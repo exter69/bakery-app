@@ -1,0 +1,176 @@
+.register-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+}
+
+.register-page__hero {
+  width: 100%;
+  height: 35vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.register-page__hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.register-page__content {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  margin-top: -3rem;
+  position: relative;
+  z-index: 1;
+}
+
+.register-card {
+  width: 100%;
+  max-width: 420px;
+  background: white;
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.register-card__title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.25rem;
+}
+
+.register-card__subtitle {
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0 0 1.75rem;
+}
+
+.register-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.register-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.register-card__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.register-card__input {
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  color: #1e293b;
+  transition: border-color 0.15s ease;
+}
+
+.register-card__input:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.register-card__role-group {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.register-card__role-options {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.register-card__role-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.register-card__role-option--active {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+
+.register-card__role-radio {
+  accent-color: #6366f1;
+}
+
+.register-card__role-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.register-card__error {
+  padding: 0.75rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #dc2626;
+  font-size: 0.85rem;
+}
+
+.register-card__submit {
+  padding: 0.875rem;
+  border-radius: 12px;
+  border: none;
+  background: #6366f1;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.register-card__submit:hover:not(:disabled) {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.register-card__submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.register-card__submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.register-card__footer {
+  margin: 1.5rem 0 0;
+  font-size: 0.875rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.register-card__link {
+  font-weight: 600;
+  color: #6366f1;
+  text-decoration: none;
+}
+
+.register-card__link:hover {
+  color: #4f46e5;
+}

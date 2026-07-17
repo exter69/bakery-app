@@ -1,0 +1,4 @@
+-- Add holiday mode fields to users table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS holiday_mode BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS holiday_from TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS holiday_to TIMESTAMPTZ;

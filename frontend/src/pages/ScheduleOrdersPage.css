@@ -1,0 +1,375 @@
+/* ScheduleOrdersPage styles - modern rounded aesthetic */
+
+.schedule-orders {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.schedule-orders__title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1.5rem;
+}
+
+/* Controls bar */
+.schedule-orders__controls {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.schedule-orders__control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.schedule-orders__control-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.schedule-orders__select {
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  font-size: 0.875rem;
+  color: #334155;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.schedule-orders__select:hover {
+  border-color: #cbd5e1;
+}
+
+.schedule-orders__select:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+/* Table */
+.schedule-orders__table-wrapper {
+  overflow-x: auto;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: white;
+}
+
+.schedule-orders__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.schedule-orders__table th {
+  padding: 0.875rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+  background: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.schedule-orders__table td {
+  padding: 0.875rem 1rem;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.schedule-orders__table tr:last-child td {
+  border-bottom: none;
+}
+
+.schedule-orders__table tr:hover td {
+  background: #f8fafc;
+}
+
+/* Type badge */
+.schedule-orders__type-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.schedule-orders__type-badge--order {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.schedule-orders__type-badge--reservation {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+/* Status badge */
+.schedule-orders__status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.schedule-orders__status-badge--pending_payment {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.schedule-orders__status-badge--confirmed {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.schedule-orders__status-badge--preparing {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.schedule-orders__status-badge--ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.schedule-orders__status-badge--delivered {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.schedule-orders__status-badge--picked_up {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.schedule-orders__status-badge--cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Delete button */
+.schedule-orders__delete-btn {
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.schedule-orders__delete-btn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+.schedule-orders__delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Pagination */
+.schedule-orders__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.schedule-orders__page-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.schedule-orders__page-btn:hover:not(:disabled) {
+  border-color: #6366f1;
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.schedule-orders__page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.schedule-orders__page-info {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Loading and error states */
+.schedule-orders__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  gap: 1rem;
+}
+
+.schedule-orders__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 1rem;
+  background: #fef2f2;
+  border-radius: 16px;
+  border: 1px solid #fecaca;
+  text-align: center;
+}
+
+.schedule-orders__error p {
+  color: #dc2626;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.schedule-orders__empty {
+  padding: 3rem 1rem;
+  text-align: center;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px dashed #cbd5e1;
+}
+
+.schedule-orders__empty p {
+  color: #64748b;
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Confirmation dialog overlay */
+.schedule-orders__confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.schedule-orders__confirm-dialog {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.schedule-orders__confirm-dialog h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+  color: #1e293b;
+}
+
+.schedule-orders__confirm-dialog p {
+  margin: 0 0 1.5rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.schedule-orders__confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.schedule-orders__confirm-cancel {
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+.schedule-orders__confirm-cancel:hover {
+  background: #f1f5f9;
+}
+
+.schedule-orders__confirm-delete {
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  border: none;
+  background: #dc2626;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+}
+
+.schedule-orders__confirm-delete:hover {
+  background: #b91c1c;
+}
+
+/* Error toast */
+.schedule-orders__toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.875rem 1.5rem;
+  border-radius: 12px;
+  background: #1e293b;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  z-index: 1100;
+  animation: toast-in 0.3s ease;
+}
+
+.schedule-orders__toast--error {
+  background: #dc2626;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .schedule-orders__controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .schedule-orders__control-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

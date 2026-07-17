@@ -1,0 +1,314 @@
+/* Recurring Orders Page */
+
+.recurring-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.recurring-page__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.25rem;
+}
+
+.recurring-page__subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0 0 1.5rem;
+}
+
+/* Holiday card */
+.holiday-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 2rem;
+}
+
+.holiday-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.holiday-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.holiday-card__dates {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.holiday-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.holiday-card__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.holiday-card__input {
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: #1e293b;
+  transition: border-color 0.15s ease;
+}
+
+.holiday-card__input:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.holiday-card__actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* Holiday banner */
+.holiday-banner {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: #92400e;
+  font-weight: 500;
+}
+
+/* Toggle reuse from Dashboard.css */
+.recurring-toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  display: inline-block;
+}
+
+.recurring-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.recurring-toggle__slider {
+  position: absolute;
+  inset: 0;
+  background: #cbd5e1;
+  border-radius: 11px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.recurring-toggle__slider::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.2s ease;
+}
+
+.recurring-toggle input:checked + .recurring-toggle__slider {
+  background: #6366f1;
+}
+
+.recurring-toggle input:checked + .recurring-toggle__slider::before {
+  transform: translateX(18px);
+}
+
+/* Orders section */
+.recurring-orders-section {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+}
+
+.recurring-orders-section__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1rem;
+}
+
+/* Table */
+.recurring-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.recurring-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.recurring-table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.recurring-table td {
+  padding: 0.75rem 1rem;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.recurring-table tr:last-child td {
+  border-bottom: none;
+}
+
+.recurring-table tr:hover td {
+  background: #f8fafc;
+}
+
+/* Badges */
+.recurring-badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.recurring-badge--active {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.recurring-badge--paused {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* Buttons */
+.recurring-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.recurring-btn:active {
+  transform: translateY(1px);
+}
+
+.recurring-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.recurring-btn--primary {
+  background: #6366f1;
+  color: white;
+}
+
+.recurring-btn--primary:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.recurring-btn--secondary {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.recurring-btn--secondary:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.recurring-btn--danger {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.recurring-btn--danger:hover:not(:disabled) {
+  background: #fecaca;
+}
+
+/* Actions cell */
+.recurring-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Loading & empty */
+.recurring-loading {
+  color: #64748b;
+  font-size: 0.95rem;
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.recurring-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #94a3b8;
+}
+
+/* Pagination */
+.recurring-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* Messages */
+.recurring-msg {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.recurring-msg--success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+.recurring-msg--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
