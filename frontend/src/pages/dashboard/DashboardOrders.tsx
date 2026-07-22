@@ -120,7 +120,7 @@ export default function DashboardOrders() {
           className="dash-form__select"
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          style={{ maxWidth: 200 }}
+          
         >
           {STATUS_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>

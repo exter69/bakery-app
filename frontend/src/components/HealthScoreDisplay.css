@@ -1,0 +1,23 @@
+.health-score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-hand-body);
+  font-size: 0.85rem;
+  color: var(--ink);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.health-score-badge__emoji {
+  font-style: normal;
+  font-size: 0.9rem;
+}
+
+.health-score-badge__value {
+  font-weight: 600;
+}

@@ -59,6 +59,18 @@ var (
 
 	// ErrUserNotFound is returned when a user ID does not match any record.
 	ErrUserNotFound = errors.New("user not found")
+
+	// ErrTokenRequired is returned when a registration code is required but missing.
+	ErrTokenRequired = errors.New("registration code is required for seller accounts")
+
+	// ErrInvalidToken is returned when the provided registration token is not found.
+	ErrInvalidToken = errors.New("invalid registration token")
+
+	// ErrTokenExpired is returned when the provided registration token has expired.
+	ErrTokenExpired = errors.New("registration token has expired")
+
+	// ErrTokenAlreadyUsed is returned when the provided registration token was already used.
+	ErrTokenAlreadyUsed = errors.New("registration token has already been used")
 )
 
 // ValidationErrors wraps a list of validation errors from the validation package.

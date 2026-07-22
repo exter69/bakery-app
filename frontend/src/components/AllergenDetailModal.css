@@ -1,0 +1,133 @@
+/* ─── Allergen Detail Modal ───────────────────────────────────────────────── */
+
+/* Backdrop — higher z-index than ProductSelectionModal (1000) */
+.adm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(58, 46, 34, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: adm-fade-in 200ms ease forwards;
+}
+
+/* Modal container */
+.adm {
+  width: min(440px, 90vw);
+  max-height: min(520px, 80vh);
+  background: var(--bg-card, #fffdf8);
+  border: 1.5px solid var(--ink, #3a2e22);
+  border-radius: 16px;
+  box-shadow: 4px 4px 0 rgba(58, 46, 34, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: adm-scale-in 200ms ease forwards;
+  outline: none;
+}
+
+/* ─── Header ──────────────────────────────────────────────────────────────── */
+
+.adm__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--bg-panel, #f7f1e5);
+  border-bottom: 1.5px solid var(--ink, #3a2e22);
+  flex-shrink: 0;
+}
+
+.adm__title {
+  font-family: var(--font-hand-heading, 'Caveat', cursive);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ink, #3a2e22);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm__close-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ink, #3a2e22);
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 150ms;
+  flex-shrink: 0;
+}
+
+.adm__close-btn:hover {
+  background: rgba(58, 46, 34, 0.08);
+}
+
+.adm__close-btn:focus-visible {
+  outline: 2px solid var(--accent, #e8b04b);
+  outline-offset: 2px;
+}
+
+/* ─── Body ────────────────────────────────────────────────────────────────── */
+
+.adm__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  overscroll-behavior: contain;
+}
+
+/* ─── Allergen list ───────────────────────────────────────────────────────── */
+
+.adm__allergen-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adm__allergen-item {
+  padding: 10px 14px;
+  background: var(--bg-panel, #f7f1e5);
+  border: 1px solid rgba(58, 46, 34, 0.15);
+  border-radius: 10px;
+}
+
+.adm__allergen-name {
+  font-family: var(--font-hand-body, 'Patrick Hand', cursive);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink, #3a2e22);
+  margin: 0 0 4px;
+}
+
+.adm__allergen-desc {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-muted, #7a5c3e);
+  margin: 0;
+}
+
+/* ─── Animations ──────────────────────────────────────────────────────────── */
+
+@keyframes adm-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes adm-scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

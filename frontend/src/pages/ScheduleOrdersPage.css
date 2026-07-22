@@ -7,9 +7,10 @@
 }
 
 .schedule-orders__title {
+  font-family: var(--font-hand-heading);
   font-size: 2rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--ink);
   margin: 0 0 1.5rem;
 }
 
@@ -31,16 +32,16 @@
 .schedule-orders__control-group label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--ink-muted);
 }
 
 .schedule-orders__select {
   padding: 0.5rem 0.75rem;
   border-radius: 10px;
-  border: 2px solid #e2e8f0;
-  background: white;
+  border: var(--border);
+  background: var(--bg-card);
   font-size: 0.875rem;
-  color: #334155;
+  color: var(--ink);
   cursor: pointer;
   transition: border-color 0.15s ease;
 }
@@ -51,15 +52,15 @@
 
 .schedule-orders__select:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--accent);
 }
 
 /* Table */
 .schedule-orders__table-wrapper {
   overflow-x: auto;
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  background: white;
+  border: var(--border);
+  background: var(--bg-card);
 }
 
 .schedule-orders__table {
@@ -72,15 +73,15 @@
   padding: 0.875rem 1rem;
   text-align: left;
   font-weight: 600;
-  color: #475569;
-  background: #f8fafc;
-  border-bottom: 2px solid #e2e8f0;
+  color: var(--ink-muted);
+  background: var(--bg-panel);
+  border: var(--border);
 }
 
 .schedule-orders__table td {
   padding: 0.875rem 1rem;
-  color: #334155;
-  border-bottom: 1px solid #f1f5f9;
+  color: var(--ink);
+  border-bottom: 1px solid rgba(58,46,34,0.1);
 }
 
 .schedule-orders__table tr:last-child td {
@@ -88,7 +89,7 @@
 }
 
 .schedule-orders__table tr:hover td {
-  background: #f8fafc;
+  background: var(--bg-panel);
 }
 
 /* Type badge */
@@ -102,7 +103,7 @@
 
 .schedule-orders__type-badge--order {
   background: #eef2ff;
-  color: #4338ca;
+  color: var(--accent);
 }
 
 .schedule-orders__type-badge--reservation {
@@ -161,7 +162,7 @@
   border-radius: 8px;
   border: 1px solid #fca5a5;
   background: #fef2f2;
-  color: #dc2626;
+  color: var(--alert);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -190,19 +191,19 @@
 .schedule-orders__page-btn {
   padding: 0.5rem 1rem;
   border-radius: 10px;
-  border: 2px solid #e2e8f0;
-  background: white;
+  border: var(--border);
+  background: var(--bg-card);
   font-size: 0.875rem;
   font-weight: 600;
-  color: #334155;
+  color: var(--ink);
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .schedule-orders__page-btn:hover:not(:disabled) {
-  border-color: #6366f1;
+  border-color: var(--accent);
   background: #eef2ff;
-  color: #4338ca;
+  color: var(--accent);
 }
 
 .schedule-orders__page-btn:disabled {
@@ -212,7 +213,7 @@
 
 .schedule-orders__page-info {
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--ink-muted);
   font-weight: 500;
 }
 
@@ -239,7 +240,7 @@
 }
 
 .schedule-orders__error p {
-  color: #dc2626;
+  color: var(--alert);
   font-size: 1rem;
   margin: 0;
 }
@@ -247,13 +248,13 @@
 .schedule-orders__empty {
   padding: 3rem 1rem;
   text-align: center;
-  background: #f8fafc;
+  background: var(--bg-panel);
   border-radius: 16px;
   border: 1px dashed #cbd5e1;
 }
 
 .schedule-orders__empty p {
-  color: #64748b;
+  color: var(--ink-muted);
   font-size: 1rem;
   margin: 0;
 }
@@ -273,7 +274,7 @@
 }
 
 .schedule-orders__confirm-dialog {
-  background: white;
+  background: var(--bg-card);
   border-radius: 16px;
   padding: 2rem;
   max-width: 400px;
@@ -284,12 +285,12 @@
 .schedule-orders__confirm-dialog h3 {
   margin: 0 0 0.75rem;
   font-size: 1.125rem;
-  color: #1e293b;
+  color: var(--ink);
 }
 
 .schedule-orders__confirm-dialog p {
   margin: 0 0 1.5rem;
-  color: #64748b;
+  color: var(--ink-muted);
   font-size: 0.9rem;
 }
 
@@ -302,23 +303,23 @@
 .schedule-orders__confirm-cancel {
   padding: 0.5rem 1rem;
   border-radius: 10px;
-  border: 2px solid #e2e8f0;
-  background: white;
+  border: var(--border);
+  background: var(--bg-card);
   font-size: 0.875rem;
   font-weight: 600;
-  color: #334155;
+  color: var(--ink);
   cursor: pointer;
 }
 
 .schedule-orders__confirm-cancel:hover {
-  background: #f1f5f9;
+  background: var(--bg-panel);
 }
 
 .schedule-orders__confirm-delete {
   padding: 0.5rem 1rem;
   border-radius: 10px;
   border: none;
-  background: #dc2626;
+  background: var(--alert);
   font-size: 0.875rem;
   font-weight: 600;
   color: white;
@@ -337,7 +338,7 @@
   transform: translateX(-50%);
   padding: 0.875rem 1.5rem;
   border-radius: 12px;
-  background: #1e293b;
+  background: var(--ink);
   color: white;
   font-size: 0.875rem;
   font-weight: 500;
@@ -347,7 +348,7 @@
 }
 
 .schedule-orders__toast--error {
-  background: #dc2626;
+  background: var(--alert);
 }
 
 @keyframes toast-in {

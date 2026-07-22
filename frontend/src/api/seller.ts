@@ -8,16 +8,19 @@ export type Order = ScheduleEntry;
 /** Reservation type as returned by bakery-specific endpoints */
 export type Reservation = ScheduleEntry;
 
-/** Fetch the current seller's bakery (first bakery they own) */
+/** Fetch the current seller's bakery */
 export async function fetchMyBakery(): Promise<Bakery | null> {
-  const res = await apiFetch<ListResponse<Bakery>>('/bakeries?page=1&mine=true');
-  return res.items.length > 0 ? res.items[0] : null;
+  try {
+    return await apiFetch<Bakery>('/seller/bakery');
+  } catch {
+    return null;
+  }
 }
 
 /** Update bakery info */
 export function updateBakery(
   id: string,
-  data: { name?: string; description?: string; address?: string; photoUrl?: string }
+  data: { name?: string; description?: string; address?: string; photoUrl?: string; googlePlaceId?: string }
 ): Promise<Bakery> {
   return apiFetch<Bakery>(`/bakeries/${id}`, {
     method: 'PUT',
@@ -41,7 +44,7 @@ export function fetchProducts(bakeryId: string): Promise<Product[]> {
 /** Create a new product */
 export function createProduct(
   bakeryId: string,
-  product: { name: string; description: string; price: number; photoUrl: string; category: string }
+  product: { name: string; description: string; price: number; photoUrl: string; category: string; allergens: string[]; healthScore: number | null }
 ): Promise<Product> {
   return apiFetch<Product>(`/bakeries/${bakeryId}/products`, {
     method: 'POST',

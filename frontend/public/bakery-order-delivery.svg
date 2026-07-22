@@ -1,0 +1,141 @@
+<svg viewBox="0 0 1200 640" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+  <!-- ========= Bakery: set an order, receive it on a weekly schedule ========= -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDF6EC"/>
+      <stop offset="1" stop-color="#F7E9D2"/>
+    </linearGradient>
+    <linearGradient id="crust" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E7A85B"/>
+      <stop offset="1" stop-color="#C6803B"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#B07A3D" flood-opacity="0.20"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="640" rx="28" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="600" y="66" font-size="34" fill="#8A4F27" text-anchor="middle" font-weight="800">Set it once. Fresh every week.</text>
+  <text x="600" y="96" font-size="16" fill="#B5713C" text-anchor="middle">Build your order, pick your days &amp; times — we deliver on your schedule</text>
+
+  <!-- ===================== STEP 1: SET UP ORDER ===================== -->
+  <g filter="url(#soft)"><rect x="60" y="150" width="250" height="330" rx="26" fill="#FFFFFF"/></g>
+  <!-- phone -->
+  <rect x="135" y="188" width="100" height="200" rx="16" fill="#3E5C50"/>
+  <rect x="145" y="204" width="80" height="152" rx="7" fill="#EAF3EC"/>
+  <!-- basket / items on screen -->
+  <path d="M160 250 q10 -20 25 -20 q15 0 25 20 q-25 9 -50 0 Z" fill="url(#crust)"/>
+  <path d="M164 249 l42 0" stroke="#9A5A2A" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="170" cy="285" r="9" fill="#D9924A"/>
+  <circle cx="190" cy="285" r="9" fill="#E7A85B"/>
+  <circle cx="210" cy="285" r="9" fill="#C6803B"/>
+  <rect x="152" y="322" width="66" height="24" rx="12" fill="#E07856"/>
+  <text x="185" y="338" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">Add order</text>
+  <!-- + badge -->
+  <g transform="translate(240,180)">
+    <circle cx="0" cy="0" r="22" fill="#8FB98C"/>
+    <path d="M0 -10 v20 M-10 0 h20" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <text x="185" y="432" font-size="22" fill="#8A4F27" text-anchor="middle" font-weight="800">1. Build order</text>
+  <text x="185" y="454" font-size="13" fill="#A9793F" text-anchor="middle">Pick your breads &amp; pastries</text>
+
+  <!-- arrow -->
+  <path d="M320 315 h34" stroke="#C6803B" stroke-width="5" stroke-linecap="round"/>
+  <path d="M350 306 l13 9 l-13 9" fill="none" stroke="#C6803B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- ===================== STEP 2 (HERO): WEEKLY SCHEDULE ===================== -->
+  <g filter="url(#soft)"><rect x="372" y="150" width="456" height="330" rx="26" fill="#FFFFFF"/></g>
+
+  <!-- big clock -->
+  <g transform="translate(455,232)">
+    <circle cx="0" cy="0" r="46" fill="#FDF1DC" stroke="#E7A85B" stroke-width="6"/>
+    <circle cx="0" cy="0" r="46" fill="none" stroke="#8FB98C" stroke-width="6" stroke-dasharray="7 8" opacity="0.55"/>
+    <line x1="0" y1="0" x2="0" y2="-26" stroke="#3E5C50" stroke-width="5" stroke-linecap="round"/>
+    <line x1="0" y1="0" x2="19" y2="9" stroke="#E07856" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="4" fill="#8A4F27"/>
+    <text x="0" y="72" font-size="13" fill="#A9793F" text-anchor="middle" font-weight="700">choose the hour</text>
+  </g>
+
+  <!-- weekly strip: Mon..Sun, selected delivery days highlighted -->
+  <g transform="translate(548,180)">
+    <text x="122" y="8" font-size="13" fill="#8A4F27" text-anchor="middle" font-weight="800">YOUR WEEK</text>
+    <!-- Mon (selected) -->
+    <g transform="translate(0,22)">
+      <rect x="0" y="0" width="52" height="72" rx="10" fill="#E07856"/>
+      <text x="26" y="20" font-size="12" fill="#fff" text-anchor="middle" font-weight="800">MON</text>
+      <circle cx="26" cy="42" r="12" fill="#FDF6EC"/>
+      <line x1="26" y1="42" x2="26" y2="34" stroke="#E07856" stroke-width="2.4" stroke-linecap="round"/>
+      <line x1="26" y1="42" x2="32" y2="45" stroke="#E07856" stroke-width="2.4" stroke-linecap="round"/>
+      <text x="26" y="66" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">7:00</text>
+    </g>
+    <!-- Tue -->
+    <g transform="translate(60,22)"><rect x="0" y="0" width="52" height="72" rx="10" fill="#F1E4CE"/><text x="26" y="20" font-size="12" fill="#B79A6E" text-anchor="middle" font-weight="800">TUE</text></g>
+    <!-- Wed (selected) -->
+    <g transform="translate(120,22)">
+      <rect x="0" y="0" width="52" height="72" rx="10" fill="#E07856"/>
+      <text x="26" y="20" font-size="12" fill="#fff" text-anchor="middle" font-weight="800">WED</text>
+      <circle cx="26" cy="42" r="12" fill="#FDF6EC"/>
+      <line x1="26" y1="42" x2="26" y2="34" stroke="#E07856" stroke-width="2.4" stroke-linecap="round"/>
+      <line x1="26" y1="42" x2="32" y2="45" stroke="#E07856" stroke-width="2.4" stroke-linecap="round"/>
+      <text x="26" y="66" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">7:00</text>
+    </g>
+    <!-- Thu -->
+    <g transform="translate(180,22)"><rect x="0" y="0" width="52" height="72" rx="10" fill="#F1E4CE"/><text x="26" y="20" font-size="12" fill="#B79A6E" text-anchor="middle" font-weight="800">THU</text></g>
+    <!-- Fri (selected) -->
+    <g transform="translate(0,104)">
+      <rect x="0" y="0" width="52" height="72" rx="10" fill="#E07856"/>
+      <text x="26" y="20" font-size="12" fill="#fff" text-anchor="middle" font-weight="800">FRI</text>
+      <circle cx="26" cy="42" r="12" fill="#FDF6EC"/>
+      <line x1="26" y1="42" x2="26" y2="34" stroke="#E07856" stroke-width="2.4" stroke-linecap="round"/>
+      <line x1="26" y1="42" x2="33" y2="42" stroke="#E07856" stroke-width="2.4" stroke-linecap="round"/>
+      <text x="26" y="66" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">8:00</text>
+    </g>
+    <!-- Sat -->
+    <g transform="translate(60,104)"><rect x="0" y="0" width="52" height="72" rx="10" fill="#F1E4CE"/><text x="26" y="20" font-size="12" fill="#B79A6E" text-anchor="middle" font-weight="800">SAT</text></g>
+    <!-- Sun (selected) -->
+    <g transform="translate(120,104)">
+      <rect x="0" y="0" width="52" height="72" rx="10" fill="#E07856"/>
+      <text x="26" y="20" font-size="12" fill="#fff" text-anchor="middle" font-weight="800">SUN</text>
+      <circle cx="26" cy="42" r="12" fill="#FDF6EC"/>
+      <line x1="26" y1="42" x2="26" y2="34" stroke="#E07856" stroke-width="2.4" stroke-linecap="round"/>
+      <line x1="26" y1="42" x2="31" y2="47" stroke="#E07856" stroke-width="2.4" stroke-linecap="round"/>
+      <text x="26" y="66" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">9:00</text>
+    </g>
+    <!-- Thu2 spacer to complete grid -->
+    <g transform="translate(180,104)"><rect x="0" y="0" width="52" height="72" rx="10" fill="#F1E4CE"/><text x="26" y="20" font-size="12" fill="#B79A6E" text-anchor="middle" font-weight="800">+ add</text></g>
+  </g>
+
+  <text x="600" y="432" font-size="22" fill="#8A4F27" text-anchor="middle" font-weight="800">2. Set your weekly schedule</text>
+  <text x="600" y="454" font-size="13" fill="#A9793F" text-anchor="middle">Choose which days &amp; hours you want it delivered</text>
+
+  <!-- arrow -->
+  <path d="M838 315 h34" stroke="#C6803B" stroke-width="5" stroke-linecap="round"/>
+  <path d="M868 306 l13 9 l-13 9" fill="none" stroke="#C6803B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- ===================== STEP 3: DELIVERED ON REPEAT ===================== -->
+  <g filter="url(#soft)"><rect x="890" y="150" width="250" height="330" rx="26" fill="#FFFFFF"/></g>
+  <!-- scooter -->
+  <g transform="translate(928,238)">
+    <circle cx="20" cy="118" r="24" fill="#3E5C50"/><circle cx="20" cy="118" r="10" fill="#EAF3EC"/>
+    <circle cx="158" cy="118" r="24" fill="#3E5C50"/><circle cx="158" cy="118" r="10" fill="#EAF3EC"/>
+    <path d="M20 118 q-6 -42 38 -42 l54 0 q28 0 46 42" fill="none" stroke="#E07856" stroke-width="12" stroke-linecap="round"/>
+    <rect x="50" y="54" width="42" height="28" rx="8" fill="#E07856"/>
+    <path d="M112 78 l28 -24" stroke="#3E5C50" stroke-width="7" stroke-linecap="round"/>
+    <path d="M138 50 l15 4" stroke="#3E5C50" stroke-width="7" stroke-linecap="round"/>
+    <!-- box with bread -->
+    <rect x="-22" y="56" width="48" height="42" rx="7" fill="#C6803B"/>
+    <rect x="-22" y="56" width="48" height="13" rx="7" fill="#A9662E"/>
+    <ellipse cx="2" cy="54" rx="15" ry="8" fill="#E7A85B"/>
+    <path d="M-7 52 l4 6 M2 50 l4 6 M11 52 l4 6" stroke="#8A4F27" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <!-- recurring loop arrow "every week" -->
+  <g transform="translate(1015,196)">
+    <path d="M -18 6 a 18 18 0 1 1 6 13" fill="none" stroke="#8FB98C" stroke-width="5" stroke-linecap="round"/>
+    <path d="M -22 -4 l 4 12 l 12 -4" fill="none" stroke="#8FB98C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="1015" y="205" font-size="11" fill="#5f8a5c" text-anchor="middle" font-weight="800"></text>
+  <text x="1015" y="432" font-size="22" fill="#8A4F27" text-anchor="middle" font-weight="800">3. Delivered on repeat</text>
+  <text x="1015" y="454" font-size="13" fill="#A9793F" text-anchor="middle">Warm &amp; on time, every week</text>
+</svg>

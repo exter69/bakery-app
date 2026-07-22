@@ -1,32 +1,53 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchBakery, fetchMenu } from '../api/bakeries';
 import { createOrder, createReservation } from '../api/orders';
 import { isAuthenticated } from '../api/client';
-import type { Bakery, Menu, Product } from '../types/bakery';
-import OrderSidePanel from '../components/OrderSidePanel';
-import type { OrderItem } from '../components/OrderSidePanel';
-import ReservationSidePanel from '../components/ReservationSidePanel';
-import type { ReservationItem } from '../components/ReservationSidePanel';
-import ProductSelectionOverlay from '../components/ProductSelectionOverlay';
+import ProductSelectionModal from '../components/ProductSelectionModal';
+import HealthScoreDisplay from '../components/HealthScoreDisplay';
+import { AllergenIndicator } from '../components/AllergenIndicator';
+import AllergenDetailModal from '../components/AllergenDetailModal';
+import AllergenInfoIcon from '../components/AllergenInfoIcon';
+import type { OrderItem, DeliveryFrequency } from '../components/ProductSelectionModal';
+import type { Bakery, DaySchedule, Menu, Product } from '../types/bakery';
 import './BakeryDetailPage.css';
 
-type ActivePanel = 'order' | 'reservation' | null;
+function formatTime(t: { hour: number; minute: number }): string {
+  return `${String(t.hour).padStart(2, '0')}:${String(t.minute).padStart(2, '0')}`;
+}
 
 export default function BakeryDetailPage() {
   const { id } = useParams<{ id: string }>();
 
+  // Data fetching state
   const [bakery, setBakery] = useState<Bakery | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuError, setMenuError] = useState<string | null>(null);
-  const [orderPanelOpen, setOrderPanelOpen] = useState(false);
-  const [reservationPanelOpen, setReservationPanelOpen] = useState(false);
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [reservationItems, setReservationItems] = useState<ReservationItem[]>([]);
-  const [selectionMode, setSelectionMode] = useState<ActivePanel>(null);
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+
+  // Allergen detail modal state
+  const [allergenModalProduct, setAllergenModalProduct] = useState<Product | null>(null);
+
+  // Mobile active category filter
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
+  // User location for travel time
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
+
+  // ─── Data Fetching ───────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {} // silently ignore
+      );
+    }
+  }, []);
 
   const loadMenu = useCallback(async () => {
     if (!id) return;
@@ -41,7 +62,6 @@ export default function BakeryDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-
     async function load() {
       setLoading(true);
       try {
@@ -53,119 +73,127 @@ export default function BakeryDetailPage() {
         setLoading(false);
       }
     }
-
     load();
   }, [id, loadMenu]);
 
-  // Handle product click during selection mode
-  const handleProductClick = (product: Product) => {
-    if (selectionMode === 'order') {
-      setOrderItems((prev) => {
-        const existing = prev.find((item) => item.product.id === product.id);
-        if (existing) {
-          return prev.map((item) =>
-            item.product.id === product.id
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          );
-        }
-        return [...prev, { product, quantity: 1 }];
-      });
-    } else if (selectionMode === 'reservation') {
-      setReservationItems((prev) => {
-        const existing = prev.find((item) => item.product.id === product.id);
-        if (existing) {
-          return prev.map((item) =>
-            item.product.id === product.id
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          );
-        }
-        return [...prev, { product, quantity: 1 }];
-      });
+  // Set initial active category for mobile
+  useEffect(() => {
+    if (menu && !activeCategory) {
+      const categories = Object.keys(menu);
+      if (categories.length > 0) setActiveCategory(categories[0]);
     }
-  };
+  }, [menu, activeCategory]);
 
-  // Handle order submission → calls API, handles payment redirect
-  const handleOrderSubmit = async (day: string, startTime: string, endTime: string) => {
-    if (!id || orderItems.length === 0) return;
+  // ─── Derived Data ────────────────────────────────────────────────────────────
 
-    setSubmitError(null);
-    setSubmitting(true);
-
-    try {
-      const response = await createOrder({
-        bakeryId: id,
-        items: orderItems.map((item) => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-        })),
-        scheduledDay: day,
-        scheduledTime: { startTime, endTime },
-      });
-
-      // Redirect to payment URL
-      if (response.paymentUrl) {
-        window.location.href = response.paymentUrl;
+  const scheduleMap = useMemo(() => {
+    const map = new Map<string, DaySchedule>();
+    if (bakery) {
+      for (const ds of bakery.schedule) {
+        map.set(ds.day, ds);
       }
-    } catch (err) {
-      // Retain user selections, show error in the panel
-      setSubmitError(err instanceof Error ? err.message : 'Order submission failed. Please try again.');
-    } finally {
-      setSubmitting(false);
     }
-  };
+    return map;
+  }, [bakery]);
 
-  // Handle reservation submission → calls API, no payment redirect
-  const handleReservationSubmit = async (day: string, startTime: string, endTime: string) => {
-    if (!id || reservationItems.length === 0) return;
+  const todayHours = useMemo(() => {
+    if (!bakery) return null;
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const today = days[new Date().getDay()];
+    const s = scheduleMap.get(today);
+    if (!s || !s.isOpen) return 'Closed today';
+    return `Open ${formatTime(s.openTime)}–${formatTime(s.closeTime)}`;
+  }, [bakery, scheduleMap]);
 
+  const travelInfo = useMemo(() => {
+    if (!userPos || !bakery) return null;
+    const lat1 = userPos.lat, lng1 = userPos.lng;
+    const lat2 = bakery.latitude ?? 0;
+    const lng2 = bakery.longitude ?? 0;
+    if (!lat2 && !lng2) return null;
+
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) ** 2;
+    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    const walkMin = Math.round(dist / 5 * 60);
+    const bikeMin = Math.round(dist / 15 * 60);
+    const driveMin = Math.round(dist / 30 * 60);
+
+    return { distanceKm: Math.round(dist * 10) / 10, walkMin, bikeMin, driveMin };
+  }, [userPos, bakery]);
+
+  // Menu data for the modal
+  const menuCategories = menu ? Object.entries(menu) : [];
+  const hasMenuItems = menuCategories.some(([, products]) => products.length > 0);
+
+  const allProducts = useMemo<Product[]>(() => {
+    if (!menu) return [];
+    return Object.values(menu).flat();
+  }, [menu]);
+
+  const categories = useMemo(() => {
+    if (!menu) return [];
+    return Object.keys(menu);
+  }, [menu]);
+
+  const productsByCategory = useMemo<Record<string, Product[]>>(() => {
+    return menu ?? {};
+  }, [menu]);
+
+  // ─── Modal Submit Handler ────────────────────────────────────────────────────
+
+  const handleModalSubmit = async (
+    items: OrderItem[],
+    days: string[],
+    time: string,
+    mode: 'delivery' | 'reservation',
+    frequency?: DeliveryFrequency,
+  ) => {
+    if (!id || items.length === 0 || days.length === 0 || !time) return;
     setSubmitError(null);
-    setSubmitting(true);
-
     try {
-      await createReservation({
-        bakeryId: id,
-        items: reservationItems.map((item) => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-        })),
-        scheduledDay: day,
-        scheduledTime: { startTime, endTime },
-      });
+      const requestItems = items.map((item) => ({
+        productId: item.product.id,
+        quantity: item.quantity,
+      }));
 
-      // Reservation confirmed - close panel and reset
-      setReservationPanelOpen(false);
-      setReservationItems([]);
+      if (mode === 'delivery') {
+        const response = await createOrder({
+          bakeryId: id,
+          items: requestItems,
+          scheduledDay: days[0],
+          scheduledTime: { startTime: time, endTime: time },
+          recurring: frequency === 'weekly',
+          recurringDays: frequency === 'weekly' ? days : undefined,
+        });
+        if (response.paymentUrl) {
+          window.location.href = response.paymentUrl;
+          return;
+        }
+      } else {
+        await createReservation({
+          bakeryId: id,
+          items: requestItems,
+          scheduledDay: days[0],
+          scheduledTime: { startTime: time, endTime: time },
+        });
+      }
+      setModalOpen(false);
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Reservation submission failed. Please try again.');
-    } finally {
-      setSubmitting(false);
+      setSubmitError(err instanceof Error ? err.message : 'Order submission failed.');
     }
   };
 
-  // Close order panel
-  const handleCloseOrderPanel = () => {
-    setOrderPanelOpen(false);
-    setOrderItems([]);
-    setSelectionMode(null);
-    setSubmitError(null);
-  };
-
-  // Close reservation panel
-  const handleCloseReservationPanel = () => {
-    setReservationPanelOpen(false);
-    setReservationItems([]);
-    setSelectionMode(null);
-    setSubmitError(null);
-  };
-
-  // Get flat list of products for overlay
-  const allProducts = menu ? Object.values(menu).flat() : [];
+  // ─── Render ──────────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
-      <div className="bakery-detail__loading">
+      <div className="bakery-page bakery-page--loading">
         <div className="spinner" aria-label="Loading bakery details" />
         <p>Loading bakery details...</p>
       </div>
@@ -174,174 +202,202 @@ export default function BakeryDetailPage() {
 
   if (!bakery) {
     return (
-      <div className="bakery-detail__error">
+      <div className="bakery-page bakery-page--error">
         <p>Bakery not found.</p>
       </div>
     );
   }
 
-  const menuCategories = menu ? Object.entries(menu) : [];
-  const hasMenuItems = menuCategories.some(([, products]) => products.length > 0);
-
   return (
-    <div className="bakery-detail">
-      {/* Bakery Header */}
-      <header className="bakery-detail__header">
-        <img
-          src={bakery.photoUrl}
-          alt={bakery.name}
-          className="bakery-detail__photo"
-        />
-        <div className="bakery-detail__info">
-          <h1 className="bakery-detail__name">{bakery.name}</h1>
-          <p className="bakery-detail__description">{bakery.description}</p>
-          <p className="bakery-detail__address">
-            <span className="bakery-detail__address-icon" aria-hidden="true">📍</span>
-            {bakery.address}
-          </p>
-        </div>
-      </header>
+    <div className="bakery-page">
+      <div className="bakery-page__content">
+        {/* Desktop header */}
+        <header className="bakery-page__header">
+          <div className="bakery-page__photo-wrap">
+            {bakery.photoUrl ? (
+              <img src={bakery.photoUrl} alt={bakery.name} className="bakery-page__photo" />
+            ) : (
+              <div className="bakery-page__photo-placeholder" aria-label={`${bakery.name} photo`} />
+            )}
+          </div>
+          <div className="bakery-page__info">
+            <h1 className="bakery-page__name">{bakery.name}</h1>
+            <p className="bakery-page__address">{bakery.address}</p>
+            <p className="bakery-page__hours">{todayHours}</p>
+            {travelInfo && (
+              <p className="bakery-page__travel">
+                📍 {travelInfo.distanceKm} km — 🚶 {travelInfo.walkMin} min · 🚲 {travelInfo.bikeMin} min · 🚗 {travelInfo.driveMin} min
+              </p>
+            )}
+          </div>
+        </header>
 
-      {/* Action Buttons */}
-      <div className="bakery-detail__actions">
-        {isAuthenticated() ? (
-          <>
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={() => {
-                setOrderPanelOpen(true);
-                setSubmitError(null);
-              }}
-            >
-              Place Order
-            </button>
-            <button
-              type="button"
-              className="btn btn--secondary"
-              onClick={() => {
-                setReservationPanelOpen(true);
-                setSubmitError(null);
-              }}
-            >
-              Make Reservation
-            </button>
-          </>
-        ) : (
-          <div className="bakery-detail__guest-banner">
-            <p>
-              <Link to="/login" className="bakery-detail__sign-in-link">Sign in</Link> to place orders and make reservations.
-            </p>
+        {/* Mobile hero */}
+        <div className="bakery-page__mobile-hero">
+          {bakery.photoUrl ? (
+            <img src={bakery.photoUrl} alt={bakery.name} className="bakery-page__mobile-hero-img" />
+          ) : (
+            <div className="bakery-page__mobile-hero-placeholder" aria-label={`${bakery.name} photo`} />
+          )}
+          <div className="bakery-page__mobile-info">
+            <h1 className="bakery-page__name">{bakery.name}</h1>
+            <p className="bakery-page__hours">{todayHours}</p>
+            {travelInfo && (
+              <p className="bakery-page__travel">
+                📍 {travelInfo.distanceKm} km — 🚶 {travelInfo.walkMin} min · 🚲 {travelInfo.bikeMin} min · 🚗 {travelInfo.driveMin} min
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile category chips */}
+        {hasMenuItems && (
+          <div className="bakery-page__category-chips">
+            {menuCategories.map(([category]) => (
+              <button
+                key={category}
+                type="button"
+                className={`bakery-page__category-chip ${activeCategory === category ? 'bakery-page__category-chip--active' : ''}`}
+                onClick={() => setActiveCategory(category)}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Menu section */}
+        <section className="bakery-page__menu">
+          {menuError && (
+            <div className="bakery-page__menu-error">
+              <p>{menuError}</p>
+              <button type="button" className="bakery-page__retry-btn" onClick={loadMenu}>
+                Retry
+              </button>
+            </div>
+          )}
+
+          {!menuError && !hasMenuItems && (
+            <div className="bakery-page__menu-empty">
+              <p>Menu is currently empty.</p>
+            </div>
+          )}
+
+          {!menuError && hasMenuItems && (
+            <div className="bakery-page__categories">
+              {menuCategories.map(([category, products]) => (
+                <div
+                  key={category}
+                  className={`bakery-page__category ${activeCategory !== null && activeCategory !== category ? 'bakery-page__category--hidden-mobile' : ''}`}
+                >
+                  <h3 className="bakery-page__category-title">{category}</h3>
+
+                  {/* Desktop product grid */}
+                  <div className="bakery-page__product-grid">
+                    {products.map((product) => (
+                      <article key={product.id} className="product-card">
+                        {product.photoUrl ? (
+                          <img src={product.photoUrl} alt={product.name} className="product-card__photo" loading="lazy" />
+                        ) : (
+                          <div className="product-card__photo-placeholder" aria-hidden="true" />
+                        )}
+                        <div className="product-card__body">
+                          <span className="product-card__name">{product.name}</span>
+                          <span className="product-card__price">€{(product.price / 100).toFixed(2)}</span>
+                          {product.healthScore != null && <HealthScoreDisplay score={product.healthScore} />}
+                        </div>
+                        {product.allergens?.length > 0 && (
+                          <AllergenIndicator
+                            allergens={product.allergens}
+                            productName={product.name}
+                            onOpenModal={() => setAllergenModalProduct(product)}
+                          />
+                        )}
+                      </article>
+                    ))}
+                  </div>
+
+                  {/* Mobile product rows */}
+                  <div className="bakery-page__product-rows">
+                    {products.map((product) => (
+                      <div key={product.id} className="product-row">
+                        {product.photoUrl ? (
+                          <img src={product.photoUrl} alt={product.name} className="product-row__photo" loading="lazy" />
+                        ) : (
+                          <div className="product-row__photo-placeholder" aria-hidden="true" />
+                        )}
+                        <div className="product-row__info">
+                          <span className="product-row__name">{product.name}</span>
+                          <span className="product-row__price">€{(product.price / 100).toFixed(2)}</span>
+                          {product.healthScore != null && <HealthScoreDisplay score={product.healthScore} />}
+                        </div>
+                        {product.allergens?.length > 0 && (
+                          <AllergenIndicator
+                            allergens={product.allergens}
+                            productName={product.name}
+                            onOpenModal={() => setAllergenModalProduct(product)}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Sign-in banner when not authenticated */}
+        {!isAuthenticated() && (
+          <div className="bakery-page__sign-in-banner">
+            <Link to="/login" className="bakery-page__sign-in-link">Sign in</Link> to place orders
+          </div>
+        )}
+
+        {/* Floating order button (desktop) */}
+        {isAuthenticated() && (
+          <button
+            type="button"
+            className="bakery-page__order-btn"
+            onClick={() => setModalOpen(true)}
+          >
+            Start a delivery order →
+          </button>
+        )}
+
+        {/* Submit error toast */}
+        {submitError && (
+          <div className="bakery-page__sign-in-banner" role="alert">
+            {submitError}
           </div>
         )}
       </div>
 
-      {/* Submission Error (visible at page level) */}
-      {submitError && (
-        <div className="bakery-detail__submit-error" role="alert">
-          <p>{submitError}</p>
-        </div>
+      {/* Product Selection Modal */}
+      <ProductSelectionModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        bakeryName={bakery.name}
+        products={allProducts}
+        categories={categories}
+        productsByCategory={productsByCategory}
+        schedule={bakery.schedule}
+        minDeliveryAmount={bakery.minDeliveryAmount}
+        onSubmit={handleModalSubmit}
+      />
+
+      {/* Allergen Detail Modal */}
+      {allergenModalProduct && (
+        <AllergenDetailModal
+          isOpen={!!allergenModalProduct}
+          onClose={() => setAllergenModalProduct(null)}
+          productName={allergenModalProduct.name}
+          allergens={allergenModalProduct.allergens}
+        />
       )}
 
-      {/* Menu Section */}
-      <section className="bakery-detail__menu">
-        <h2 className="bakery-detail__menu-title">Menu</h2>
-
-        {menuError && (
-          <div className="bakery-detail__menu-error">
-            <p>{menuError}</p>
-            <button
-              type="button"
-              className="btn btn--outline"
-              onClick={loadMenu}
-            >
-              Retry
-            </button>
-          </div>
-        )}
-
-        {!menuError && !hasMenuItems && (
-          <div className="bakery-detail__menu-empty">
-            <p>Menu is currently empty.</p>
-          </div>
-        )}
-
-        {!menuError && hasMenuItems && (
-          <div className="bakery-detail__categories">
-            {menuCategories.map(([category, products]) => (
-              <div key={category} className="menu-category">
-                <h3 className="menu-category__title">{category}</h3>
-                <div className="menu-category__grid">
-                  {products.map((product) => (
-                    <article
-                      key={product.id}
-                      className={`product-card ${selectionMode ? 'product-card--selectable' : ''}`}
-                      onClick={selectionMode ? () => handleProductClick(product) : undefined}
-                      role={selectionMode ? 'button' : undefined}
-                      tabIndex={selectionMode ? 0 : undefined}
-                      aria-label={selectionMode ? `Add ${product.name} to ${selectionMode}` : undefined}
-                    >
-                      {product.photoUrl && (
-                        <img
-                          src={product.photoUrl}
-                          alt={product.name}
-                          className="product-card__photo"
-                          loading="lazy"
-                        />
-                      )}
-                      <div className="product-card__content">
-                        <h4 className="product-card__name">{product.name}</h4>
-                        {product.description && (
-                          <p className="product-card__description">
-                            {product.description}
-                          </p>
-                        )}
-                        <p className="product-card__price">
-                          €{(product.price / 100).toFixed(2)}
-                        </p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Product Selection Overlay */}
-      <ProductSelectionOverlay
-        isActive={selectionMode !== null}
-        products={allProducts}
-        selectedItems={selectionMode === 'order' ? orderItems : reservationItems}
-        onProductClick={handleProductClick}
-        onDone={() => setSelectionMode(null)}
-      />
-
-      {/* Order Side Panel */}
-      <OrderSidePanel
-        isOpen={orderPanelOpen}
-        onClose={handleCloseOrderPanel}
-        bakerySchedule={bakery.schedule}
-        onStartSelection={() => setSelectionMode('order')}
-        items={orderItems}
-        onSubmit={handleOrderSubmit}
-        submitting={submitting}
-        submitError={submitError}
-      />
-
-      {/* Reservation Side Panel */}
-      <ReservationSidePanel
-        isOpen={reservationPanelOpen}
-        onClose={handleCloseReservationPanel}
-        schedule={bakery.schedule}
-        items={reservationItems}
-        onItemsChange={setReservationItems}
-        onStartSelection={() => setSelectionMode('reservation')}
-        onSubmit={handleReservationSubmit}
-        submitting={submitting}
-        submitError={submitError}
-      />
+      {/* Page-level allergen info floating button */}
+      <AllergenInfoIcon />
     </div>
   );
 }

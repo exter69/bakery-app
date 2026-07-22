@@ -1,10 +1,40 @@
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useRef, useEffect, useState, useCallback } from 'react';
+import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { isAuthenticated, clearToken } from '../api/client';
+import { useI18n } from '../i18n';
+import Footer from './Footer';
+import LanguageSwitcher from './LanguageSwitcher';
 import './CustomerLayout.css';
 
 export default function CustomerLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const authenticated = isAuthenticated();
+  const { t } = useI18n();
+
+  const linksRef = useRef<HTMLDivElement>(null);
+  const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null);
+
+  const updateIndicator = useCallback(() => {
+    if (!linksRef.current) return;
+    const active = linksRef.current.querySelector('.pill-nav__link--active') as HTMLElement | null;
+    if (active) {
+      const containerRect = linksRef.current.getBoundingClientRect();
+      const activeRect = active.getBoundingClientRect();
+      setIndicator({
+        left: activeRect.left - containerRect.left,
+        width: activeRect.width,
+      });
+    } else {
+      setIndicator(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Small delay to let NavLink update its active class
+    const timer = setTimeout(updateIndicator, 20);
+    return () => clearTimeout(timer);
+  }, [location.pathname, updateIndicator]);
 
   function handleSignOut() {
     clearToken();
@@ -13,85 +43,82 @@ export default function CustomerLayout() {
 
   return (
     <div className="customer-layout">
-      {/* Navbar */}
-      <nav className="navbar">
-        <Link to="/" className="navbar__brand">
-          BakeryApp
+      {/* Floating pill navbar */}
+      <nav className="pill-nav">
+        <Link to="/" className="pill-nav__brand">
+          Mie &amp; Beurre
         </Link>
 
-        <div className="navbar__links">
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              `navbar__link${isActive ? ' navbar__link--active' : ''}`
-            }
-          >
-            Home
-          </NavLink>
+        <div className="pill-nav__spacer" />
+
+        <div className="pill-nav__links" ref={linksRef}>
+          {/* Sliding indicator */}
+          {indicator && (
+            <span
+              className="pill-nav__indicator"
+              style={{ left: indicator.left, width: indicator.width }}
+            />
+          )}
           <NavLink
             to="/bakeries"
             className={({ isActive }) =>
-              `navbar__link${isActive ? ' navbar__link--active' : ''}`
+              `pill-nav__link${isActive ? ' pill-nav__link--active' : ''}`
             }
           >
-            Bakeries
+            {t('nav.bakeries')}
           </NavLink>
           {authenticated && (
             <NavLink
-              to="/recurring"
+              to="/schedule"
               className={({ isActive }) =>
-                `navbar__link${isActive ? ' navbar__link--active' : ''}`
+                `pill-nav__link${isActive ? ' pill-nav__link--active' : ''}`
               }
             >
-              Recurring
+              {t('nav.orders')}
             </NavLink>
           )}
           <NavLink
             to="/about"
             className={({ isActive }) =>
-              `navbar__link${isActive ? ' navbar__link--active' : ''}`
+              `pill-nav__link${isActive ? ' pill-nav__link--active' : ''}`
             }
           >
-            About
+            {t('nav.about')}
+          </NavLink>
+          <NavLink
+            to="/guide"
+            className={({ isActive }) =>
+              `pill-nav__link${isActive ? ' pill-nav__link--active' : ''}`
+            }
+          >
+            {t('nav.guide')}
           </NavLink>
         </div>
 
-        <div className="navbar__actions">
+        <LanguageSwitcher />
+
+        <div className="pill-nav__actions">
           {authenticated ? (
-            <>
-              <Link to="/schedule" className="navbar__btn navbar__btn--ghost">
-                My Orders
-              </Link>
-              <button
-                onClick={handleSignOut}
-                className="navbar__btn navbar__btn--primary"
-              >
-                Sign Out
-              </button>
-            </>
+            <button
+              onClick={handleSignOut}
+              className="pill-nav__btn pill-nav__btn--accent"
+            >
+              {t('nav.signOut')}
+            </button>
           ) : (
-            <Link to="/login" className="navbar__btn navbar__btn--primary">
-              Sign In
+            <Link to="/login" className="pill-nav__btn pill-nav__btn--accent">
+              {t('nav.signIn')}
             </Link>
           )}
         </div>
       </nav>
 
-      {/* Hero strip */}
-      <div className="hero-strip">
-        <img
-          src="https://images.unsplash.com/photo-1517433670267-08bbd4be890f?w=1600"
-          alt="Bakery background"
-          className="hero-strip__img"
-        />
-        <div className="hero-strip__overlay" />
-      </div>
-
       {/* Page content */}
       <main className="customer-layout__content">
         <Outlet />
       </main>
+
+      <Footer />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { apiFetch, setToken, decodeTokenRole } from '../api/client';
+import { useI18n } from '../i18n';
+import BakerCard from '../components/BakerCard';
 import './RegisterPage.css';
 
 interface LoginResponse {
@@ -9,10 +11,15 @@ interface LoginResponse {
 }
 
 export default function RegisterPage() {
+  const [searchParams] = useSearchParams();
+  const isBakeryMode = searchParams.get('role') === 'bakery';
+  const { t } = useI18n();
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<number>(2); // default: customer
+  const [role, setRole] = useState<number>(isBakeryMode ? 1 : 2);
+  const [token, setBakeryToken] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -48,7 +55,7 @@ export default function RegisterPage() {
       // Register
       await apiFetch('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ username: username.trim(), password, role }),
+        body: JSON.stringify({ username: username.trim(), password, role, ...(role === 1 && token.trim() ? { code: token.trim() } : {}) }),
       });
 
       // Auto-login after registration
@@ -78,13 +85,17 @@ export default function RegisterPage() {
 
       <div className="register-page__content">
         <div className="register-card">
-          <h1 className="register-card__title">Create Account</h1>
-          <p className="register-card__subtitle">Join our bakery community</p>
+          <h1 className="register-card__title">
+            {role === 1 ? t('register.titleBakery') : t('register.title')}
+          </h1>
+          <p className="register-card__subtitle">
+            {role === 1 ? t('register.subtitleBakery') : t('register.subtitle')}
+          </p>
 
           <form className="register-card__form" onSubmit={handleSubmit}>
             <div className="register-card__field">
               <label htmlFor="reg-username" className="register-card__label">
-                Username
+                {t('login.username')}
               </label>
               <input
                 id="reg-username"
@@ -100,7 +111,7 @@ export default function RegisterPage() {
 
             <div className="register-card__field">
               <label htmlFor="reg-password" className="register-card__label">
-                Password
+                {t('login.password')}
               </label>
               <input
                 id="reg-password"
@@ -115,7 +126,7 @@ export default function RegisterPage() {
 
             <div className="register-card__field">
               <label htmlFor="reg-confirm" className="register-card__label">
-                Confirm Password
+                {t('register.confirmPassword')}
               </label>
               <input
                 id="reg-confirm"
@@ -129,7 +140,7 @@ export default function RegisterPage() {
             </div>
 
             <fieldset className="register-card__role-group">
-              <legend className="register-card__label">I am a...</legend>
+              <legend className="register-card__label">{t('register.iAmA')}</legend>
               <div className="register-card__role-options">
                 <label className={`register-card__role-option ${role === 2 ? 'register-card__role-option--active' : ''}`}>
                   <input
@@ -140,7 +151,7 @@ export default function RegisterPage() {
                     onChange={() => setRole(2)}
                     className="register-card__role-radio"
                   />
-                  <span className="register-card__role-text">Customer</span>
+                  <span className="register-card__role-text">{t('register.customer')}</span>
                 </label>
                 <label className={`register-card__role-option ${role === 1 ? 'register-card__role-option--active' : ''}`}>
                   <input
@@ -151,10 +162,26 @@ export default function RegisterPage() {
                     onChange={() => setRole(1)}
                     className="register-card__role-radio"
                   />
-                  <span className="register-card__role-text">Bakery Owner</span>
+                  <span className="register-card__role-text">{t('register.bakeryOwner')}</span>
                 </label>
               </div>
             </fieldset>
+
+            {role === 1 && (
+              <div className="register-card__field">
+                <label htmlFor="reg-token" className="register-card__label">
+                  {t('register.bakeryCode')}
+                </label>
+                <input
+                  id="reg-token"
+                  type="text"
+                  className="register-card__input"
+                  value={token}
+                  onChange={(e) => setBakeryToken(e.target.value)}
+                  placeholder="Enter the code you received"
+                />
+              </div>
+            )}
 
             {error && (
               <div className="register-card__error" role="alert">
@@ -167,17 +194,20 @@ export default function RegisterPage() {
               className="register-card__submit"
               disabled={loading}
             >
-              {loading ? 'Creating account...' : 'Create Account'}
+              {loading ? t('register.creating') : t('register.createAccount')}
             </button>
           </form>
 
           <p className="register-card__footer">
-            Already have an account?{' '}
+            {t('register.haveAccount')}{' '}
             <Link to="/login" className="register-card__link">
-              Sign In
+              {t('login.signIn')}
             </Link>
           </p>
         </div>
+
+        {/* Baker registration card */}
+        <BakerCard />
       </div>
     </div>
   );

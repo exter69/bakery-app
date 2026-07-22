@@ -1,0 +1,35 @@
+.lang-switcher {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.lang-switcher__btn {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--color-ink, #2d2017);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-ink, #2d2017);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+}
+
+.lang-switcher__btn:hover {
+  background: var(--color-ink, #2d2017);
+  color: var(--color-bg, #fffdf8);
+}
+
+.lang-switcher__btn--active {
+  background: var(--color-accent, #e8772e);
+  border-color: var(--color-accent, #e8772e);
+  color: #fff;
+}
+
+.lang-switcher__btn--active:hover {
+  background: var(--color-accent, #e8772e);
+  border-color: var(--color-accent, #e8772e);
+  color: #fff;
+}

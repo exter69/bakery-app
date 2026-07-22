@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"errors"
+	"log"
 	"sync"
 	"time"
 
@@ -32,16 +33,18 @@ type paymentLinkEntry struct {
 
 // ServiceConfig holds dependencies for creating a PaymentService.
 type ServiceConfig struct {
-	Gateway   PaymentGateway
-	OrderRepo domain.OrderRepository
-	Clock     func() time.Time // optional, defaults to time.Now
+	Gateway          PaymentGateway
+	OrderRepo        domain.OrderRepository
+	Clock            func() time.Time // optional, defaults to time.Now
+	OnOrderConfirmed func(ctx context.Context, orderID string) error // optional callback after payment confirmation
 }
 
 // paymentService is the concrete implementation of domain.PaymentService.
 type paymentService struct {
-	gateway   PaymentGateway
-	orderRepo domain.OrderRepository
-	clock     func() time.Time
+	gateway          PaymentGateway
+	orderRepo        domain.OrderRepository
+	clock            func() time.Time
+	onOrderConfirmed func(ctx context.Context, orderID string) error
 
 	mu    sync.RWMutex
 	links map[string]*paymentLinkEntry // keyed by orderID
@@ -54,10 +57,11 @@ func NewPaymentService(cfg ServiceConfig) domain.PaymentService {
 		clock = time.Now
 	}
 	return &paymentService{
-		gateway:   cfg.Gateway,
-		orderRepo: cfg.OrderRepo,
-		clock:     clock,
-		links:     make(map[string]*paymentLinkEntry),
+		gateway:          cfg.Gateway,
+		orderRepo:        cfg.OrderRepo,
+		clock:            clock,
+		onOrderConfirmed: cfg.OnOrderConfirmed,
+		links:            make(map[string]*paymentLinkEntry),
 	}
 }
 
@@ -129,7 +133,19 @@ func (s *paymentService) ProcessPaymentCallback(ctx context.Context, orderID str
 	order.Status = domain.OrderStatusConfirmed
 	order.UpdatedAt = now
 
-	return s.orderRepo.Save(ctx, order)
+	if err := s.orderRepo.Save(ctx, order); err != nil {
+		return err
+	}
+
+	// Notify listeners (e.g., send confirmation email, generate invoice)
+	if s.onOrderConfirmed != nil {
+		if err := s.onOrderConfirmed(ctx, orderID); err != nil {
+			// Log but don't fail the payment — the order is already confirmed
+			log.Printf("[PAYMENT] post-confirmation callback error for order %s: %v", orderID, err)
+		}
+	}
+
+	return nil
 }
 
 // InitiateRefund initiates a refund for a cancelled order.

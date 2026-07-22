@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
+	"math/rand"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -13,18 +15,22 @@ import (
 
 // AuthService handles user registration and login.
 type AuthService struct {
-	userRepo  domain.UserRepository
-	jwtSecret string
-	idGen     func() string
-	now       func() time.Time
+	userRepo     domain.UserRepository
+	tokenRepo    domain.RegistrationTokenRepository
+	jwtSecret    string
+	contactEmail string
+	idGen        func() string
+	now          func() time.Time
 }
 
 // AuthServiceConfig holds dependencies for the auth service.
 type AuthServiceConfig struct {
-	UserRepo  domain.UserRepository
-	JWTSecret string
-	IDGen     func() string
-	Now       func() time.Time
+	UserRepo     domain.UserRepository
+	TokenRepo    domain.RegistrationTokenRepository
+	JWTSecret    string
+	ContactEmail string // admin email to receive access request notifications
+	IDGen        func() string
+	Now          func() time.Time
 }
 
 // NewAuthService creates a new AuthService with the given dependencies.
@@ -38,10 +44,12 @@ func NewAuthService(cfg AuthServiceConfig) *AuthService {
 		now = time.Now
 	}
 	return &AuthService{
-		userRepo:  cfg.UserRepo,
-		jwtSecret: cfg.JWTSecret,
-		idGen:     idGen,
-		now:       now,
+		userRepo:     cfg.UserRepo,
+		tokenRepo:    cfg.TokenRepo,
+		jwtSecret:    cfg.JWTSecret,
+		contactEmail: cfg.ContactEmail,
+		idGen:        idGen,
+		now:          now,
 	}
 }
 
@@ -52,8 +60,19 @@ func defaultAuthIDGen() string {
 	return fmt.Sprintf("user-%d", authIDCounter)
 }
 
+// generateTokenCode produces an 8-character alphanumeric code avoiding ambiguous characters.
+func generateTokenCode() string {
+	const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	b := make([]byte, 8)
+	for i := range b {
+		b[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(b)
+}
+
 // Register creates a new user account.
-func (s *AuthService) Register(ctx context.Context, username, password string, role domain.UserRole) (*domain.User, error) {
+// If registering as a seller (role=1), a valid registration code is required.
+func (s *AuthService) Register(ctx context.Context, username, password string, role domain.UserRole, code *string) (*domain.User, error) {
 	// Validate username
 	if username == "" {
 		return nil, ErrUsernameRequired
@@ -62,6 +81,36 @@ func (s *AuthService) Register(ctx context.Context, username, password string, r
 	// Validate password
 	if len(password) < 6 {
 		return nil, ErrPasswordTooShort
+	}
+
+	var contactEmail string
+
+	// Seller registration requires a valid token
+	if role == domain.RoleSeller {
+		if code == nil || *code == "" {
+			return nil, ErrTokenRequired
+		}
+
+		token, err := s.tokenRepo.GetByToken(ctx, *code)
+		if err != nil {
+			return nil, fmt.Errorf("looking up token: %w", err)
+		}
+		if token == nil {
+			return nil, ErrInvalidToken
+		}
+		if token.Used {
+			return nil, ErrTokenAlreadyUsed
+		}
+		if s.now().After(token.ExpiresAt) {
+			return nil, ErrTokenExpired
+		}
+
+		// Mark the token as used
+		if err := s.tokenRepo.MarkUsed(ctx, *code); err != nil {
+			return nil, fmt.Errorf("marking token used: %w", err)
+		}
+
+		contactEmail = token.Email
 	}
 
 	// Check if username already exists
@@ -84,6 +133,7 @@ func (s *AuthService) Register(ctx context.Context, username, password string, r
 		Username:     username,
 		PasswordHash: string(hash),
 		Role:         role,
+		ContactEmail: contactEmail,
 		CreatedAt:    s.now(),
 	}
 
@@ -92,6 +142,27 @@ func (s *AuthService) Register(ctx context.Context, username, password string, r
 	}
 
 	return user, nil
+}
+
+// CreateRegistrationToken generates a new registration token for the given email/bakery.
+func (s *AuthService) CreateRegistrationToken(ctx context.Context, email, bakeryName string) (*domain.RegistrationToken, error) {
+	token := &domain.RegistrationToken{
+		ID:         s.idGen(),
+		Token:      generateTokenCode(),
+		Email:      email,
+		BakeryName: bakeryName,
+		ExpiresAt:  s.now().Add(7 * 24 * time.Hour),
+		Used:       false,
+		CreatedAt:  s.now(),
+	}
+
+	if err := s.tokenRepo.Save(ctx, token); err != nil {
+		return nil, fmt.Errorf("saving token: %w", err)
+	}
+
+	log.Printf("[EMAIL] Token %s created for baker %s (%s). Send notification to admin: %s", token.Token, email, bakeryName, s.contactEmail)
+
+	return token, nil
 }
 
 // Login authenticates a user and returns a JWT token.
@@ -118,8 +189,8 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 		"iat":  jwt.NewNumericDate(now),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(s.jwtSecret))
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := jwtToken.SignedString([]byte(s.jwtSecret))
 	if err != nil {
 		return "", nil, fmt.Errorf("signing token: %w", err)
 	}

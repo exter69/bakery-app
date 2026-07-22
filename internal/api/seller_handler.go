@@ -26,11 +26,15 @@ func NewSellerHandler(svc *service.SellerService) *SellerHandler {
 // RegisterRoutes registers all seller routes on the given chi router.
 // All routes require JWT auth (handled by the parent group).
 func (h *SellerHandler) RegisterRoutes(r chi.Router) {
+	// Seller's own bakery
+	r.Get("/api/seller/bakery", h.GetMyBakery)
+
 	// Bakery management
 	r.Put("/api/bakeries/{id}", h.UpdateBakery)
 	r.Put("/api/bakeries/{id}/schedule", h.UpdateBakerySchedule)
 
 	// Product management
+	r.Get("/api/bakeries/{id}/products", h.ListProducts)
 	r.Post("/api/bakeries/{id}/products", h.CreateProduct)
 	r.Put("/api/products/{id}", h.UpdateProduct)
 	r.Delete("/api/products/{id}", h.DeleteProduct)
@@ -55,7 +59,7 @@ func requireSeller(w http.ResponseWriter, r *http.Request) string {
 	}
 
 	role := middleware.GetUserRoleFromContext(r.Context())
-	if role != int(domain.RoleSeller) {
+	if role != int(domain.RoleSeller) && role != int(domain.RoleAdmin) {
 		writeJSON(w, http.StatusForbidden, dto.ErrorResponse{
 			Code:    "FORBIDDEN",
 			Message: "seller role required",
@@ -133,10 +137,11 @@ func (h *SellerHandler) UpdateBakery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name        *string `json:"name"`
-		Description *string `json:"description"`
-		Address     *string `json:"address"`
-		PhotoURL    *string `json:"photoUrl"`
+		Name          *string `json:"name"`
+		Description   *string `json:"description"`
+		Address       *string `json:"address"`
+		PhotoURL      *string `json:"photoUrl"`
+		GooglePlaceID *string `json:"googlePlaceId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
@@ -146,7 +151,7 @@ func (h *SellerHandler) UpdateBakery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bakery, err := h.svc.UpdateBakery(r.Context(), bakeryID, userID, req.Name, req.Description, req.Address, req.PhotoURL)
+	bakery, err := h.svc.UpdateBakery(r.Context(), bakeryID, userID, req.Name, req.Description, req.Address, req.PhotoURL, req.GooglePlaceID)
 	if err != nil {
 		handleSellerError(w, err)
 		return
@@ -191,6 +196,54 @@ func (h *SellerHandler) UpdateBakerySchedule(w http.ResponseWriter, r *http.Requ
 	writeJSON(w, http.StatusOK, bakery)
 }
 
+// GetMyBakery handles GET /api/seller/bakery — returns the seller's own bakery.
+func (h *SellerHandler) GetMyBakery(w http.ResponseWriter, r *http.Request) {
+	userID := requireSeller(w, r)
+	if userID == "" {
+		return
+	}
+
+	bakery, err := h.svc.GetMyBakery(r.Context(), userID)
+	if err != nil {
+		handleSellerError(w, err)
+		return
+	}
+	if bakery == nil {
+		writeJSON(w, http.StatusNotFound, dto.ErrorResponse{
+			Code:    "BAKERY_NOT_FOUND",
+			Message: "you don't have a bakery yet",
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, bakery)
+}
+
+// ListProducts handles GET /api/bakeries/{id}/products.
+func (h *SellerHandler) ListProducts(w http.ResponseWriter, r *http.Request) {
+	userID := requireSeller(w, r)
+	if userID == "" {
+		return
+	}
+
+	bakeryID := chi.URLParam(r, "id")
+	if bakeryID == "" {
+		writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
+			Code:    "INVALID_REQUEST",
+			Message: "bakery ID is required",
+		})
+		return
+	}
+
+	products, err := h.svc.ListProducts(r.Context(), bakeryID, userID)
+	if err != nil {
+		handleSellerError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, products)
+}
+
 // CreateProduct handles POST /api/bakeries/{id}/products.
 func (h *SellerHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	userID := requireSeller(w, r)
@@ -208,11 +261,13 @@ func (h *SellerHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		Price       int64  `json:"price"`
-		PhotoURL    string `json:"photoUrl"`
-		Category    string `json:"category"`
+		Name        string   `json:"name"`
+		Description string   `json:"description"`
+		Price       int64    `json:"price"`
+		PhotoURL    string   `json:"photoUrl"`
+		Category    string   `json:"category"`
+		Allergens   []string `json:"allergens"`
+		HealthScore *int     `json:"healthScore"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
@@ -230,12 +285,37 @@ func (h *SellerHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Default allergens to empty slice if not provided
+	if req.Allergens == nil {
+		req.Allergens = []string{}
+	}
+
+	// Validate allergens
+	if err := domain.ValidateAllergens(req.Allergens); err != nil {
+		writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
+			Code:    "INVALID_ALLERGEN",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	// Validate health score
+	if err := domain.ValidateHealthScore(req.HealthScore); err != nil {
+		writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
+			Code:    "INVALID_HEALTH_SCORE",
+			Message: err.Error(),
+		})
+		return
+	}
+
 	product := domain.Product{
 		Name:        req.Name,
 		Description: req.Description,
 		Price:       req.Price,
 		PhotoURL:    req.PhotoURL,
 		Category:    req.Category,
+		Allergens:   req.Allergens,
+		HealthScore: req.HealthScore,
 	}
 
 	created, err := h.svc.CreateProduct(r.Context(), bakeryID, userID, product)
@@ -272,6 +352,44 @@ func (h *SellerHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate allergens if present in the update payload.
+	if raw, exists := updates["allergens"]; exists {
+		allergens, err := toStringSlice(raw)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
+				Code:    "INVALID_REQUEST",
+				Message: "allergens must be an array of strings",
+			})
+			return
+		}
+		if err := domain.ValidateAllergens(allergens); err != nil {
+			writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
+				Code:    "INVALID_ALLERGEN",
+				Message: err.Error(),
+			})
+			return
+		}
+	}
+
+	// Validate healthScore if present in the update payload.
+	if raw, exists := updates["healthScore"]; exists {
+		score, err := toOptionalInt(raw)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
+				Code:    "INVALID_REQUEST",
+				Message: "healthScore must be an integer or null",
+			})
+			return
+		}
+		if err := domain.ValidateHealthScore(score); err != nil {
+			writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
+				Code:    "INVALID_HEALTH_SCORE",
+				Message: err.Error(),
+			})
+			return
+		}
+	}
+
 	product, err := h.svc.UpdateProduct(r.Context(), productID, userID, updates)
 	if err != nil {
 		handleSellerError(w, err)
@@ -279,6 +397,44 @@ func (h *SellerHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, product)
+}
+
+// toStringSlice converts an interface{} (expected to be []interface{} from JSON)
+// into a []string. Returns an error if the value is not a valid array of strings.
+func toStringSlice(v interface{}) ([]string, error) {
+	if v == nil {
+		return []string{}, nil
+	}
+	arr, ok := v.([]interface{})
+	if !ok {
+		return nil, errors.New("expected array")
+	}
+	result := make([]string, 0, len(arr))
+	for _, item := range arr {
+		s, ok := item.(string)
+		if !ok {
+			return nil, errors.New("expected string element")
+		}
+		result = append(result, s)
+	}
+	return result, nil
+}
+
+// toOptionalInt converts an interface{} (expected to be float64 from JSON or nil)
+// into a *int. Returns nil for JSON null, or a pointer to the integer value.
+func toOptionalInt(v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	f, ok := v.(float64)
+	if !ok {
+		return nil, errors.New("expected number")
+	}
+	i := int(f)
+	if float64(i) != f {
+		return nil, errors.New("expected integer")
+	}
+	return &i, nil
 }
 
 // DeleteProduct handles DELETE /api/products/{id}.

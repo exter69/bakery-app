@@ -1,17 +1,28 @@
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { clearToken } from '../../api/client';
 import './DashboardLayout.css';
 
+const STORAGE_KEY = 'dashboard_sidebar_collapsed';
+
 const NAV_ITEMS = [
-  { to: '/dashboard', label: 'Overview', end: true },
-  { to: '/dashboard/bakery', label: 'My Bakery', end: false },
-  { to: '/dashboard/products', label: 'Products', end: false },
-  { to: '/dashboard/schedule', label: 'Schedule', end: false },
-  { to: '/dashboard/orders', label: 'Orders', end: false },
-  { to: '/dashboard/reservations', label: 'Reservations', end: false },
+  { to: '/dashboard', label: 'Overview', icon: '📊', end: true },
+  { to: '/dashboard/bakery', label: 'My Bakery', icon: '🏪', end: false },
+  { to: '/dashboard/products', label: 'Products', icon: '🥐', end: false },
+  { to: '/dashboard/schedule', label: 'Schedule', icon: '📅', end: false },
+  { to: '/dashboard/orders', label: 'Orders', icon: '📦', end: false },
+  { to: '/dashboard/reservations', label: 'Reservations', icon: '📋', end: false },
 ];
 
 export default function DashboardLayout() {
+  const [collapsed, setCollapsed] = useState(() => {
+    return localStorage.getItem(STORAGE_KEY) === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, String(collapsed));
+  }, [collapsed]);
+
   const handleLogout = () => {
     clearToken();
     window.location.href = '/login';
@@ -19,9 +30,19 @@ export default function DashboardLayout() {
 
   return (
     <div className="dashboard-layout">
-      <aside className="dashboard-sidebar">
+      <aside className={`dashboard-sidebar ${collapsed ? 'dashboard-sidebar--collapsed' : ''}`}>
         <div className="dashboard-sidebar__header">
-          <h2 className="dashboard-sidebar__brand">Bakery Portal</h2>
+          <h2 className="dashboard-sidebar__brand">
+            {collapsed ? '🍞' : 'Bakery Portal'}
+          </h2>
+          <button
+            type="button"
+            className="dashboard-sidebar__toggle"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? '»' : '«'}
+          </button>
         </div>
         <nav className="dashboard-sidebar__nav">
           {NAV_ITEMS.map((item) => (
@@ -32,8 +53,10 @@ export default function DashboardLayout() {
               className={({ isActive }) =>
                 `dashboard-sidebar__link ${isActive ? 'dashboard-sidebar__link--active' : ''}`
               }
+              title={collapsed ? item.label : undefined}
             >
-              {item.label}
+              <span className="dashboard-sidebar__icon">{item.icon}</span>
+              <span className="dashboard-sidebar__label">{item.label}</span>
             </NavLink>
           ))}
         </nav>
@@ -43,7 +66,7 @@ export default function DashboardLayout() {
             className="dashboard-sidebar__logout"
             onClick={handleLogout}
           >
-            Sign Out
+            {collapsed ? '🚪' : 'Sign Out'}
           </button>
         </div>
       </aside>

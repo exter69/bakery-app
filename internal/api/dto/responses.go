@@ -7,8 +7,10 @@ type BakeryCardResponse struct {
 	ID            string                `json:"id"`
 	Name          string                `json:"name"`
 	PhotoURL      string                `json:"photoUrl"`
+	Latitude      float64               `json:"latitude"`
+	Longitude     float64               `json:"longitude"`
 	TodaySchedule TodayScheduleResponse `json:"todaySchedule"`
-	Distance      *float64              `json:"distance,omitempty"` // distance in km, only present when lat/lng provided
+	Distance      *float64              `json:"distance,omitempty"`
 }
 
 // TodayScheduleResponse represents the bakery's schedule for today.

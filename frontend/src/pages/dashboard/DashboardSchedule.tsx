@@ -30,6 +30,7 @@ function timeInMinutes(t: { hour: number; minute: number }): number {
 export default function DashboardSchedule() {
   const [bakeryId, setBakeryId] = useState<string | null>(null);
   const [schedule, setSchedule] = useState<DaySchedule[]>(defaultSchedule());
+  const [useGoogleMaps, setUseGoogleMaps] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -41,6 +42,11 @@ export default function DashboardSchedule() {
           setBakeryId(b.id);
           if (b.schedule && b.schedule.length > 0) {
             setSchedule(b.schedule);
+          }
+          // Auto-enable Google Maps if a place ID is linked
+          const placeId = b.googlePlaceId;
+          if (placeId) {
+            setUseGoogleMaps(true);
           }
         }
       })
@@ -101,7 +107,79 @@ export default function DashboardSchedule() {
 
       {msg && <div className={`dash-msg dash-msg--${msg.type}`}>{msg.text}</div>}
 
-      <div className="dash-card">
+      {/* Google Maps data source toggle */}
+      <div className="dash-card" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <h3 style={{ margin: '0 0 0.25rem', fontSize: '1rem', fontWeight: 600 }}>
+              Use Google Maps hours
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
+              Automatically sync opening hours from your Google Maps listing. No need to update multiple tools.
+            </p>
+          </div>
+          <label className="dash-toggle">
+            <input
+              type="checkbox"
+              checked={useGoogleMaps}
+              onChange={(e) => setUseGoogleMaps(e.target.checked)}
+            />
+            <span className="dash-toggle__slider" />
+          </label>
+        </div>
+
+        {useGoogleMaps && (
+          <div style={{ marginTop: '1rem', padding: '1rem', background: '#f0fdf4', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
+            <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', color: '#166534' }}>
+              ✓ Google Maps sync is active. Hours fetched from your linked profile:
+            </p>
+            <div className="dash-table-wrap" style={{ opacity: 0.85 }}>
+              <table className="dash-table">
+                <thead>
+                  <tr>
+                    <th>Day</th>
+                    <th>Status</th>
+                    <th>Hours</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {schedule.map((day) => (
+                    <tr key={day.day}>
+                      <td style={{ fontWeight: 500 }}>{day.day}</td>
+                      <td>
+                        <span style={{ fontSize: '0.8rem', padding: '2px 8px', borderRadius: '6px', background: day.isOpen ? '#dcfce7' : '#fee2e2', color: day.isOpen ? '#166534' : '#991b1b' }}>
+                          {day.isOpen ? 'Open' : 'Closed'}
+                        </span>
+                      </td>
+                      <td style={{ color: '#475569', fontSize: '0.9rem' }}>
+                        {day.isOpen ? `${timeToString(day.openTime)} – ${timeToString(day.closeTime)}` : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p style={{ margin: '0.75rem 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+              To change these hours, update them on your Google Maps listing.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Manual schedule */}
+      <div
+        className="dash-card"
+        style={{
+          opacity: useGoogleMaps ? 0.5 : 1,
+          pointerEvents: useGoogleMaps ? 'none' : 'auto',
+          transition: 'opacity 0.2s ease',
+        }}
+      >
+        {useGoogleMaps && (
+          <div style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>
+            Manual schedule disabled — using Google Maps data
+          </div>
+        )}
         <form onSubmit={handleSave}>
           <div className="dash-table-wrap">
             <table className="dash-table">
@@ -156,7 +234,7 @@ export default function DashboardSchedule() {
           </div>
 
           <div style={{ marginTop: '1.25rem' }}>
-            <button type="submit" className="dash-btn dash-btn--primary" disabled={saving}>
+            <button type="submit" className="dash-btn dash-btn--primary" disabled={saving || useGoogleMaps}>
               {saving ? 'Saving…' : 'Save Schedule'}
             </button>
           </div>

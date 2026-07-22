@@ -10,6 +10,9 @@ type BakeryRepository interface {
 	// GetBakery returns a single bakery by ID, or nil if not found.
 	GetBakery(ctx context.Context, id string) (*Bakery, error)
 
+	// GetBakeryByOwner returns the bakery owned by the given user, or nil if not found.
+	GetBakeryByOwner(ctx context.Context, ownerID string) (*Bakery, error)
+
 	// UpdateBakery persists changes to a bakery.
 	UpdateBakery(ctx context.Context, bakery *Bakery) error
 
@@ -87,4 +90,16 @@ type RecurringOrderRepository interface {
 
 	// Delete removes a recurring order by ID.
 	Delete(ctx context.Context, id string) error
+}
+
+// RegistrationTokenRepository provides data access for registration tokens.
+type RegistrationTokenRepository interface {
+	// Save persists a registration token.
+	Save(ctx context.Context, token *RegistrationToken) error
+
+	// GetByToken returns a registration token by its token string, or nil if not found.
+	GetByToken(ctx context.Context, tokenStr string) (*RegistrationToken, error)
+
+	// MarkUsed marks a registration token as used.
+	MarkUsed(ctx context.Context, tokenStr string) error
 }

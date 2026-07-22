@@ -13,6 +13,7 @@ import BakeryDetailPage from './pages/BakeryDetailPage';
 import ScheduleOrdersPage from './pages/ScheduleOrdersPage';
 import RecurringOrdersPage from './pages/RecurringOrdersPage';
 import AboutPage from './pages/AboutPage';
+import GuidePage from './pages/GuidePage';
 import DashboardLayout from './pages/dashboard/DashboardLayout';
 import DashboardOverview from './pages/dashboard/DashboardOverview';
 import DashboardBakery from './pages/dashboard/DashboardBakery';
@@ -48,14 +49,17 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* Customer routes wrapped in CustomerLayout (navbar + hero strip) */}
+        {/* Home page renders its own nav (floating pill over hero) */}
+        <Route path="/" element={<HomePage />} />
+
+        {/* Customer routes wrapped in CustomerLayout (pill navbar at top) */}
         <Route element={<CustomerLayout />}>
-          <Route path="/" element={<HomePage />} />
           <Route path="/bakeries" element={<BakeriesPage />} />
           <Route path="/bakeries/:id" element={<BakeryDetailPage />} />
           <Route path="/schedule" element={<ProtectedRoute><ScheduleOrdersPage /></ProtectedRoute>} />
           <Route path="/recurring" element={<ProtectedRoute><RecurringOrdersPage /></ProtectedRoute>} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/guide" element={<GuidePage />} />
         </Route>
 
         {/* Seller dashboard (role 0 or 1) */}

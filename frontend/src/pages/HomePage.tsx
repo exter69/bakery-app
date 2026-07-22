@@ -1,133 +1,355 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { fetchBakeries } from '../api/bakeries';
+import { isAuthenticated, clearToken } from '../api/client';
+import { useI18n } from '../i18n';
+import Footer from '../components/Footer';
+import BakeryMap from '../components/BakeryMap';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import type { BakeryCard } from '../types/bakery';
 import './HomePage.css';
 
 export default function HomePage() {
+  const navigate = useNavigate();
+  const authenticated = isAuthenticated();
   const [bakeries, setBakeries] = useState<BakeryCard[]>([]);
+  const { t } = useI18n();
+
+  // Hover indicator for nav links
+  const heroLinksRef = useRef<HTMLDivElement>(null);
+  const [hoverIndicator, setHoverIndicator] = useState<{ left: number; width: number } | null>(null);
+
+  const handleLinkHover = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!heroLinksRef.current) return;
+    const containerRect = heroLinksRef.current.getBoundingClientRect();
+    const linkRect = e.currentTarget.getBoundingClientRect();
+    setHoverIndicator({
+      left: linkRect.left - containerRect.left,
+      width: linkRect.width,
+    });
+  }, []);
+
+  const handleLinksLeave = useCallback(() => {
+    setHoverIndicator(null);
+  }, []);
 
   useEffect(() => {
     fetchBakeries()
-      .then((res) => setBakeries(res.items.slice(0, 4)))
-      .catch(() => {
-        /* silently ignore — section just won't show */
-      });
+      .then((res) => setBakeries(res.items.slice(0, 5)))
+      .catch(() => {});
   }, []);
+
+  function handleSignOut() {
+    clearToken();
+    navigate('/login');
+  }
+
+  const openBakeries = bakeries.filter((b) => b.todaySchedule.isOpen);
 
   return (
     <div className="home-page">
-      {/* Hero */}
+      {/* Hero with real bakery photo */}
       <section className="home-hero">
-        <h1 className="home-hero__title">Fresh bakery, delivered to your door</h1>
-        <p className="home-hero__subtitle">
-          Choose your favorites, pick the day and time — we handle the rest. Or
-          reserve for pickup at your local bakery.
-        </p>
-        <div className="home-hero__actions">
-          <Link to="/bakeries" className="home-hero__btn home-hero__btn--primary">
-            Start Ordering
-          </Link>
-          <a href="#how-it-works" className="home-hero__btn home-hero__btn--secondary">
-            How It Works
-          </a>
+        <div className="home-hero__overlay" />
+
+        {/* Floating pill navbar */}
+        <nav className="pill-nav pill-nav--hero">
+          <Link to="/" className="pill-nav__brand">Mie &amp; Beurre</Link>
+          <div className="pill-nav__spacer" />
+          <div className="pill-nav__links" ref={heroLinksRef} onMouseLeave={handleLinksLeave}>
+            {hoverIndicator && (
+              <span
+                className="pill-nav__indicator"
+                style={{ left: hoverIndicator.left, width: hoverIndicator.width }}
+              />
+            )}
+            <Link to="/bakeries" className="pill-nav__link" onMouseEnter={handleLinkHover}>{t('nav.bakeries')}</Link>
+            {authenticated && <Link to="/schedule" className="pill-nav__link" onMouseEnter={handleLinkHover}>{t('nav.orders')}</Link>}
+            <Link to="/about" className="pill-nav__link" onMouseEnter={handleLinkHover}>{t('nav.about')}</Link>
+          </div>
+          <LanguageSwitcher />
+          <div className="pill-nav__actions">
+            {authenticated ? (
+              <button onClick={handleSignOut} className="pill-nav__btn pill-nav__btn--accent">{t('nav.signOut')}</button>
+            ) : (
+              <Link to="/login" className="pill-nav__btn pill-nav__btn--accent">{t('nav.signIn')}</Link>
+            )}
+          </div>
+        </nav>
+
+        <div className="home-hero__tagline">
+          {t('home.tagline')}
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="home-section" id="how-it-works">
-        <h2 className="home-section__title">How It Works</h2>
-        <div className="how-it-works">
-          <div className="how-step">
-            <div className="how-step__number">1</div>
-            <h3 className="how-step__title">Browse &amp; Choose</h3>
-            <p className="how-step__desc">
-              Explore bakeries near you and pick your favorite breads, pastries,
-              and treats.
-            </p>
-          </div>
-          <div className="how-step">
-            <div className="how-step__number">2</div>
-            <h3 className="how-step__title">Schedule Delivery</h3>
-            <p className="how-step__desc">
-              Choose the day and time, and set it recurring if you want — weekly
-              auto-order so you never have to think about it.
-            </p>
-          </div>
-          <div className="how-step">
-            <div className="how-step__number">3</div>
-            <h3 className="how-step__title">Enjoy Fresh</h3>
-            <p className="how-step__desc">
-              Wake up to fresh bakery products at your door. It&apos;s that
-              simple.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Delivery & Pickup */}
-      <section className="home-section">
-        <h2 className="home-section__title">Our Services</h2>
-        <div className="feature-cards">
-          <div className="feature-card">
-            <div className="feature-card__icon">🚲</div>
-            <h3 className="feature-card__title">Delivery — The Morning Ritual</h3>
-            <p className="feature-card__desc">
-              Scheduled delivery of bakery products straight to your door. Choose
-              the time and day, make it recurring — weekly auto-order so you never
-              have to think about it.
-            </p>
-            <p className="feature-card__note">
-              Holiday mode coming soon — pause when you&apos;re away.
-            </p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-card__icon">🏪</div>
-            <h3 className="feature-card__title">Pickup — Skip the Queue</h3>
-            <p className="feature-card__desc">
-              Reserve your items and pick them up at the bakery, no waiting.
-              Browse the menu, select what you want, and it&apos;ll be ready when
-              you arrive.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Nearby Bakeries */}
-      {bakeries.length > 0 && (
-        <section className="home-section">
-          <div className="nearby-header">
-            <h2 className="nearby-header__title">Bakeries Near You</h2>
-            <Link to="/bakeries" className="nearby-header__link">
-              View All →
-            </Link>
-          </div>
-          <div className="nearby-grid">
-            {bakeries.map((bakery) => (
-              <Link
-                key={bakery.id}
-                to={`/bakeries/${bakery.id}`}
-                className="bakery-card"
-              >
-                <img
-                  src={bakery.photoUrl}
-                  alt={bakery.name}
-                  className="bakery-card__photo"
-                  loading="lazy"
-                />
-                <div className="bakery-card__info">
-                  <h3 className="bakery-card__name">{bakery.name}</h3>
-                  <p className="bakery-card__schedule">
-                    {bakery.todaySchedule.isOpen
-                      ? `Open ${bakery.todaySchedule.openTime} – ${bakery.todaySchedule.closeTime}`
-                      : 'Closed today'}
-                  </p>
-                </div>
+      {/* Body */}
+      <div className="home-body">
+        {/* Top row: Entry cards (left) + Quick reserve starts here (right) */}
+        <div className="home-top-row">
+          {/* Left: entry cards + open now below */}
+          <div className="home-top-row__left">
+            {/* Entry cards — typographic style */}
+            <div className="entry-cards">
+              <Link to="/bakeries" className="entry-card">
+                <span className="entry-card__eyebrow">LIVRAISON</span>
+                <span className="entry-card__title">{t('home.orderDelivery')}</span>
+                <span className="entry-card__subtitle">{t('home.payOnline')}</span>
+                <span className="entry-card__cta">
+                  <span>{t('bakeries.title')}</span>
+                  <span>→</span>
+                </span>
               </Link>
-            ))}
+              <Link to="/bakeries" className="entry-card">
+                <span className="entry-card__eyebrow">RETRAIT</span>
+                <span className="entry-card__title">{t('home.reservePickup')}</span>
+                <span className="entry-card__subtitle">{t('home.payAtCounter')}</span>
+                <span className="entry-card__cta">
+                  <span>{t('bakeries.title')}</span>
+                  <span>→</span>
+                </span>
+              </Link>
+            </div>
+
+            {/* Open right now — in a card */}
+            <section className="open-now-card">
+              <h2 className="open-now-card__heading">{t('home.openNow')}</h2>
+              {openBakeries.length > 0 ? (
+                <ul className="open-now-card__list">
+                  {openBakeries.slice(0, 5).map((bakery) => (
+                    <li key={bakery.id}>
+                      <Link to={`/bakeries/${bakery.id}`} className="open-now-card__row">
+                        <img
+                          src={bakery.photoUrl}
+                          alt={bakery.name}
+                          className="open-now-card__photo"
+                          loading="lazy"
+                        />
+                        <div className="open-now-card__info">
+                          <span className="open-now-card__name">{bakery.name}</span>
+                          <span className="open-now-card__details">
+                            {t('common.open')} {t('common.till')} {bakery.todaySchedule.closeTime}
+                            {bakery.distance != null && (
+                              <> · {bakery.distance < 1
+                                ? `${Math.round(bakery.distance * 1000)}m`
+                                : `${bakery.distance}km`}</>
+                            )}
+                          </span>
+                        </div>
+                        <span className="open-now-card__hours">
+                          {bakery.todaySchedule.openTime} – {bakery.todaySchedule.closeTime}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="open-now-card__empty">{t('home.noOpen')}</p>
+              )}
+              <Link to="/bakeries" className="open-now-card__see-all">
+                {t('home.seeAll')}
+              </Link>
+            </section>
+
+            {/* Map preview */}
+            <section className="open-now-card" style={{ marginTop: '1.5rem' }}>
+              <h2 className="open-now-card__heading">Bakeries near you</h2>
+              <BakeryMap bakeries={bakeries} />
+            </section>
           </div>
-        </section>
-      )}
+
+          {/* Right: Quick reserve widget */}
+          <aside className="home-top-row__sidebar">
+            <QuickReserveWidget bakeries={bakeries} />
+          </aside>
+        </div>
+      </div>
+
+      <Footer />
+    </div>
+  );
+}
+
+
+// --- Quick Reserve Widget ---
+
+interface QuickReserveWidgetProps {
+  bakeries: BakeryCard[];
+}
+
+// Demo products for the sweet category (in a real app, fetched from the bakery's menu)
+const SWEET_PRODUCTS = [
+  { id: 'qr-1', name: 'Croissant', price: 150 },
+  { id: 'qr-2', name: 'Pain au Chocolat', price: 180 },
+  { id: 'qr-3', name: 'Éclair au Café', price: 380 },
+  { id: 'qr-4', name: 'Tarte aux Pommes', price: 450 },
+  { id: 'qr-5', name: 'Kouign-Amann', price: 320 },
+];
+
+function getPickupTime(): string {
+  const d = new Date(Date.now() + 30 * 60 * 1000); // 30 min from now
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  return `${days[d.getDay()]} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function QuickReserveWidget({ bakeries }: QuickReserveWidgetProps) {
+  const { t } = useI18n();
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+
+  // Pick a random bakery
+  const selectedBakery = bakeries.length > 0
+    ? bakeries[Math.floor(Math.random() * bakeries.length)]
+    : null;
+
+  const totalItems = Object.values(quantities).reduce((s, q) => s + q, 0);
+  const totalPrice = SWEET_PRODUCTS.reduce((s, p) => s + (quantities[p.id] || 0) * p.price, 0);
+  const pickupTime = getPickupTime();
+
+  const increment = (id: string) => {
+    setQuantities((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+  };
+
+  const decrement = (id: string) => {
+    setQuantities((prev) => {
+      const cur = prev[id] || 0;
+      if (cur <= 0) return prev;
+      const next = { ...prev, [id]: cur - 1 };
+      if (next[id] === 0) delete next[id];
+      return next;
+    });
+  };
+
+  const [needsLogin, setNeedsLogin] = useState(false);
+
+  const handleSubmit = () => {
+    if (totalItems === 0) return;
+    if (!isAuthenticated()) {
+      setNeedsLogin(true);
+      return;
+    }
+    setSubmitted(true);
+  };
+
+  const handleConfirm = () => {
+    setConfirmed(true);
+  };
+
+  if (confirmed) {
+    return (
+      <div className="quick-reserve">
+        <h2 className="quick-reserve__heading">{t('home.quickReserve')}</h2>
+        <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+          <span style={{ fontSize: '2rem' }}>✓</span>
+          <p style={{ margin: '0.5rem 0 0', color: 'var(--ink)' }}>Reservation confirmed!</p>
+          <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--ink-muted)' }}>
+            Pickup at {pickupTime}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="quick-reserve">
+      <h2 className="quick-reserve__heading">{t('home.quickReserve')}</h2>
+
+      {/* Bakery slot — shows random bakery photo + name */}
+      <div className="quick-reserve__bakery-slot">
+        {selectedBakery ? (
+          <div className="quick-reserve__bakery-info">
+            <img
+              src={selectedBakery.photoUrl}
+              alt={selectedBakery.name}
+              className="quick-reserve__bakery-img"
+            />
+            <span className="quick-reserve__bakery-name">{selectedBakery.name}</span>
+          </div>
+        ) : (
+          <span className="quick-reserve__bakery-placeholder">bakery</span>
+        )}
+      </div>
+
+      {/* Animated content area */}
+      <div className={`quick-reserve__content-area ${submitted ? 'quick-reserve__content-area--summary' : ''}`}>
+        {/* Selection view */}
+        <div className={`quick-reserve__view ${!submitted ? 'quick-reserve__view--visible' : 'quick-reserve__view--hidden'}`}>
+          <div className="quick-reserve__items">
+            {SWEET_PRODUCTS.map((product) => {
+              const qty = quantities[product.id] || 0;
+              return (
+                <div key={product.id} className="quick-reserve__product-row">
+                  <span className="quick-reserve__product-name">{product.name}</span>
+                  <div className="quick-reserve__stepper">
+                    <button
+                      type="button"
+                      className="quick-reserve__stepper-btn"
+                      onClick={() => decrement(product.id)}
+                      disabled={qty === 0}
+                    >
+                      −
+                    </button>
+                    <span className="quick-reserve__stepper-qty">{qty}</span>
+                    <button
+                      type="button"
+                      className="quick-reserve__stepper-btn"
+                      onClick={() => increment(product.id)}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            className="quick-reserve__submit-btn"
+            disabled={totalItems === 0}
+            onClick={handleSubmit}
+          >
+            {totalItems === 0
+              ? 'Select items'
+              : `Add ${totalItems} item${totalItems > 1 ? 's' : ''} · €${(totalPrice / 100).toFixed(2)}`}
+          </button>
+          {needsLogin && (
+            <div className="quick-reserve__login-hint">
+              <p>Sign in to complete your reservation</p>
+              <Link to="/login" className="quick-reserve__login-link">Sign in →</Link>
+            </div>
+          )}
+        </div>
+
+        {/* Summary view */}
+        <div className={`quick-reserve__view ${submitted ? 'quick-reserve__view--visible' : 'quick-reserve__view--hidden'}`}>
+          <div className="quick-reserve__summary">
+            <h3 className="quick-reserve__summary-title">Order Summary</h3>
+            {SWEET_PRODUCTS.filter((p) => (quantities[p.id] || 0) > 0).map((product) => (
+              <div key={product.id} className="quick-reserve__summary-row">
+                <span>{quantities[product.id]}× {product.name}</span>
+                <span>€{((quantities[product.id] || 0) * product.price / 100).toFixed(2)}</span>
+              </div>
+            ))}
+            <div className="quick-reserve__summary-total">
+              <span>Total</span>
+              <span>€{(totalPrice / 100).toFixed(2)}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="quick-reserve__back-btn"
+            onClick={() => setSubmitted(false)}
+          >
+            ← Modify selection
+          </button>
+          <div className="quick-reserve__footer" onClick={handleConfirm} style={{ cursor: 'pointer' }}>
+            <span className="quick-reserve__footer-line">
+              {pickupTime} · €{(totalPrice / 100).toFixed(2)}
+            </span>
+            <span className="quick-reserve__footer-sub">{t('home.payAtPickup')}</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

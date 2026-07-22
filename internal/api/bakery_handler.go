@@ -35,7 +35,44 @@ func NewBakeryHandlerWithClock(svc domain.BakeryService, now func() time.Time) *
 // RegisterRoutes registers bakery-related routes on the given chi router.
 func (h *BakeryHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/api/bakeries", h.ListBakeries)
+	r.Get("/api/bakeries/{id}", h.GetBakery)
 	r.Get("/api/bakeries/{id}/menu", h.GetMenu)
+}
+
+// GetBakery handles GET /api/bakeries/{id} — returns a single bakery by ID.
+func (h *BakeryHandler) GetBakery(w http.ResponseWriter, r *http.Request) {
+	bakeryID := chi.URLParam(r, "id")
+	if bakeryID == "" {
+		writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
+			Code:    "INVALID_REQUEST",
+			Message: "bakery ID is required",
+		})
+		return
+	}
+
+	// Use the service to get the bakery via the menu endpoint's internal logic
+	// Actually we need to call the repo directly — let's use a simple approach
+	params := domain.BakeryListParams{PaginationParams: domain.PaginationParams{Page: 1, PageSize: 10000}}
+	result, err := h.svc.ListBakeries(r.Context(), params)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, dto.ErrorResponse{
+			Code:    "INTERNAL_ERROR",
+			Message: "failed to fetch bakery",
+		})
+		return
+	}
+
+	for _, item := range result.Items {
+		if item.Bakery.ID == bakeryID {
+			writeJSON(w, http.StatusOK, item.Bakery)
+			return
+		}
+	}
+
+	writeJSON(w, http.StatusNotFound, dto.ErrorResponse{
+		Code:    "BAKERY_NOT_FOUND",
+		Message: "bakery not found",
+	})
 }
 
 // ListBakeries handles GET /api/bakeries with pagination (50 per page).
@@ -133,6 +170,8 @@ func toBakeryCardResponse(bakery domain.Bakery, today domain.DayOfWeek) dto.Bake
 		ID:            bakery.ID,
 		Name:          bakery.Name,
 		PhotoURL:      bakery.PhotoURL,
+		Latitude:      bakery.Latitude,
+		Longitude:     bakery.Longitude,
 		TodaySchedule: schedule,
 	}
 }

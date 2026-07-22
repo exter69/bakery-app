@@ -1,0 +1,253 @@
+/* Baker registration card */
+.baker-card {
+  width: 100%;
+  max-width: 280px;
+  background: var(--bg-panel);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-offset);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.baker-card__illustration {
+  width: 100%;
+  height: 100px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.baker-card__illustration-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.baker-card__title {
+  font-family: var(--font-hand-heading);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+  text-align: center;
+}
+
+.baker-card__steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.baker-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  position: relative;
+}
+
+.baker-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 32px;
+  height: calc(100% - 16px);
+  border-left: 1.5px dashed #a08b70;
+}
+
+.baker-step__chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: var(--border);
+  font-family: var(--font-hand-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+  background: transparent;
+}
+
+.baker-step__chip--active {
+  background: var(--accent);
+}
+
+.baker-step__text {
+  font-family: var(--font-hand-body);
+  font-size: 0.9rem;
+  color: var(--ink);
+  line-height: 1.4;
+  padding-top: 2px;
+}
+
+.baker-card__cta {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: var(--border);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-hand-body);
+  font-size: 0.95rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.baker-card__cta:hover {
+  background: var(--bg-card);
+  box-shadow: 2px 2px 0 rgba(58, 46, 34, 0.25);
+}
+
+.baker-card__cta--accent {
+  background: var(--accent);
+  margin-top: 0.25rem;
+}
+
+.baker-card__cta--accent:hover {
+  background: #d9a23e;
+}
+
+/* Modal */
+.baker-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(58, 46, 34, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+}
+
+.baker-modal {
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-offset);
+  padding: 2rem;
+  width: 100%;
+  max-width: 420px;
+}
+
+.baker-modal__title {
+  font-family: var(--font-hand-heading);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 0.25rem;
+}
+
+.baker-modal__subtitle {
+  font-family: var(--font-hand-body);
+  font-size: 0.95rem;
+  color: var(--ink-muted);
+  margin: 0 0 1.25rem;
+}
+
+.baker-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.baker-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.baker-modal__label {
+  font-family: var(--font-hand-body);
+  font-size: 0.95rem;
+  color: var(--ink-muted);
+}
+
+.baker-modal__input {
+  padding: 0.7rem 1rem;
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: 10px;
+  font-family: var(--font-hand-body);
+  font-size: 1rem;
+  color: var(--ink);
+  transition: border-color 0.15s ease;
+}
+
+.baker-modal__input::placeholder {
+  color: #a08b70;
+}
+
+.baker-modal__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.baker-modal__error {
+  padding: 0.65rem 1rem;
+  background: #fdf2f0;
+  border: 1.5px solid var(--alert);
+  border-radius: 10px;
+  color: var(--alert);
+  font-size: 0.9rem;
+}
+
+.baker-modal__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.baker-modal__cancel {
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-pill);
+  border: var(--border);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-hand-body);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.baker-modal__cancel:hover {
+  background: var(--bg-panel);
+}
+
+.baker-modal__submit {
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-pill);
+  border: var(--border);
+  background: var(--accent);
+  color: var(--ink);
+  font-family: var(--font-hand-body);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.baker-modal__submit:hover:not(:disabled) {
+  background: #d9a23e;
+}
+
+.baker-modal__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.baker-modal__success {
+  text-align: center;
+}

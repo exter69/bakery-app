@@ -1,0 +1,255 @@
+/* Bakeries Page */
+
+.bakeries-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.bakeries-page__header {
+  margin-bottom: 2rem;
+}
+
+.bakeries-page__title {
+  font-family: var(--font-hand-heading);
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 0.25rem;
+}
+
+.bakeries-page__subtitle {
+  font-size: 1.05rem;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+/* Empty state */
+.bakeries-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  text-align: center;
+}
+
+.bakeries-empty__text {
+  font-size: 1.25rem;
+  color: var(--ink-muted);
+  max-width: 400px;
+}
+
+/* Filter chips */
+.bakeries-filters {
+  display: none;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-pill);
+  border: var(--border);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-hand-body);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.filter-chip:hover {
+  background: var(--bg-panel);
+}
+
+.filter-chip--active {
+  background: var(--accent);
+  border-color: var(--ink);
+}
+
+/* Desktop: Card Grid */
+.bakery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.bakery-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--bg-card);
+  border: var(--border);
+  box-shadow: var(--shadow-offset);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.bakery-card:hover {
+  box-shadow: 5px 5px 0 rgba(58, 46, 34, .18);
+  transform: translateY(-2px);
+}
+
+.bakery-card--closed {
+  opacity: 0.55;
+}
+
+.bakery-card__photo {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  background: var(--bg-panel);
+}
+
+.bakery-card__info {
+  padding: 1rem;
+}
+
+.bakery-card__name {
+  font-family: var(--font-hand-heading);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 0.25rem;
+}
+
+.bakery-card__schedule {
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.bakery-card__schedule--closed {
+  color: var(--alert);
+}
+
+.bakery-card__distance {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  margin: 0.25rem 0 0;
+}
+
+/* Mobile: Ledger Rows — hidden on desktop */
+.bakery-ledger {
+  display: none;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Mobile breakpoint */
+@media (max-width: 720px) {
+  .bakery-grid {
+    display: none;
+  }
+
+  .bakery-ledger {
+    display: flex;
+  }
+
+  .bakeries-filters {
+    display: flex;
+  }
+}
+
+/* Ledger row */
+.ledger-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-offset);
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s ease;
+}
+
+.ledger-row:hover {
+  box-shadow: 4px 4px 0 rgba(58, 46, 34, .16);
+}
+
+.ledger-row--closed {
+  opacity: 0.55;
+}
+
+.ledger-row__photo {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: var(--border);
+  background: var(--bg-panel);
+}
+
+.ledger-row__center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.ledger-row__name {
+  font-family: var(--font-hand-heading);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ledger-row__address {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+/* Week strip */
+.ledger-row__week {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.2rem;
+}
+
+.day-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-family: var(--font-hand-body);
+  border: 1px solid var(--ink);
+  color: var(--ink);
+}
+
+.day-chip--today {
+  background: var(--accent);
+  border-color: var(--ink);
+  font-weight: 700;
+}
+
+/* Right side hours */
+.ledger-row__hours {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.ledger-row__time {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.ledger-row__closed-label {
+  font-size: 0.85rem;
+  color: var(--alert);
+  font-weight: 600;
+}

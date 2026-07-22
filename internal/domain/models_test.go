@@ -173,3 +173,11 @@ func TestAllDaysOfWeek(t *testing.T) {
 	assert.Equal(t, Monday, days[0])
 	assert.Equal(t, Sunday, days[6])
 }
+
+func TestProduct_MarshalJSON_NilAllergens(t *testing.T) {
+	p := Product{ID: "1", Name: "Test", Allergens: nil}
+	data, err := json.Marshal(p)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), `"allergens":[]`)
+	assert.NotContains(t, string(data), `"allergens":null`)
+}

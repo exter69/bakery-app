@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/lucatorrekens/bakery-app/internal/domain"
@@ -31,8 +32,8 @@ func NewSellerService(cfg SellerServiceConfig) *SellerService {
 	}
 }
 
-// UpdateBakery updates a bakery's info after verifying ownership.
-func (s *SellerService) UpdateBakery(ctx context.Context, bakeryID, ownerID string, name, description, address, photoURL *string) (*domain.Bakery, error) {
+// verifyBakeryOwnership fetches a bakery and verifies the caller owns it.
+func (s *SellerService) verifyBakeryOwnership(ctx context.Context, bakeryID, ownerID string) (*domain.Bakery, error) {
 	bakery, err := s.bakeryRepo.GetBakery(ctx, bakeryID)
 	if err != nil {
 		return nil, fmt.Errorf("fetching bakery: %w", err)
@@ -42,6 +43,15 @@ func (s *SellerService) UpdateBakery(ctx context.Context, bakeryID, ownerID stri
 	}
 	if bakery.OwnerID != ownerID {
 		return nil, ErrForbidden
+	}
+	return bakery, nil
+}
+
+// UpdateBakery updates a bakery's info after verifying ownership.
+func (s *SellerService) UpdateBakery(ctx context.Context, bakeryID, ownerID string, name, description, address, photoURL, googlePlaceID *string) (*domain.Bakery, error) {
+	bakery, err := s.verifyBakeryOwnership(ctx, bakeryID, ownerID)
+	if err != nil {
+		return nil, err
 	}
 
 	if name != nil {
@@ -56,6 +66,9 @@ func (s *SellerService) UpdateBakery(ctx context.Context, bakeryID, ownerID stri
 	if photoURL != nil {
 		bakery.PhotoURL = *photoURL
 	}
+	if googlePlaceID != nil {
+		bakery.GooglePlaceID = *googlePlaceID
+	}
 
 	if err := s.bakeryRepo.UpdateBakery(ctx, bakery); err != nil {
 		return nil, fmt.Errorf("updating bakery: %w", err)
@@ -65,15 +78,9 @@ func (s *SellerService) UpdateBakery(ctx context.Context, bakeryID, ownerID stri
 
 // UpdateBakerySchedule updates a bakery's schedule after verifying ownership.
 func (s *SellerService) UpdateBakerySchedule(ctx context.Context, bakeryID, ownerID string, schedule []domain.DaySchedule) (*domain.Bakery, error) {
-	bakery, err := s.bakeryRepo.GetBakery(ctx, bakeryID)
+	bakery, err := s.verifyBakeryOwnership(ctx, bakeryID, ownerID)
 	if err != nil {
-		return nil, fmt.Errorf("fetching bakery: %w", err)
-	}
-	if bakery == nil {
-		return nil, ErrBakeryNotFound
-	}
-	if bakery.OwnerID != ownerID {
-		return nil, ErrForbidden
+		return nil, err
 	}
 
 	bakery.Schedule = schedule
@@ -84,21 +91,32 @@ func (s *SellerService) UpdateBakerySchedule(ctx context.Context, bakeryID, owne
 	return bakery, nil
 }
 
+// GetMyBakery returns the first bakery owned by the given user.
+func (s *SellerService) GetMyBakery(ctx context.Context, ownerID string) (*domain.Bakery, error) {
+	return s.bakeryRepo.GetBakeryByOwner(ctx, ownerID)
+}
+
+// ListProducts returns all products for a bakery after verifying ownership.
+func (s *SellerService) ListProducts(ctx context.Context, bakeryID, ownerID string) ([]domain.Product, error) {
+	if _, err := s.verifyBakeryOwnership(ctx, bakeryID, ownerID); err != nil {
+		return nil, err
+	}
+
+	products, err := s.bakeryRepo.GetProductsByBakery(ctx, bakeryID)
+	if err != nil {
+		return nil, fmt.Errorf("fetching products: %w", err)
+	}
+	return products, nil
+}
+
 // CreateProduct adds a product to a bakery after verifying ownership.
 func (s *SellerService) CreateProduct(ctx context.Context, bakeryID, ownerID string, product domain.Product) (*domain.Product, error) {
-	bakery, err := s.bakeryRepo.GetBakery(ctx, bakeryID)
-	if err != nil {
-		return nil, fmt.Errorf("fetching bakery: %w", err)
-	}
-	if bakery == nil {
-		return nil, ErrBakeryNotFound
-	}
-	if bakery.OwnerID != ownerID {
-		return nil, ErrForbidden
+	if _, err := s.verifyBakeryOwnership(ctx, bakeryID, ownerID); err != nil {
+		return nil, err
 	}
 
 	product.BakeryID = bakeryID
-	product.ID = fmt.Sprintf("prod_%d", time.Now().UnixNano())
+	product.ID = fmt.Sprintf("prod_%d_%d", time.Now().UnixNano(), rand.Intn(10000))
 	product.IsAvailable = true
 
 	if err := s.bakeryRepo.CreateProduct(ctx, &product); err != nil {
@@ -118,15 +136,8 @@ func (s *SellerService) UpdateProduct(ctx context.Context, productID, ownerID st
 	}
 
 	// Verify bakery ownership
-	bakery, err := s.bakeryRepo.GetBakery(ctx, product.BakeryID)
-	if err != nil {
-		return nil, fmt.Errorf("fetching bakery: %w", err)
-	}
-	if bakery == nil {
-		return nil, ErrBakeryNotFound
-	}
-	if bakery.OwnerID != ownerID {
-		return nil, ErrForbidden
+	if _, err := s.verifyBakeryOwnership(ctx, product.BakeryID, ownerID); err != nil {
+		return nil, err
 	}
 
 	// Apply updates
@@ -148,6 +159,27 @@ func (s *SellerService) UpdateProduct(ctx context.Context, productID, ownerID st
 	if v, ok := updates["isAvailable"].(bool); ok {
 		product.IsAvailable = v
 	}
+	if raw, exists := updates["allergens"]; exists {
+		if raw == nil {
+			product.Allergens = []string{}
+		} else if arr, ok := raw.([]interface{}); ok {
+			allergens := make([]string, 0, len(arr))
+			for _, item := range arr {
+				if s, ok := item.(string); ok {
+					allergens = append(allergens, s)
+				}
+			}
+			product.Allergens = allergens
+		}
+	}
+	if raw, exists := updates["healthScore"]; exists {
+		if raw == nil {
+			product.HealthScore = nil
+		} else if f, ok := raw.(float64); ok {
+			score := int(f)
+			product.HealthScore = &score
+		}
+	}
 
 	if err := s.bakeryRepo.UpdateProduct(ctx, product); err != nil {
 		return nil, fmt.Errorf("updating product: %w", err)
@@ -166,15 +198,8 @@ func (s *SellerService) DeleteProduct(ctx context.Context, productID, ownerID st
 	}
 
 	// Verify bakery ownership
-	bakery, err := s.bakeryRepo.GetBakery(ctx, product.BakeryID)
-	if err != nil {
-		return fmt.Errorf("fetching bakery: %w", err)
-	}
-	if bakery == nil {
-		return ErrBakeryNotFound
-	}
-	if bakery.OwnerID != ownerID {
-		return ErrForbidden
+	if _, err := s.verifyBakeryOwnership(ctx, product.BakeryID, ownerID); err != nil {
+		return err
 	}
 
 	if err := s.bakeryRepo.DeleteProduct(ctx, productID); err != nil {
@@ -185,15 +210,8 @@ func (s *SellerService) DeleteProduct(ctx context.Context, productID, ownerID st
 
 // ListBakeryOrders returns paginated orders for a bakery after verifying ownership.
 func (s *SellerService) ListBakeryOrders(ctx context.Context, bakeryID, ownerID string, filters domain.OrderFilters, params domain.PaginationParams) (*domain.ListResult[domain.Order], error) {
-	bakery, err := s.bakeryRepo.GetBakery(ctx, bakeryID)
-	if err != nil {
-		return nil, fmt.Errorf("fetching bakery: %w", err)
-	}
-	if bakery == nil {
-		return nil, ErrBakeryNotFound
-	}
-	if bakery.OwnerID != ownerID {
-		return nil, ErrForbidden
+	if _, err := s.verifyBakeryOwnership(ctx, bakeryID, ownerID); err != nil {
+		return nil, err
 	}
 
 	if params.Page < 1 {
@@ -218,15 +236,8 @@ func (s *SellerService) ListBakeryOrders(ctx context.Context, bakeryID, ownerID 
 
 // ListBakeryReservations returns paginated reservations for a bakery after verifying ownership.
 func (s *SellerService) ListBakeryReservations(ctx context.Context, bakeryID, ownerID string, filters domain.ReservationFilters, params domain.PaginationParams) (*domain.ListResult[domain.Reservation], error) {
-	bakery, err := s.bakeryRepo.GetBakery(ctx, bakeryID)
-	if err != nil {
-		return nil, fmt.Errorf("fetching bakery: %w", err)
-	}
-	if bakery == nil {
-		return nil, ErrBakeryNotFound
-	}
-	if bakery.OwnerID != ownerID {
-		return nil, ErrForbidden
+	if _, err := s.verifyBakeryOwnership(ctx, bakeryID, ownerID); err != nil {
+		return nil, err
 	}
 
 	if params.Page < 1 {
@@ -267,15 +278,8 @@ func (s *SellerService) UpdateOrderStatus(ctx context.Context, orderID, ownerID 
 	}
 
 	// Verify bakery ownership
-	bakery, err := s.bakeryRepo.GetBakery(ctx, order.BakeryID)
-	if err != nil {
-		return nil, fmt.Errorf("fetching bakery: %w", err)
-	}
-	if bakery == nil {
-		return nil, ErrBakeryNotFound
-	}
-	if bakery.OwnerID != ownerID {
-		return nil, ErrForbidden
+	if _, err := s.verifyBakeryOwnership(ctx, order.BakeryID, ownerID); err != nil {
+		return nil, err
 	}
 
 	// Validate transition
@@ -310,15 +314,8 @@ func (s *SellerService) UpdateReservationStatus(ctx context.Context, reservation
 	}
 
 	// Verify bakery ownership
-	bakery, err := s.bakeryRepo.GetBakery(ctx, reservation.BakeryID)
-	if err != nil {
-		return nil, fmt.Errorf("fetching bakery: %w", err)
-	}
-	if bakery == nil {
-		return nil, ErrBakeryNotFound
-	}
-	if bakery.OwnerID != ownerID {
-		return nil, ErrForbidden
+	if _, err := s.verifyBakeryOwnership(ctx, reservation.BakeryID, ownerID); err != nil {
+		return nil, err
 	}
 
 	// Validate transition

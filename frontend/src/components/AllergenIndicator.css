@@ -1,0 +1,88 @@
+/* ─── Allergen Indicator ───────────────────────────────────────────────────── */
+
+.allergen-indicator {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card, #fffdf8);
+  border: 1.5px solid var(--ink, #3a2e22);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  z-index: 3;
+  transition: background 150ms, transform 150ms;
+  box-shadow: 1px 1px 0 rgba(58, 46, 34, 0.15);
+}
+
+.allergen-indicator:hover,
+.allergen-indicator:focus-visible {
+  background: var(--bg-panel, #f7f1e5);
+  transform: scale(1.1);
+  outline: none;
+}
+
+.allergen-indicator:focus-visible {
+  outline: 2px solid var(--accent, #e8b04b);
+  outline-offset: 2px;
+}
+
+/* ─── Tooltip ──────────────────────────────────────────────────────────────── */
+
+.allergen-indicator__tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: var(--ink, #3a2e22);
+  color: var(--bg-card, #fffdf8);
+  font-family: var(--font-hand-body, 'Patrick Hand', cursive);
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: none;
+  z-index: 100;
+}
+
+.allergen-indicator__tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 8px;
+  border: 5px solid transparent;
+  border-top-color: var(--ink, #3a2e22);
+}
+
+.allergen-indicator:hover .allergen-indicator__tooltip,
+.allergen-indicator:focus .allergen-indicator__tooltip {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+/* ─── Responsive (<768px) ──────────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .allergen-indicator {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+
+  .allergen-indicator__tooltip {
+    font-size: 11px;
+    max-width: 180px;
+  }
+}

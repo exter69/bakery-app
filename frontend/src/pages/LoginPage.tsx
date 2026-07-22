@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { apiFetch, setToken, decodeTokenRole, setGuestMode } from '../api/client';
+import { useI18n } from '../i18n';
+import BakerCard from '../components/BakerCard';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import './LoginPage.css';
 
 interface LoginResponse {
@@ -15,6 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useI18n();
 
   const from = (location.state as { from?: string })?.from || '/';
 
@@ -32,7 +36,7 @@ export default function LoginPage() {
     setError(null);
 
     if (!username.trim() || !password.trim()) {
-      setError('Please enter username and password.');
+      setError(t('login.error'));
       return;
     }
 
@@ -58,6 +62,12 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
+      {/* Language switcher top-right */}
+      <div className="login-page__lang">
+        <LanguageSwitcher />
+      </div>
+
+      {/* Hero image top */}
       <div className="login-page__hero">
         <img
           src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1200"
@@ -66,15 +76,17 @@ export default function LoginPage() {
         />
       </div>
 
+      {/* Content: sign-in card + baker card side by side */}
       <div className="login-page__content">
+        {/* Sign-in card */}
         <div className="login-card">
-          <h1 className="login-card__title">Welcome Back</h1>
-          <p className="login-card__subtitle">Sign in to your account</p>
+          <h1 className="login-card__title">{t('login.welcome')}</h1>
+          <p className="login-card__subtitle">{t('login.subtitle')}</p>
 
           <form className="login-card__form" onSubmit={handleSubmit}>
             <div className="login-card__field">
               <label htmlFor="username-input" className="login-card__label">
-                Username
+                {t('login.username')}
               </label>
               <input
                 id="username-input"
@@ -82,7 +94,7 @@ export default function LoginPage() {
                 className="login-card__input"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                placeholder={t('login.username')}
                 autoComplete="username"
                 autoFocus
               />
@@ -90,7 +102,7 @@ export default function LoginPage() {
 
             <div className="login-card__field">
               <label htmlFor="password-input" className="login-card__label">
-                Password
+                {t('login.password')}
               </label>
               <input
                 id="password-input"
@@ -98,7 +110,7 @@ export default function LoginPage() {
                 className="login-card__input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder={t('login.password')}
                 autoComplete="current-password"
               />
             </div>
@@ -114,27 +126,27 @@ export default function LoginPage() {
               className="login-card__submit"
               disabled={loading}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? t('login.signingIn') : t('login.signIn')}
             </button>
           </form>
 
-          <div className="login-card__divider">
-            <span>or</span>
-          </div>
+          <div className="login-card__divider"><span>{t('login.or')}</span></div>
 
           <div className="login-card__actions">
             <Link to="/register" className="login-card__link">
-              Create Account
+              {t('login.createAccount')}
             </Link>
             <button
               type="button"
               className="login-card__guest-btn"
               onClick={handleGuestAccess}
             >
-              Visit without account
+              {t('login.guest')}
             </button>
           </div>
         </div>
+
+        <BakerCard />
       </div>
     </div>
   );

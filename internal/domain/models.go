@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -20,11 +21,23 @@ type User struct {
 	Username         string     `json:"username"`
 	PasswordHash     string     `json:"-"`
 	Role             UserRole   `json:"role"`
+	ContactEmail     string     `json:"contactEmail,omitempty"`
 	HolidayMode      bool       `json:"holidayMode"`
 	HolidayFrom      *time.Time `json:"holidayFrom,omitempty"`
 	HolidayTo        *time.Time `json:"holidayTo,omitempty"`
 	FavoriteProducts []string   `json:"favoriteProducts"`
 	CreatedAt        time.Time  `json:"createdAt"`
+}
+
+// RegistrationToken represents a token used to register as a baker.
+type RegistrationToken struct {
+	ID         string    `json:"id"`
+	Token      string    `json:"token"`
+	Email      string    `json:"email"`
+	BakeryName string    `json:"bakeryName"`
+	ExpiresAt  time.Time `json:"expiresAt"`
+	Used       bool      `json:"used"`
+	CreatedAt  time.Time `json:"createdAt"`
 }
 
 // Bakery represents a bakery with its schedule.
@@ -35,10 +48,12 @@ type Bakery struct {
 	PhotoURL    string        `json:"photoUrl"`
 	Description string        `json:"description"`
 	Address     string        `json:"address"`
-	Latitude    float64       `json:"latitude"`
-	Longitude   float64       `json:"longitude"`
-	Schedule    []DaySchedule `json:"schedule"`
-	CreatedAt   time.Time     `json:"createdAt"`
+	Latitude      float64       `json:"latitude"`
+	Longitude     float64       `json:"longitude"`
+	GooglePlaceID string        `json:"googlePlaceId,omitempty"`
+	MinDelivery   int64         `json:"minDeliveryAmount"` // minimum delivery amount in cents, default 1000 (€10)
+	Schedule      []DaySchedule `json:"schedule"`
+	CreatedAt     time.Time     `json:"createdAt"`
 }
 
 // DaySchedule represents the operating hours for a single day.
@@ -90,14 +105,27 @@ func (t TimeOfDay) AfterOrEqual(other TimeOfDay) bool {
 
 // Product represents a menu item in a bakery.
 type Product struct {
-	ID          string `json:"id"`
-	BakeryID    string `json:"bakeryId"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Price       int64  `json:"price"` // price in cents
-	PhotoURL    string `json:"photoUrl"`
-	Category    string `json:"category"`
-	IsAvailable bool   `json:"isAvailable"`
+	ID          string   `json:"id"`
+	BakeryID    string   `json:"bakeryId"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Price       int64    `json:"price"` // price in cents
+	PhotoURL    string   `json:"photoUrl"`
+	Category    string   `json:"category"`
+	IsAvailable bool     `json:"isAvailable"`
+	Allergens   []string `json:"allergens"`   // subset of ValidAllergens; empty = no allergens
+	HealthScore *int     `json:"healthScore"` // nullable; 1-5
+}
+
+// MarshalJSON ensures Allergens is serialized as an empty array (never null)
+// and HealthScore is serialized as a number or null.
+func (p Product) MarshalJSON() ([]byte, error) {
+	type Alias Product
+	a := Alias(p)
+	if a.Allergens == nil {
+		a.Allergens = []string{}
+	}
+	return json.Marshal(a)
 }
 
 // Order represents a delivery order with online payment.

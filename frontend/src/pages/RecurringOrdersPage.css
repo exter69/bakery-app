@@ -7,21 +7,22 @@
 }
 
 .recurring-page__title {
+  font-family: var(--font-hand-heading);
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--ink);
   margin: 0 0 0.25rem;
 }
 
 .recurring-page__subtitle {
   font-size: 0.95rem;
-  color: #64748b;
+  color: var(--ink-muted);
   margin: 0 0 1.5rem;
 }
 
 /* Holiday card */
 .holiday-card {
-  background: white;
+  background: var(--bg-card);
   border-radius: 16px;
   padding: 1.5rem;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
@@ -38,7 +39,7 @@
 .holiday-card__title {
   font-size: 1rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--ink);
   margin: 0;
 }
 
@@ -59,21 +60,21 @@
 .holiday-card__label {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--ink-muted);
 }
 
 .holiday-card__input {
   padding: 0.5rem 0.75rem;
-  border: 2px solid #e2e8f0;
+  border: var(--border);
   border-radius: 10px;
   font-size: 0.85rem;
-  color: #1e293b;
+  color: var(--ink);
   transition: border-color 0.15s ease;
 }
 
 .holiday-card__input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--accent);
 }
 
 .holiday-card__actions {
@@ -122,7 +123,7 @@
   position: absolute;
   width: 16px;
   height: 16px;
-  background: white;
+  background: var(--bg-card);
   border-radius: 50%;
   top: 3px;
   left: 3px;
@@ -130,7 +131,7 @@
 }
 
 .recurring-toggle input:checked + .recurring-toggle__slider {
-  background: #6366f1;
+  background: var(--accent);
 }
 
 .recurring-toggle input:checked + .recurring-toggle__slider::before {
@@ -139,7 +140,7 @@
 
 /* Orders section */
 .recurring-orders-section {
-  background: white;
+  background: var(--bg-card);
   border-radius: 16px;
   padding: 1.5rem;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
@@ -148,7 +149,7 @@
 .recurring-orders-section__title {
   font-size: 1rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--ink);
   margin: 0 0 1rem;
 }
 
@@ -156,7 +157,7 @@
 .recurring-table-wrap {
   overflow-x: auto;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: var(--border);
 }
 
 .recurring-table {
@@ -168,19 +169,19 @@
 .recurring-table th {
   text-align: left;
   padding: 0.75rem 1rem;
-  background: #f8fafc;
-  color: #64748b;
+  background: var(--bg-panel);
+  color: var(--ink-muted);
   font-weight: 600;
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  border-bottom: 1px solid #e2e8f0;
+  border: var(--border);
 }
 
 .recurring-table td {
   padding: 0.75rem 1rem;
-  color: #334155;
-  border-bottom: 1px solid #f1f5f9;
+  color: var(--ink);
+  border-bottom: 1px solid rgba(58,46,34,0.1);
 }
 
 .recurring-table tr:last-child td {
@@ -188,7 +189,7 @@
 }
 
 .recurring-table tr:hover td {
-  background: #f8fafc;
+  background: var(--bg-panel);
 }
 
 /* Badges */
@@ -235,26 +236,26 @@
 }
 
 .recurring-btn--primary {
-  background: #6366f1;
+  background: var(--accent);
   color: white;
 }
 
 .recurring-btn--primary:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--accent);
 }
 
 .recurring-btn--secondary {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--bg-panel);
+  color: var(--ink-muted);
 }
 
 .recurring-btn--secondary:hover:not(:disabled) {
-  background: #e2e8f0;
+  background: var(--ink);
 }
 
 .recurring-btn--danger {
   background: #fef2f2;
-  color: #dc2626;
+  color: var(--alert);
 }
 
 .recurring-btn--danger:hover:not(:disabled) {
@@ -270,7 +271,7 @@
 
 /* Loading & empty */
 .recurring-loading {
-  color: #64748b;
+  color: var(--ink-muted);
   font-size: 0.95rem;
   padding: 2rem 0;
   text-align: center;
@@ -290,7 +291,7 @@
   gap: 0.75rem;
   margin-top: 1rem;
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--ink-muted);
 }
 
 /* Messages */
@@ -310,5 +311,5 @@
 .recurring-msg--error {
   background: #fef2f2;
   border: 1px solid #fecaca;
-  color: #dc2626;
+  color: var(--alert);
 }

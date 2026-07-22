@@ -2,12 +2,12 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f8fafc;
+  background: var(--bg-page);
 }
 
 .register-page__hero {
   width: 100%;
-  height: 35vh;
+  height: 30vh;
   overflow: hidden;
   position: relative;
 }
@@ -19,10 +19,10 @@
 }
 
 .register-page__content {
-  flex: 1;
   display: flex;
   align-items: flex-start;
   justify-content: center;
+  gap: 1.5rem;
   padding: 2rem 1.5rem;
   margin-top: -3rem;
   position: relative;
@@ -32,22 +32,25 @@
 .register-card {
   width: 100%;
   max-width: 420px;
-  background: white;
-  border-radius: 20px;
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-card);
   padding: 2.5rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-offset);
 }
 
 .register-card__title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1e293b;
+  font-family: var(--font-hand-heading);
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--ink);
   margin: 0 0 0.25rem;
 }
 
 .register-card__subtitle {
-  font-size: 1rem;
-  color: #64748b;
+  font-family: var(--font-hand-body);
+  font-size: 1.05rem;
+  color: var(--ink-muted);
   margin: 0 0 1.75rem;
 }
 
@@ -60,27 +63,29 @@
 .register-card__field {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .register-card__label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #475569;
+  font-family: var(--font-hand-body);
+  font-size: 0.95rem;
+  color: var(--ink-muted);
 }
 
 .register-card__input {
   padding: 0.75rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 0.875rem;
-  color: #1e293b;
+  border: var(--border);
+  border-radius: 10px;
+  font-family: var(--font-hand-body);
+  font-size: 1rem;
+  color: var(--ink);
+  background: var(--bg-card);
   transition: border-color 0.15s ease;
 }
 
 .register-card__input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--accent);
 }
 
 .register-card__role-group {
@@ -102,75 +107,200 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  border: var(--border);
+  border-radius: 10px;
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .register-card__role-option--active {
-  border-color: #6366f1;
-  background: #eef2ff;
+  border-color: var(--ink);
+  background: var(--accent);
 }
 
 .register-card__role-radio {
-  accent-color: #6366f1;
+  accent-color: var(--accent);
 }
 
 .register-card__role-text {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #1e293b;
+  font-family: var(--font-hand-body);
+  font-size: 1rem;
+  color: var(--ink);
 }
 
 .register-card__error {
   padding: 0.75rem 1rem;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: #fdf2f0;
+  border: 1.5px solid var(--alert);
   border-radius: 10px;
-  color: #dc2626;
-  font-size: 0.85rem;
+  color: var(--alert);
+  font-size: 0.9rem;
 }
 
 .register-card__submit {
   padding: 0.875rem;
-  border-radius: 12px;
-  border: none;
-  background: #6366f1;
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
+  border-radius: var(--radius-pill);
+  border: var(--border);
+  background: var(--accent);
+  color: var(--ink);
+  font-family: var(--font-hand-body);
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
 .register-card__submit:hover:not(:disabled) {
-  background: #4f46e5;
+  background: #d9a23e;
   transform: translateY(-1px);
 }
 
-.register-card__submit:active:not(:disabled) {
-  transform: translateY(0);
-}
-
 .register-card__submit:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
 .register-card__footer {
   margin: 1.5rem 0 0;
-  font-size: 0.875rem;
-  color: #64748b;
+  font-family: var(--font-hand-body);
+  font-size: 1rem;
+  color: var(--ink-muted);
   text-align: center;
 }
 
 .register-card__link {
-  font-weight: 600;
-  color: #6366f1;
-  text-decoration: none;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .register-card__link:hover {
-  color: #4f46e5;
+  color: var(--accent);
+}
+
+/* Baker registration card (same as login page) */
+.baker-card {
+  width: 100%;
+  max-width: 280px;
+  background: var(--bg-panel);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-offset);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.baker-card__illustration {
+  width: 100%;
+  height: 100px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.baker-card__illustration-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.baker-card__title {
+  font-family: var(--font-hand-heading);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+  text-align: center;
+}
+
+.baker-card__steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.baker-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  position: relative;
+}
+
+.baker-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 32px;
+  height: calc(100% - 16px);
+  border-left: 1.5px dashed #a08b70;
+}
+
+.baker-step__chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: var(--border);
+  font-family: var(--font-hand-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+  background: transparent;
+}
+
+.baker-step__chip--active {
+  background: var(--accent);
+}
+
+.baker-step__text {
+  font-family: var(--font-hand-body);
+  font-size: 0.9rem;
+  color: var(--ink);
+  line-height: 1.4;
+  padding-top: 2px;
+}
+
+.baker-card__cta {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-top: 0.5rem;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: var(--border);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-hand-body);
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.baker-card__cta:hover {
+  background: var(--bg-card);
+  box-shadow: 2px 2px 0 rgba(58, 46, 34, 0.25);
+}
+
+@media (max-width: 720px) {
+  .register-page__content {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .register-card {
+    max-width: 100%;
+  }
+
+  .baker-card {
+    max-width: 100%;
+  }
 }

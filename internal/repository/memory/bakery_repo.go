@@ -33,6 +33,10 @@ func (r *BakeryRepo) SeedBakery(b domain.Bakery) {
 func (r *BakeryRepo) SeedProduct(p domain.Product) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	// Ensure Allergens is never stored as nil
+	if p.Allergens == nil {
+		p.Allergens = []string{}
+	}
 	r.products[p.BakeryID] = append(r.products[p.BakeryID], p)
 }
 
@@ -71,6 +75,18 @@ func (r *BakeryRepo) GetBakery(_ context.Context, id string) (*domain.Bakery, er
 	return &b, nil
 }
 
+// GetBakeryByOwner returns the bakery owned by the given user, or nil if not found.
+func (r *BakeryRepo) GetBakeryByOwner(_ context.Context, ownerID string) (*domain.Bakery, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, b := range r.bakeries {
+		if b.OwnerID == ownerID {
+			return &b, nil
+		}
+	}
+	return nil, nil
+}
+
 // UpdateBakery persists changes to a bakery.
 func (r *BakeryRepo) UpdateBakery(_ context.Context, bakery *domain.Bakery) error {
 	r.mu.Lock()
@@ -92,7 +108,15 @@ func (r *BakeryRepo) GetProductsByBakery(_ context.Context, bakeryID string) ([]
 	if products == nil {
 		return []domain.Product{}, nil
 	}
-	return products, nil
+	// Ensure Allergens is never nil on returned products
+	result := make([]domain.Product, len(products))
+	copy(result, products)
+	for i := range result {
+		if result[i].Allergens == nil {
+			result[i].Allergens = []string{}
+		}
+	}
+	return result, nil
 }
 
 // GetProductByID returns a single product by ID, or nil if not found.
@@ -103,7 +127,12 @@ func (r *BakeryRepo) GetProductByID(_ context.Context, id string) (*domain.Produ
 	for _, products := range r.products {
 		for i := range products {
 			if products[i].ID == id {
-				return &products[i], nil
+				p := products[i]
+				// Ensure Allergens is never nil on returned product
+				if p.Allergens == nil {
+					p.Allergens = []string{}
+				}
+				return &p, nil
 			}
 		}
 	}
@@ -115,6 +144,11 @@ func (r *BakeryRepo) CreateProduct(_ context.Context, product *domain.Product) e
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	// Ensure Allergens is never stored as nil
+	if product.Allergens == nil {
+		product.Allergens = []string{}
+	}
+
 	r.products[product.BakeryID] = append(r.products[product.BakeryID], *product)
 	return nil
 }
@@ -123,6 +157,11 @@ func (r *BakeryRepo) CreateProduct(_ context.Context, product *domain.Product) e
 func (r *BakeryRepo) UpdateProduct(_ context.Context, product *domain.Product) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	// Ensure Allergens is never stored as nil
+	if product.Allergens == nil {
+		product.Allergens = []string{}
+	}
 
 	products := r.products[product.BakeryID]
 	for i := range products {

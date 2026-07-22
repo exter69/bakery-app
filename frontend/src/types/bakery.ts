@@ -3,6 +3,8 @@ export interface BakeryCard {
   id: string;
   name: string;
   photoUrl: string;
+  latitude: number;
+  longitude: number;
   todaySchedule: TodaySchedule;
   distance?: number; // distance in km, only present when user location is available
 }
@@ -21,6 +23,10 @@ export interface Bakery {
   photoUrl: string;
   description: string;
   address: string;
+  latitude?: number;
+  longitude?: number;
+  googlePlaceId?: string;
+  minDeliveryAmount?: number; // in cents
   schedule: DaySchedule[];
   createdAt: string;
 }
@@ -43,6 +49,8 @@ export interface Product {
   photoUrl: string;
   category: string;
   isAvailable: boolean;
+  allergens: string[];
+  healthScore: number | null;
 }
 
 /** Menu grouped by category */

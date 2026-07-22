@@ -1,0 +1,67 @@
+<svg viewBox="0 0 1000 420" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+  <!-- ================= Simple: how to order ================= -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDF6EC"/>
+      <stop offset="1" stop-color="#F7E9D2"/>
+    </linearGradient>
+    <linearGradient id="crust" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E7A85B"/>
+      <stop offset="1" stop-color="#C6803B"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#B07A3D" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1000" height="420" rx="26" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="500" y="60" font-size="30" fill="#8A4F27" text-anchor="middle" font-weight="800">Ordering is simple</text>
+
+  <!-- Step 1: Choose -->
+  <g filter="url(#soft)"><circle cx="200" cy="200" r="72" fill="#FFFFFF"/></g>
+  <!-- croissant -->
+  <path d="M170 208 q30 -46 60 0 q-30 16 -60 0 Z" fill="url(#crust)"/>
+  <path d="M178 204 l44 0 M184 212 l32 0" stroke="#9A5A2A" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- small pastries -->
+  <circle cx="178" cy="176" r="9" fill="#D9924A"/>
+  <circle cx="222" cy="176" r="9" fill="#E7A85B"/>
+  <text x="200" y="316" font-size="20" fill="#8A4F27" text-anchor="middle" font-weight="800">1. Choose</text>
+  <text x="200" y="338" font-size="13" fill="#A9793F" text-anchor="middle">Pick your breads</text>
+
+  <!-- arrow -->
+  <path d="M300 200 h60" stroke="#C6803B" stroke-width="5" stroke-linecap="round"/>
+  <path d="M354 190 l14 10 l-14 10" fill="none" stroke="#C6803B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Step 2: Add to basket -->
+  <g filter="url(#soft)"><circle cx="500" cy="200" r="72" fill="#FFFFFF"/></g>
+  <!-- basket -->
+  <g transform="translate(500,205)">
+    <path d="M-38 -6 h76 l-9 44 a6 6 0 0 1 -6 5 h-40 a6 6 0 0 1 -6 -5 Z" fill="#E07856"/>
+    <path d="M-44 -6 h88" stroke="#c85f3f" stroke-width="7" stroke-linecap="round"/>
+    <path d="M-22 -8 l10 -22 M22 -8 l-10 -22" stroke="#8A4F27" stroke-width="4" stroke-linecap="round"/>
+    <line x1="-16" y1="4" x2="-13" y2="34" stroke="#FDF6EC" stroke-width="3"/>
+    <line x1="0" y1="4" x2="0" y2="36" stroke="#FDF6EC" stroke-width="3"/>
+    <line x1="16" y1="4" x2="13" y2="34" stroke="#FDF6EC" stroke-width="3"/>
+  </g>
+  <!-- + badge -->
+  <g transform="translate(548,152)">
+    <circle cx="0" cy="0" r="18" fill="#8FB98C"/>
+    <path d="M0 -8 v16 M-8 0 h16" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/>
+  </g>
+  <text x="500" y="316" font-size="20" fill="#8A4F27" text-anchor="middle" font-weight="800">2. Add to basket</text>
+  <text x="500" y="338" font-size="13" fill="#A9793F" text-anchor="middle">Set the quantity</text>
+
+  <!-- arrow -->
+  <path d="M600 200 h60" stroke="#C6803B" stroke-width="5" stroke-linecap="round"/>
+  <path d="M654 190 l14 10 l-14 10" fill="none" stroke="#C6803B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Step 3: Confirm -->
+  <g filter="url(#soft)"><circle cx="800" cy="200" r="72" fill="#FFFFFF"/></g>
+  <!-- check circle -->
+  <circle cx="800" cy="195" r="40" fill="#8FB98C"/>
+  <path d="M782 196 l12 13 l24 -28" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="800" y="316" font-size="20" fill="#8A4F27" text-anchor="middle" font-weight="800">3. Confirm</text>
+  <text x="800" y="338" font-size="13" fill="#A9793F" text-anchor="middle">Order placed!</text>
+</svg>

@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "linear": {
+      "url": "https://mcp.linear.app/mcp",
+      "disabled": false,
+      "autoApprove": [
+        "list_issues",
+        "get_issue",
+        "list_comments",
+        "list_cycles",
+        "list_documents",
+        "get_document"
+      ]
+    }
+  }
+}

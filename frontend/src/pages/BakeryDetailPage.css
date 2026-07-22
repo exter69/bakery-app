@@ -1,13 +1,16 @@
-/* BakeryDetailPage styles - modern rounded aesthetic */
+/* =========================================================
+   BakeryDetailPage — Wireframe 1d (desktop) + 1e (mobile)
+   ========================================================= */
 
-.bakery-detail {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
+/* Page wrapper */
+.bakery-page {
+  display: flex;
+  min-height: calc(100vh - 80px);
+  position: relative;
 }
 
-/* Loading state */
-.bakery-detail__loading {
+.bakery-page--loading,
+.bakery-page--error {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -17,304 +20,889 @@
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #6366f1;
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(58, 46, 34, 0.15);
+  border-top-color: var(--accent);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 0.7s linear infinite;
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
-/* Error state */
-.bakery-detail__error {
+/* ---- Main content (left) ---- */
+.bakery-page__content {
+  flex: 1;
+  min-width: 0;
+  padding: 2rem 2.5rem;
+}
+
+/* Desktop header */
+.bakery-page__header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: 40vh;
-  font-size: 1.125rem;
-  color: #64748b;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
-/* Header */
-.bakery-detail__header {
-  display: flex;
-  gap: 2rem;
-  align-items: flex-start;
-  margin-bottom: 2rem;
-}
-
-.bakery-detail__photo {
-  width: 200px;
-  height: 200px;
-  border-radius: 24px;
-  object-fit: cover;
+.bakery-page__photo-wrap {
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.bakery-detail__info {
+.bakery-page__photo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: var(--border);
+}
+
+.bakery-page__photo-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--ink);
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    rgba(58, 46, 34, 0.04) 6px,
+    rgba(58, 46, 34, 0.04) 12px
+  );
+}
+
+.bakery-page__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.bakery-page__name {
+  font-family: var(--font-hand-heading);
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ink);
+}
+
+.bakery-page__address {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ink-muted);
+}
+
+.bakery-page__hours {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+}
+
+/* Mobile hero (hidden on desktop) */
+.bakery-page__mobile-hero {
+  display: none;
+}
+
+/* Selection mode banner */
+.bakery-page__selection-banner {
+  background: var(--accent);
+  color: var(--ink);
+  text-align: center;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 1.25rem;
+  border: var(--border);
+}
+
+/* Category chips (mobile only on desktop hidden) */
+.bakery-page__category-chips {
+  display: none;
+}
+
+/* Menu section */
+.bakery-page__menu {
+  margin-top: 0.5rem;
+}
+
+.bakery-page__menu-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  border: var(--border);
+}
+
+.bakery-page__menu-error p {
+  color: var(--alert);
+  margin: 0;
+}
+
+.bakery-page__retry-btn {
+  background: transparent;
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  font-family: var(--font-hand-body);
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.bakery-page__retry-btn:hover {
+  background: var(--bg-panel);
+}
+
+.bakery-page__menu-empty {
+  padding: 2.5rem;
+  text-align: center;
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  border: 1.5px dashed var(--ink-muted);
+}
+
+.bakery-page__menu-empty p {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+/* Categories */
+.bakery-page__categories {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.bakery-page__category-title {
+  font-family: var(--font-hand-heading);
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0 0 0.75rem;
+  font-style: italic;
+}
+
+/* Desktop product grid */
+.bakery-page__product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+/* Mobile product rows (hidden on desktop) */
+.bakery-page__product-rows {
+  display: none;
+}
+
+/* Product card */
+.product-card {
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  position: relative;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.product-card--selectable {
+  cursor: pointer;
+}
+
+.product-card--selectable:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-offset);
+}
+
+.product-card--selected {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+
+.product-card__photo {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+
+.product-card__photo-placeholder {
+  width: 100%;
+  height: 120px;
+  border-bottom: 1.5px dashed var(--ink-muted);
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    rgba(58, 46, 34, 0.04) 6px,
+    rgba(58, 46, 34, 0.04) 12px
+  );
+}
+
+.product-card__body {
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.product-card__name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.product-card__price {
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+}
+
+.product-card__qty-chip {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--accent);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--ink);
+}
+
+/* Sign in banner */
+.bakery-page__sign-in-banner {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--bg-panel);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.bakery-page__sign-in-link {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* Order button (desktop floating) */
+.bakery-page__order-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--accent);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font-hand-body);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-offset);
+  transition: transform 0.15s;
+  z-index: 10;
+}
+
+.bakery-page__order-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* ---- Side panel (right) ---- */
+.bakery-page__panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100vh;
+  background: var(--bg-panel);
+  border-left: var(--border);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.bakery-page__panel--open {
+  transform: translateX(0);
+}
+
+/* Panel header */
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: var(--border);
+}
+
+.panel__title {
+  font-family: var(--font-hand-heading);
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.panel__close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--ink);
+  line-height: 1;
+  padding: 0.25rem;
+}
+
+/* Panel body */
+.panel__body {
+  flex: 1;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow-y: auto;
+}
+
+.panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.panel__section-label {
+  font-family: var(--font-hand-heading);
+  font-size: 1.05rem;
+  font-weight: 500;
+  margin: 0;
+  color: var(--ink);
+}
+
+/* Day chips */
+.panel__day-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.panel__day-chip {
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 0.75rem;
+  font-family: var(--font-hand-body);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.panel__day-chip:hover {
+  background: var(--bg-panel);
+}
+
+.panel__day-chip--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* Time select */
+.panel__time-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+  font-family: var(--font-hand-body);
+  font-size: 0.9rem;
+  color: var(--ink);
+  margin-top: 0.4rem;
+}
+
+/* Selection button */
+.panel__select-btn {
+  background: var(--bg-card);
+  border: 1.5px dashed var(--ink);
+  border-radius: var(--radius-pill);
+  padding: 0.5rem 1rem;
+  font-family: var(--font-hand-body);
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s;
+}
+
+.panel__select-btn:hover {
+  background: var(--bg-panel);
+}
+
+.panel__select-btn--done {
+  background: var(--accent);
+  border-style: solid;
+  border-color: var(--ink);
+  font-weight: 600;
+}
+
+/* Summary box */
+.panel__summary {
+  background: var(--bg-card);
+  border: 1.5px dashed var(--ink-muted);
+  border-radius: var(--radius-card);
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.panel__summary-empty {
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+  margin: 0;
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.panel__summary-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.panel__summary-divider {
+  border-top: 1.5px dashed var(--ink-muted);
+  margin: 0.3rem 0;
+}
+
+.panel__summary-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Panel footer */
+.panel__footer {
+  padding: 1rem 1.25rem;
+  border-top: var(--border);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.bakery-detail__name {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0;
-}
-
-.bakery-detail__description {
-  font-size: 1rem;
-  color: #64748b;
-  line-height: 1.6;
-  margin: 0;
-}
-
-.bakery-detail__address {
-  font-size: 0.9rem;
-  color: #475569;
-  margin: 0.5rem 0 0;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.bakery-detail__address-icon {
-  font-size: 1rem;
-}
-
-/* Action Buttons */
-.bakery-detail__actions {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2.5rem;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-}
-
-.btn:active {
-  transform: translateY(0);
-}
-
-.btn--primary {
-  background: #6366f1;
-  color: white;
-}
-
-.btn--primary:hover {
-  background: #4f46e5;
-}
-
-.btn--secondary {
-  background: #f1f5f9;
-  color: #334155;
-  border: 2px solid #e2e8f0;
-}
-
-.btn--secondary:hover {
-  background: #e2e8f0;
-  border-color: #cbd5e1;
-}
-
-.btn--outline {
-  background: transparent;
-  color: #6366f1;
-  border: 2px solid #6366f1;
-  padding: 0.5rem 1.25rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btn--outline:hover {
-  background: #eef2ff;
-}
-
-/* Menu Section */
-.bakery-detail__menu {
-  margin-top: 1rem;
-}
-
-.bakery-detail__menu-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 1.5rem;
-}
-
-/* Menu error state */
-.bakery-detail__menu-error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding: 3rem 1rem;
-  background: #fef2f2;
-  border-radius: 16px;
-  border: 1px solid #fecaca;
-}
-
-.bakery-detail__menu-error p {
-  color: #dc2626;
-  font-size: 1rem;
-  margin: 0;
-}
-
-/* Empty menu state */
-.bakery-detail__menu-empty {
-  padding: 3rem 1rem;
-  text-align: center;
-  background: #f8fafc;
-  border-radius: 16px;
-  border: 1px dashed #cbd5e1;
-}
-
-.bakery-detail__menu-empty p {
-  color: #64748b;
-  font-size: 1rem;
-  margin: 0;
-}
-
-/* Category */
-.bakery-detail__categories {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.menu-category__title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #475569;
-  margin: 0 0 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-.menu-category__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
-}
-
-/* Product Card */
-.product-card {
-  display: flex;
-  flex-direction: column;
-  border-radius: 16px;
-  overflow: hidden;
-  background: white;
-  border: 1px solid #e2e8f0;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.product-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
-}
-
-.product-card__photo {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-  background: #f1f5f9;
-}
-
-.product-card__content {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  flex: 1;
-}
-
-.product-card__name {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0;
-}
-
-.product-card__description {
+.panel__error {
+  color: var(--alert);
   font-size: 0.85rem;
-  color: #64748b;
-  line-height: 1.4;
   margin: 0;
-}
-
-.product-card__price {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #6366f1;
-  margin: 0.5rem 0 0;
-}
-
-/* Responsive */
-@media (max-width: 640px) {
-  .bakery-detail__header {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .bakery-detail__photo {
-    width: 160px;
-    height: 160px;
-  }
-
-  .bakery-detail__address {
-    justify-content: center;
-  }
-
-  .bakery-detail__actions {
-    flex-direction: column;
-  }
-
-  .menu-category__grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Guest banner */
-.bakery-detail__guest-banner {
-  padding: 1rem 1.5rem;
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
-  border-radius: 12px;
   text-align: center;
-  color: #475569;
-  font-size: 0.9rem;
 }
 
-.bakery-detail__sign-in-link {
+.panel__submit-btn {
+  display: block;
+  width: 100%;
+  background: var(--accent);
+  color: var(--ink);
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  padding: 0.7rem 1rem;
+  font-family: var(--font-hand-body);
+  font-size: 1rem;
   font-weight: 600;
-  color: #6366f1;
+  cursor: pointer;
+  text-align: center;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.panel__submit-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-offset);
+}
+
+.panel__submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.panel__submit-btn--signin {
+  background: var(--bg-card);
   text-decoration: none;
 }
 
-.bakery-detail__sign-in-link:hover {
-  color: #4f46e5;
-  text-decoration: underline;
+/* ---- Mobile bottom tray ---- */
+.bakery-page__mobile-tray {
+  display: none;
+}
+
+/* ---- Product row (mobile) ---- */
+.product-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(58, 46, 34, 0.08);
+  position: relative;
+}
+
+.product-row__photo {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px dashed var(--ink-muted);
+  flex-shrink: 0;
+}
+
+.product-row__photo-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  border: 1px dashed var(--ink-muted);
+  flex-shrink: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 4px,
+    rgba(58, 46, 34, 0.04) 4px,
+    rgba(58, 46, 34, 0.04) 8px
+  );
+}
+
+.product-row__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.product-row__name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.product-row__price {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.product-row__stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.product-row__stepper-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: var(--border);
+  background: var(--bg-card);
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--ink);
+  transition: background 0.15s;
+}
+
+.product-row__stepper-btn:hover:not(:disabled) {
+  background: var(--accent);
+}
+
+.product-row__stepper-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.product-row__stepper-count {
+  width: 1.5rem;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* =========================================================
+   Responsive — Mobile < 720px
+   ========================================================= */
+@media (max-width: 720px) {
+  .bakery-page {
+    flex-direction: column;
+    padding-bottom: 140px; /* space for fixed bottom tray */
+  }
+
+  .bakery-page--panel-open .bakery-page__content {
+    margin-right: 0;
+  }
+
+  .bakery-page__content {
+    padding: 0;
+  }
+
+  /* Hide desktop header, show mobile hero */
+  .bakery-page__header {
+    display: none;
+  }
+
+  .bakery-page__mobile-hero {
+    display: block;
+  }
+
+  .bakery-page__mobile-hero-img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+  }
+
+  .bakery-page__mobile-hero-placeholder {
+    width: 100%;
+    height: 200px;
+    border-bottom: 1.5px dashed var(--ink-muted);
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 6px,
+      rgba(58, 46, 34, 0.04) 6px,
+      rgba(58, 46, 34, 0.04) 12px
+    );
+  }
+
+  .bakery-page__mobile-info {
+    padding: 0.75rem 1rem;
+  }
+
+  .bakery-page__mobile-info .bakery-page__name {
+    font-size: 1.4rem;
+  }
+
+  /* Category chips visible on mobile */
+  .bakery-page__category-chips {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bakery-page__category-chip {
+    background: var(--bg-card);
+    border: var(--border);
+    border-radius: var(--radius-pill);
+    padding: 0.35rem 0.9rem;
+    font-family: var(--font-hand-body);
+    font-size: 0.85rem;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+
+  .bakery-page__category-chip--active {
+    background: var(--accent);
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* Hide desktop grid, show mobile rows */
+  .bakery-page__product-grid {
+    display: none;
+  }
+
+  .bakery-page__product-rows {
+    display: flex;
+    flex-direction: column;
+    padding: 0 1rem;
+  }
+
+  /* Hide non-active categories on mobile */
+  .bakery-page__category--hidden-mobile {
+    display: none;
+  }
+
+  .bakery-page__category-title {
+    padding: 0 1rem;
+  }
+
+  .bakery-page__selection-banner {
+    margin: 0.75rem 1rem;
+  }
+
+  /* Hide desktop panel and order button on mobile */
+  .bakery-page__panel {
+    display: none;
+  }
+
+  .bakery-page__order-btn {
+    display: none;
+  }
+
+  .bakery-page__sign-in-banner {
+    margin: 1rem;
+  }
+
+  /* Show mobile bottom tray */
+  .bakery-page__mobile-tray {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--ink);
+    color: var(--bg-card);
+    padding: 0.6rem 1rem;
+    z-index: 200;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .mobile-tray__steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .mobile-tray__step {
+    background: transparent;
+    border: none;
+    color: rgba(255, 253, 248, 0.6);
+    font-family: var(--font-hand-body);
+    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
+    cursor: pointer;
+  }
+
+  .mobile-tray__step--active {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .mobile-tray__dot {
+    color: rgba(255, 253, 248, 0.4);
+    font-size: 0.8rem;
+  }
+
+  .mobile-tray__summary {
+    font-size: 0.85rem;
+    text-align: center;
+    color: rgba(255, 253, 248, 0.85);
+  }
+
+  .mobile-tray__content {
+    padding: 0.75rem 0 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+
+  .mobile-tray__content .panel__day-chips {
+    justify-content: center;
+  }
+
+  .mobile-tray__content .panel__day-chip {
+    color: var(--ink);
+  }
+
+  .mobile-tray__content .panel__time-select {
+    color: var(--ink);
+  }
+
+  .mobile-tray__content .panel__summary-line {
+    color: var(--bg-card);
+  }
+
+  .mobile-tray__content .panel__summary-total {
+    color: var(--bg-card);
+  }
+
+  .mobile-tray__content .panel__summary-divider {
+    border-color: rgba(255, 253, 248, 0.3);
+  }
+
+  .mobile-tray__content .panel__submit-btn {
+    margin-top: 0.5rem;
+  }
+
+  .mobile-tray__empty {
+    text-align: center;
+    color: rgba(255, 253, 248, 0.6);
+    font-size: 0.9rem;
+    margin: 0;
+    padding: 0.5rem 0;
+  }
+
+  /* Menu section padding on mobile */
+  .bakery-page__menu {
+    padding: 0;
+  }
+
+  .bakery-page__menu-error,
+  .bakery-page__menu-empty {
+    margin: 0 1rem;
+  }
+}
+
+/* Panel mode toggle */
+.panel__mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.panel__mode-btn {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  font-family: var(--font-hand-body);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.panel__mode-btn:hover {
+  background: var(--bg-panel);
+}
+
+.panel__mode-btn--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* Minimum delivery warning */
+.panel__min-warning {
+  background: #fef3c7;
+  border: 1.5px solid #f59e0b;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  color: #92400e;
+  text-align: center;
+}
+
+/* Travel info */
+.bakery-page__travel {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
 }

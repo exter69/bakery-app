@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchMyBakery, fetchProducts, createProduct, updateProduct, deleteProduct } from '../../api/seller';
 import type { Product } from '../../types/bakery';
+import AllergenMultiSelect from '../../components/dashboard/AllergenMultiSelect';
+import HealthScoreInput from '../../components/dashboard/HealthScoreInput';
 import './Dashboard.css';
 
 interface ProductForm {
@@ -9,9 +11,11 @@ interface ProductForm {
   price: string;
   category: string;
   photoUrl: string;
+  allergens: string[];
+  healthScore: number | null;
 }
 
-const emptyForm: ProductForm = { name: '', description: '', price: '', category: '', photoUrl: '' };
+const emptyForm: ProductForm = { name: '', description: '', price: '', category: '', photoUrl: '', allergens: [], healthScore: null };
 
 export default function DashboardProducts() {
   const [bakeryId, setBakeryId] = useState<string | null>(null);
@@ -60,6 +64,8 @@ export default function DashboardProducts() {
       price: (p.price / 100).toFixed(2),
       category: p.category,
       photoUrl: p.photoUrl,
+      allergens: p.allergens ?? [],
+      healthScore: p.healthScore ?? null,
     });
     setShowModal(true);
   };
@@ -78,6 +84,8 @@ export default function DashboardProducts() {
           price: priceInCents,
           category: form.category,
           photoUrl: form.photoUrl,
+          allergens: form.allergens,
+          healthScore: form.healthScore,
         });
         setMsg({ type: 'success', text: 'Product updated.' });
       } else {
@@ -87,6 +95,8 @@ export default function DashboardProducts() {
           price: priceInCents,
           category: form.category,
           photoUrl: form.photoUrl,
+          allergens: form.allergens,
+          healthScore: form.healthScore,
         });
         setMsg({ type: 'success', text: 'Product created.' });
       }
@@ -215,6 +225,14 @@ export default function DashboardProducts() {
                 <label className="dash-form__label" htmlFor="prod-photo">Photo URL</label>
                 <input id="prod-photo" className="dash-form__input" value={form.photoUrl} onChange={(e) => setForm({ ...form, photoUrl: e.target.value })} placeholder="https://..." />
               </div>
+              <AllergenMultiSelect
+                selected={form.allergens}
+                onChange={(allergens) => setForm({ ...form, allergens })}
+              />
+              <HealthScoreInput
+                value={form.healthScore}
+                onChange={(healthScore) => setForm({ ...form, healthScore })}
+              />
               <div className="dash-modal__actions">
                 <button type="button" className="dash-btn dash-btn--secondary" onClick={() => setShowModal(false)}>Cancel</button>
                 <button type="submit" className="dash-btn dash-btn--primary" disabled={submitting}>

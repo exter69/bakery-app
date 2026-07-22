@@ -1,0 +1,192 @@
+.guide-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.guide-page__title {
+  font-family: var(--font-hand-heading);
+  font-size: 2.8rem;
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+.guide-page__subtitle {
+  font-family: var(--font-hand-body);
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 1.15rem;
+  margin-bottom: 2.5rem;
+}
+
+/* Tab switcher */
+.guide-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.guide-tabs__btn {
+  font-family: var(--font-hand-body);
+  font-size: 1.1rem;
+  padding: 0.6rem 1.6rem;
+  border: var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.guide-tabs__btn:hover {
+  background: var(--bg-panel);
+}
+
+.guide-tabs__btn--active {
+  background: var(--accent);
+  box-shadow: var(--shadow-offset);
+  font-weight: 600;
+}
+
+/* Section cards */
+.guide-section {
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-offset);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.guide-section__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.guide-section__header:hover {
+  background: var(--bg-panel);
+}
+
+.guide-section__icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.guide-section__title {
+  font-family: var(--font-hand-heading);
+  font-size: 1.5rem;
+  margin: 0;
+  flex: 1;
+}
+
+.guide-section__chevron {
+  font-size: 1.2rem;
+  transition: transform 0.25s;
+}
+
+.guide-section__chevron--open {
+  transform: rotate(90deg);
+}
+
+.guide-section__body {
+  padding: 0 1.25rem 1.25rem;
+  font-family: var(--font-hand-body);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+.guide-section__body p {
+  margin: 0 0 0.75rem;
+}
+
+/* Flow diagram */
+.guide-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 1.25rem 0;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.guide-flow__step {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.guide-flow__circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-hand-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.guide-flow__label {
+  margin-left: 0.4rem;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.guide-flow__connector {
+  width: 32px;
+  height: 2px;
+  border-top: 2px dashed var(--ink-muted);
+  margin: 0 0.35rem;
+  flex-shrink: 0;
+}
+
+/* Responsive: stack flow on mobile */
+@media (max-width: 600px) {
+  .guide-page {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .guide-page__title {
+    font-size: 2.2rem;
+  }
+
+  .guide-flow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .guide-flow__step {
+    flex-direction: row;
+  }
+
+  .guide-flow__connector {
+    display: none;
+  }
+
+  .guide-flow__connector--vertical {
+    display: block;
+    width: 2px;
+    height: 18px;
+    border-top: none;
+    border-left: 2px dashed var(--ink-muted);
+    margin: 0 0 0 16px;
+  }
+
+  .guide-tabs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

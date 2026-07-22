@@ -13,6 +13,8 @@ export interface CreateOrderRequest {
   items: CreateOrderItem[];
   scheduledDay: string;
   scheduledTime: { startTime: string; endTime: string };
+  recurring?: boolean;
+  recurringDays?: string[];
 }
 
 /** Response from creating an order (includes payment link) */

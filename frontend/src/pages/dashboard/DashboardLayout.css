@@ -1,8 +1,17 @@
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+.dashboard-layout h1,
+.dashboard-layout h2,
+.dashboard-layout h3,
+.dashboard-layout h4 {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Sidebar */
 .dashboard-sidebar {
   width: 260px;
   background: #1e293b;
@@ -10,11 +19,34 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  transition: width 200ms ease;
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 
+.dashboard-sidebar--collapsed {
+  width: 64px;
+}
+
+/* Header */
 .dashboard-sidebar__header {
   padding: 1.5rem;
   border-bottom: 1px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 64px;
+}
+
+.dashboard-sidebar--collapsed .dashboard-sidebar__header {
+  padding: 1rem 0.75rem;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .dashboard-sidebar__brand {
@@ -22,8 +54,40 @@
   font-weight: 700;
   margin: 0;
   color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 200ms ease;
 }
 
+.dashboard-sidebar--collapsed .dashboard-sidebar__brand {
+  font-size: 1.4rem;
+  text-align: center;
+}
+
+/* Toggle button */
+.dashboard-sidebar__toggle {
+  background: transparent;
+  border: 1px solid #475569;
+  color: #94a3b8;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.dashboard-sidebar__toggle:hover {
+  color: white;
+  border-color: #6366f1;
+}
+
+/* Nav */
 .dashboard-sidebar__nav {
   flex: 1;
   padding: 1rem 0;
@@ -33,7 +97,9 @@
 }
 
 .dashboard-sidebar__link {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   padding: 0.75rem 1.5rem;
   color: #94a3b8;
   text-decoration: none;
@@ -41,6 +107,14 @@
   font-weight: 500;
   border-left: 3px solid transparent;
   transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.dashboard-sidebar--collapsed .dashboard-sidebar__link {
+  padding: 0.75rem 0;
+  justify-content: center;
+  border-left: none;
 }
 
 .dashboard-sidebar__link:hover {
@@ -55,9 +129,37 @@
   font-weight: 600;
 }
 
+.dashboard-sidebar--collapsed .dashboard-sidebar__link--active {
+  border-left-color: transparent;
+}
+
+/* Icon & label */
+.dashboard-sidebar__icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  width: 1.5rem;
+  text-align: center;
+}
+
+.dashboard-sidebar__label {
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+.dashboard-sidebar--collapsed .dashboard-sidebar__label {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+/* Footer */
 .dashboard-sidebar__footer {
   padding: 1.5rem;
   border-top: 1px solid #334155;
+}
+
+.dashboard-sidebar--collapsed .dashboard-sidebar__footer {
+  padding: 1rem 0.5rem;
 }
 
 .dashboard-sidebar__logout {
@@ -71,6 +173,8 @@
   font-weight: 500;
   cursor: pointer;
   transition: color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .dashboard-sidebar__logout:hover {
@@ -78,6 +182,7 @@
   border-color: #6366f1;
 }
 
+/* Main content */
 .dashboard-main {
   flex: 1;
   padding: 2rem;
@@ -91,5 +196,12 @@
   }
   .dashboard-sidebar {
     width: 100%;
+  }
+  .dashboard-sidebar--collapsed {
+    width: 100%;
+  }
+  .dashboard-sidebar--collapsed .dashboard-sidebar__label {
+    opacity: 1;
+    width: auto;
   }
 }

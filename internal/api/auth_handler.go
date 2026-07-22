@@ -7,6 +7,7 @@ import (
 
 	"github.com/lucatorrekens/bakery-app/internal/api/dto"
 	"github.com/lucatorrekens/bakery-app/internal/domain"
+	"github.com/lucatorrekens/bakery-app/internal/middleware"
 	"github.com/lucatorrekens/bakery-app/internal/service"
 )
 
@@ -22,15 +23,30 @@ func NewAuthHandler(authSvc *service.AuthService) *AuthHandler {
 
 // registerRequest is the JSON body for POST /api/auth/register.
 type registerRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Role     *int   `json:"role,omitempty"`
+	Username string  `json:"username"`
+	Password string  `json:"password"`
+	Role     *int    `json:"role,omitempty"`
+	Code     *string `json:"code,omitempty"`
 }
 
 // loginRequest is the JSON body for POST /api/auth/login.
 type loginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+// requestAccessRequest is the JSON body for POST /api/auth/request-access.
+type requestAccessRequest struct {
+	Name          string `json:"name"`
+	Email         string `json:"email"`
+	BakeryName    string `json:"bakeryName"`
+	BakeryAddress string `json:"bakeryAddress"`
+}
+
+// createTokenRequest is the JSON body for POST /api/admin/tokens.
+type createTokenRequest struct {
+	Email      string `json:"email"`
+	BakeryName string `json:"bakeryName"`
 }
 
 // registerResponse is the JSON response for a successful registration.
@@ -77,7 +93,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		// Any other value defaults to customer
 	}
 
-	user, err := h.authSvc.Register(r.Context(), req.Username, req.Password, role)
+	user, err := h.authSvc.Register(r.Context(), req.Username, req.Password, role, req.Code)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrUsernameRequired), errors.Is(err, service.ErrPasswordTooShort):
@@ -89,6 +105,26 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusConflict, dto.ErrorResponse{
 				Code:    "USERNAME_EXISTS",
 				Message: "username already exists",
+			})
+		case errors.Is(err, service.ErrTokenRequired):
+			writeJSON(w, http.StatusUnprocessableEntity, dto.ErrorResponse{
+				Code:    "TOKEN_REQUIRED",
+				Message: err.Error(),
+			})
+		case errors.Is(err, service.ErrInvalidToken):
+			writeJSON(w, http.StatusUnprocessableEntity, dto.ErrorResponse{
+				Code:    "INVALID_TOKEN",
+				Message: err.Error(),
+			})
+		case errors.Is(err, service.ErrTokenExpired):
+			writeJSON(w, http.StatusUnprocessableEntity, dto.ErrorResponse{
+				Code:    "TOKEN_EXPIRED",
+				Message: err.Error(),
+			})
+		case errors.Is(err, service.ErrTokenAlreadyUsed):
+			writeJSON(w, http.StatusUnprocessableEntity, dto.ErrorResponse{
+				Code:    "TOKEN_ALREADY_USED",
+				Message: err.Error(),
 			})
 		default:
 			writeJSON(w, http.StatusInternalServerError, dto.ErrorResponse{
@@ -140,5 +176,82 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			Username: user.Username,
 			Role:     int(user.Role),
 		},
+	})
+}
+
+// RequestAccess handles POST /api/auth/request-access (public).
+func (h *AuthHandler) RequestAccess(w http.ResponseWriter, r *http.Request) {
+	var req requestAccessRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
+			Code:    "INVALID_BODY",
+			Message: "invalid request body",
+		})
+		return
+	}
+
+	if req.Email == "" {
+		writeJSON(w, http.StatusUnprocessableEntity, dto.ErrorResponse{
+			Code:    "VALIDATION_ERROR",
+			Message: "email is required",
+		})
+		return
+	}
+
+	_, err := h.authSvc.CreateRegistrationToken(r.Context(), req.Email, req.BakeryName)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, dto.ErrorResponse{
+			Code:    "INTERNAL_ERROR",
+			Message: "an unexpected error occurred",
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"message": "Access request received. Check your email.",
+	})
+}
+
+// CreateToken handles POST /api/admin/tokens (requires auth + role=0).
+func (h *AuthHandler) CreateToken(w http.ResponseWriter, r *http.Request) {
+	// Check admin role
+	userRole := middleware.GetUserRoleFromContext(r.Context())
+	if userRole != int(domain.RoleAdmin) {
+		writeJSON(w, http.StatusForbidden, dto.ErrorResponse{
+			Code:    "FORBIDDEN",
+			Message: "admin access required",
+		})
+		return
+	}
+
+	var req createTokenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
+			Code:    "INVALID_BODY",
+			Message: "invalid request body",
+		})
+		return
+	}
+
+	if req.Email == "" {
+		writeJSON(w, http.StatusUnprocessableEntity, dto.ErrorResponse{
+			Code:    "VALIDATION_ERROR",
+			Message: "email is required",
+		})
+		return
+	}
+
+	token, err := h.authSvc.CreateRegistrationToken(r.Context(), req.Email, req.BakeryName)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, dto.ErrorResponse{
+			Code:    "INTERNAL_ERROR",
+			Message: "an unexpected error occurred",
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]string{
+		"token":     token.Token,
+		"expiresAt": token.ExpiresAt.Format("2006-01-02T15:04:05Z07:00"),
 	})
 }
