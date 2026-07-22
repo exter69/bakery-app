@@ -14,6 +14,34 @@
   --font-hand-body: 'Patrick Hand', cursive;
 }
 
+/* Dark mode — warm artisan palette */
+[data-theme="dark"] {
+  --bg-page: #1a1714;
+  --bg-card: #2a2520;
+  --bg-panel: #332e28;
+  --ink: #e8e0d6;
+  --ink-muted: #a89882;
+  --accent: #e8b04b;
+  --alert: #e06b52;
+  --border: 1.5px solid #5a4d3f;
+  --shadow-offset: 3px 3px 0 rgba(0, 0, 0, .3);
+}
+
+/* System preference auto-detection (before JS loads) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-page: #1a1714;
+    --bg-card: #2a2520;
+    --bg-panel: #332e28;
+    --ink: #e8e0d6;
+    --ink-muted: #a89882;
+    --accent: #e8b04b;
+    --alert: #e06b52;
+    --border: 1.5px solid #5a4d3f;
+    --shadow-offset: 3px 3px 0 rgba(0, 0, 0, .3);
+  }
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }

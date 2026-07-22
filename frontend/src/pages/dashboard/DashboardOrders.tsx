@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchMyBakery, fetchBakeryOrders, updateOrderStatus } from '../../api/seller';
+import { useWebSocket } from '../../hooks/useWebSocket';
 import type { Order } from '../../api/seller';
 import './Dashboard.css';
 
@@ -22,6 +23,9 @@ export default function DashboardOrders() {
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Real-time updates via WebSocket
+  const { lastEvent } = useWebSocket();
 
   const loadOrders = useCallback(async (bId: string, p: number, status: string) => {
     try {
@@ -50,6 +54,13 @@ export default function DashboardOrders() {
       loadOrders(bakeryId, page, statusFilter);
     }
   }, [bakeryId, page, statusFilter, loadOrders]);
+
+  // Refresh when a new order arrives via WebSocket
+  useEffect(() => {
+    if (lastEvent?.type === 'new_order' && bakeryId) {
+      loadOrders(bakeryId, page, statusFilter);
+    }
+  }, [lastEvent, bakeryId, page, statusFilter, loadOrders]);
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     if (!bakeryId) return;

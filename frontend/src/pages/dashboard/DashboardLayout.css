@@ -205,3 +205,20 @@
     width: auto;
   }
 }
+
+/* Dark mode for dashboard layout */
+[data-theme="dark"] .dashboard-sidebar { background: #0f172a; }
+[data-theme="dark"] .dashboard-sidebar__header { border-color: #1e293b; }
+[data-theme="dark"] .dashboard-sidebar__link:hover { background: #1e293b; }
+[data-theme="dark"] .dashboard-sidebar__link--active { background: #1e293b; }
+[data-theme="dark"] .dashboard-sidebar__footer { border-color: #1e293b; }
+[data-theme="dark"] .dashboard-main { background: #111827; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .dashboard-sidebar { background: #0f172a; }
+  :root:not([data-theme="light"]) .dashboard-sidebar__header { border-color: #1e293b; }
+  :root:not([data-theme="light"]) .dashboard-sidebar__link:hover { background: #1e293b; }
+  :root:not([data-theme="light"]) .dashboard-sidebar__link--active { background: #1e293b; }
+  :root:not([data-theme="light"]) .dashboard-sidebar__footer { border-color: #1e293b; }
+  :root:not([data-theme="light"]) .dashboard-main { background: #111827; }
+}

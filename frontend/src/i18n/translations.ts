@@ -114,6 +114,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     'allergenInfo.intro': 'Food allergens are substances that can cause allergic reactions in sensitive individuals. The EU requires labelling of 14 major allergens to help consumers make safe food choices.',
     'allergenInfo.containsAllergens': 'Contains allergens',
     'allergenInfo.label': 'Allergen information',
+    // Theme
+    'theme.light': 'Light',
+    'theme.dark': 'Dark',
+    'theme.system': 'System',
     // Guide page
     'nav.guide': 'Guide',
     'guide.title': 'How it works',
@@ -301,6 +305,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     'allergenInfo.intro': "Les allergènes alimentaires sont des substances pouvant provoquer des réactions allergiques. L'UE impose l'étiquetage de 14 allergènes majeurs pour aider les consommateurs.",
     'allergenInfo.containsAllergens': 'Contient des allergènes',
     'allergenInfo.label': 'Informations sur les allergènes',
+    // Theme
+    'theme.light': 'Clair',
+    'theme.dark': 'Sombre',
+    'theme.system': 'Système',
     // Guide page
     'nav.guide': 'Guide',
     'guide.title': 'Comment ça marche',
@@ -488,6 +496,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     'allergenInfo.intro': 'Voedselallergenen zijn stoffen die allergische reacties kunnen veroorzaken bij gevoelige personen. De EU vereist etikettering van 14 belangrijke allergenen om consumenten te helpen.',
     'allergenInfo.containsAllergens': 'Bevat allergenen',
     'allergenInfo.label': 'Allergeninformatie',
+    // Theme
+    'theme.light': 'Licht',
+    'theme.dark': 'Donker',
+    'theme.system': 'Systeem',
     // Guide page
     'nav.guide': 'Gids',
     'guide.title': 'Hoe het werkt',

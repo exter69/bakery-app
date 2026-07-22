@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchScheduleEntries, deleteOrder, deleteReservation } from '../api/orders';
 import { ApiError } from '../api/client';
+import { useWebSocket } from '../hooks/useWebSocket';
+import { PushNotificationToggle } from '../components/PushNotificationToggle';
 import type { ScheduleEntry, ScheduleQueryParams } from '../types/order';
 import './ScheduleOrdersPage.css';
 
@@ -58,6 +60,9 @@ export default function ScheduleOrdersPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  // Real-time updates via WebSocket
+  const { lastEvent } = useWebSocket();
+
   const loadEntries = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -91,6 +96,13 @@ export default function ScheduleOrdersPage() {
   useEffect(() => {
     setPage(1);
   }, [statusFilter, sortBy, sortDirection]);
+
+  // Refresh list when a real-time order/reservation event arrives
+  useEffect(() => {
+    if (lastEvent?.type === 'order_status' || lastEvent?.type === 'reservation_status') {
+      loadEntries();
+    }
+  }, [lastEvent, loadEntries]);
 
   function showToast(message: string, isError = false) {
     setToast({ message, isError });
@@ -139,6 +151,9 @@ export default function ScheduleOrdersPage() {
   return (
     <div className="schedule-orders">
       <h1 className="schedule-orders__title">My Orders &amp; Reservations</h1>
+
+      {/* Push notification opt-in */}
+      <PushNotificationToggle />
 
       {/* Filter & Sort Controls */}
       <div className="schedule-orders__controls">

@@ -1,0 +1,54 @@
+.theme-switcher {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.theme-switcher__btn {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--ink, #3a2e22);
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  line-height: 1;
+}
+
+.theme-switcher__btn:hover {
+  background: var(--bg-panel, #f7f1e5);
+}
+
+.theme-switcher__btn--active {
+  background: var(--accent, #e8b04b);
+  border-color: var(--accent, #e8b04b);
+}
+
+.theme-switcher__btn--active:hover {
+  background: var(--accent, #e8b04b);
+  border-color: var(--accent, #e8b04b);
+}
+
+/* Dashboard context — different styling inside the baker portal sidebar */
+.dashboard-sidebar .theme-switcher {
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+
+.dashboard-sidebar .theme-switcher__btn {
+  border-color: #475569;
+}
+
+.dashboard-sidebar .theme-switcher__btn:hover {
+  background: #334155;
+}
+
+.dashboard-sidebar .theme-switcher__btn--active {
+  background: #6366f1;
+  border-color: #6366f1;
+}
+
+.dashboard-sidebar .theme-switcher__btn--active:hover {
+  background: #6366f1;
+  border-color: #6366f1;
+}

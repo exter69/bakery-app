@@ -1,0 +1,17 @@
+/* Mie & Beurre Pro design system tokens */
+.pro-portal {
+  --pro-sidebar-bg: #1e293b;
+  --pro-sidebar-text: #e2e8f0;
+  --pro-sidebar-muted: #94a3b8;
+  --pro-accent: #4b8fe8;
+  --pro-accent-hover: #3b7dd8;
+  --pro-attention: #e8b04b;
+  --pro-attention-bg: #2a2520;
+  --pro-content-bg: #f8fafc;
+  --pro-card-bg: #ffffff;
+  --pro-border: #e2e8f0;
+  --pro-text: #1e293b;
+  --pro-text-muted: #64748b;
+  --pro-danger: #ef4444;
+  --pro-success: #10b981;
+}

@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#e8b04b" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,6 +12,14 @@
     <title>Mie & Beurre</title>
   </head>
   <body>
+    <script>
+      // Prevent flash of wrong theme before React hydrates
+      (function() {
+        var t = localStorage.getItem('theme');
+        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        else if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

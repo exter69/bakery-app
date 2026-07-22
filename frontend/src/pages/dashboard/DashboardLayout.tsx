@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { clearToken } from '../../api/client';
+import { ThemeSwitcher } from '../../components/ThemeSwitcher';
 import './DashboardLayout.css';
 
 const STORAGE_KEY = 'dashboard_sidebar_collapsed';
@@ -61,6 +62,7 @@ export default function DashboardLayout() {
           ))}
         </nav>
         <div className="dashboard-sidebar__footer">
+          <ThemeSwitcher />
           <button
             type="button"
             className="dashboard-sidebar__logout"
