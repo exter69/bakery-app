@@ -63,7 +63,7 @@
 .dash-form__textarea:focus,
 .dash-form__select:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--pro-accent, #4b8fe8);
 }
 
 .dash-form__textarea {
@@ -96,12 +96,12 @@
 }
 
 .dash-btn--primary {
-  background: #6366f1;
+  background: var(--pro-accent, #4b8fe8);
   color: white;
 }
 
 .dash-btn--primary:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--pro-accent-hover, #3b7dd8);
 }
 
 .dash-btn--secondary {
@@ -308,7 +308,7 @@
 }
 
 .dash-toggle input:checked + .dash-toggle__slider {
-  background: #6366f1;
+  background: var(--pro-accent, #4b8fe8);
 }
 
 .dash-toggle input:checked + .dash-toggle__slider::before {

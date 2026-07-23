@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lucatorrekens/bakery-app/internal/domain"
+	"github.com/lucatorrekens/bakery-app/internal/notification"
 	"github.com/lucatorrekens/bakery-app/internal/validation"
 )
 
@@ -13,6 +14,7 @@ import (
 type reservationService struct {
 	bakeryRepo      domain.BakeryRepository
 	reservationRepo domain.ReservationRepository
+	notifications   notification.Dispatcher
 	idGen           func() string
 	now             func() time.Time
 }
@@ -21,6 +23,7 @@ type reservationService struct {
 type ReservationServiceConfig struct {
 	BakeryRepo      domain.BakeryRepository
 	ReservationRepo domain.ReservationRepository
+	Notifications   notification.Dispatcher
 	IDGen           func() string
 	Now             func() time.Time
 }
@@ -38,6 +41,7 @@ func NewReservationService(cfg ReservationServiceConfig) domain.ReservationServi
 	return &reservationService{
 		bakeryRepo:      cfg.BakeryRepo,
 		reservationRepo: cfg.ReservationRepo,
+		notifications:   cfg.Notifications,
 		idGen:           idGen,
 		now:             now,
 	}
@@ -114,6 +118,11 @@ func (s *reservationService) CreateReservation(ctx context.Context, userID strin
 	// Step 7: Persist
 	if err := s.reservationRepo.Save(ctx, reservation); err != nil {
 		return nil, fmt.Errorf("saving reservation: %w", err)
+	}
+
+	// Fire-and-forget: send confirmation email to the customer
+	if s.notifications != nil {
+		go s.notifications.OnReservationConfirmed(context.Background(), reservation.ID)
 	}
 
 	return &reservation, nil

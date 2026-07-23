@@ -93,6 +93,10 @@ func (m *mockBakeryRepo) DeleteProduct(_ context.Context, _ string) error {
 	return nil
 }
 
+func (m *mockBakeryRepo) SearchProducts(_ context.Context, _ domain.ProductSearchParams) ([]domain.ProductSearchResult, int, error) {
+	return nil, 0, nil
+}
+
 // mockUserRepo implements domain.UserRepository for testing.
 type mockUserRepo struct {
 	users map[string]*domain.User
@@ -220,5 +224,101 @@ func TestOnPaymentConfirmed_HandlesMissingBakery(t *testing.T) {
 	// Assert
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "bakery")
+	assert.Empty(t, emailSender.messages)
+}
+
+func TestOnOrderCancelled_SendsRefundNotification(t *testing.T) {
+	emailSender := &mockEmailSender{}
+	invStore := invoice.NewStore()
+
+	orderRepo := &mockOrderRepo{orders: map[string]*domain.Order{
+		"order-cancel-1": {
+			ID:       "order-cancel-1",
+			BakeryID: "bakery-1",
+			UserID:   "user-1",
+			Status:   domain.OrderStatusCancelled,
+		},
+	}}
+
+	bakeryRepo := &mockBakeryRepo{bakeries: map[string]*domain.Bakery{
+		"bakery-1": {ID: "bakery-1", Name: "Le Pain Doré"},
+	}}
+
+	userRepo := &mockUserRepo{users: map[string]*domain.User{
+		"user-1": {ID: "user-1", Username: "marie", ContactEmail: "marie@example.com"},
+	}}
+
+	svc := NewService(ServiceConfig{
+		EmailSender:  emailSender,
+		InvoiceStore: invStore,
+		OrderRepo:    orderRepo,
+		BakeryRepo:   bakeryRepo,
+		UserRepo:     userRepo,
+	})
+
+	err := svc.OnOrderCancelled(context.Background(), "order-cancel-1", true)
+	require.NoError(t, err)
+
+	require.Len(t, emailSender.messages, 1)
+	assert.Equal(t, "marie@example.com", emailSender.messages[0].To)
+	assert.Contains(t, emailSender.messages[0].Subject, "Order Cancelled")
+	assert.Contains(t, emailSender.messages[0].Subject, "Le Pain Doré")
+	assert.Contains(t, emailSender.messages[0].Body, "refund has been issued")
+}
+
+func TestOnOrderCancelled_SendsVoidNotification(t *testing.T) {
+	emailSender := &mockEmailSender{}
+	invStore := invoice.NewStore()
+
+	orderRepo := &mockOrderRepo{orders: map[string]*domain.Order{
+		"order-cancel-2": {
+			ID:       "order-cancel-2",
+			BakeryID: "bakery-1",
+			UserID:   "user-1",
+			Status:   domain.OrderStatusCancelled,
+		},
+	}}
+
+	bakeryRepo := &mockBakeryRepo{bakeries: map[string]*domain.Bakery{
+		"bakery-1": {ID: "bakery-1", Name: "Le Pain Doré"},
+	}}
+
+	userRepo := &mockUserRepo{users: map[string]*domain.User{
+		"user-1": {ID: "user-1", Username: "marie", ContactEmail: "marie@example.com"},
+	}}
+
+	svc := NewService(ServiceConfig{
+		EmailSender:  emailSender,
+		InvoiceStore: invStore,
+		OrderRepo:    orderRepo,
+		BakeryRepo:   bakeryRepo,
+		UserRepo:     userRepo,
+	})
+
+	err := svc.OnOrderCancelled(context.Background(), "order-cancel-2", false)
+	require.NoError(t, err)
+
+	require.Len(t, emailSender.messages, 1)
+	assert.Contains(t, emailSender.messages[0].Body, "authorization hold")
+	assert.NotContains(t, emailSender.messages[0].Body, "refund has been issued")
+}
+
+func TestOnOrderCancelled_HandlesMissingOrder(t *testing.T) {
+	emailSender := &mockEmailSender{}
+	invStore := invoice.NewStore()
+	orderRepo := &mockOrderRepo{orders: map[string]*domain.Order{}}
+	bakeryRepo := &mockBakeryRepo{bakeries: map[string]*domain.Bakery{}}
+	userRepo := &mockUserRepo{users: map[string]*domain.User{}}
+
+	svc := NewService(ServiceConfig{
+		EmailSender:  emailSender,
+		InvoiceStore: invStore,
+		OrderRepo:    orderRepo,
+		BakeryRepo:   bakeryRepo,
+		UserRepo:     userRepo,
+	})
+
+	err := svc.OnOrderCancelled(context.Background(), "nonexistent", true)
+	require.Error(t, err)
 	assert.Empty(t, emailSender.messages)
 }

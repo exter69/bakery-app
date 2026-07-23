@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -131,6 +132,7 @@ func (s *paymentService) ProcessPaymentCallback(ctx context.Context, orderID str
 
 	// Update order status to Confirmed
 	order.Status = domain.OrderStatusConfirmed
+	order.PaymentIntentID = paymentRef // Store for delayed capture/void
 	order.UpdatedAt = now
 
 	if err := s.orderRepo.Save(ctx, order); err != nil {
@@ -148,10 +150,19 @@ func (s *paymentService) ProcessPaymentCallback(ctx context.Context, orderID str
 	return nil
 }
 
-// InitiateRefund initiates a refund for a cancelled order.
-// In a real implementation this would call the payment gateway's refund API.
-func (s *paymentService) InitiateRefund(_ context.Context, _ string, _ int64) error {
-	// In production, this would call the payment gateway's refund endpoint.
-	// For now, this is a no-op mock that always succeeds.
-	return nil
+// InitiateRefund issues a refund for a cancelled order via the payment gateway.
+func (s *paymentService) InitiateRefund(ctx context.Context, orderID string, amountCents int64) error {
+	order, err := s.orderRepo.GetByID(ctx, orderID)
+	if err != nil {
+		return fmt.Errorf("fetching order for refund: %w", err)
+	}
+	if order == nil {
+		return ErrOrderNotFound
+	}
+	if order.PaymentIntentID == "" {
+		// No payment intent to refund (on-spot or legacy)
+		return nil
+	}
+
+	return s.gateway.RefundPayment(ctx, order.PaymentIntentID, amountCents)
 }

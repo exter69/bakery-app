@@ -1,0 +1,57 @@
+.stat-card {
+  background: var(--pro-card-bg, #ffffff);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--pro-border, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.stat-card__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--pro-text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.stat-card__value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--pro-text, #1e293b);
+  line-height: 1.1;
+}
+
+.stat-card__subtitle {
+  font-size: 0.8rem;
+  color: var(--pro-text-muted, #64748b);
+}
+
+.stat-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  width: fit-content;
+  margin-top: 0.2rem;
+}
+
+.stat-card__badge--positive {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--pro-success, #10b981);
+}
+
+.stat-card__badge--neutral {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--pro-text-muted, #64748b);
+}
+
+.stat-card__badge--negative {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--pro-danger, #ef4444);
+}

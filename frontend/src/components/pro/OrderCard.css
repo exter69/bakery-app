@@ -1,0 +1,115 @@
+.order-card {
+  background: var(--pro-card-bg, #ffffff);
+  border: 1px solid var(--pro-border, #e2e8f0);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: box-shadow 0.15s;
+}
+
+.order-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Blue left-border accent for "EN PRÉPARATION" cards */
+.order-card--preparing {
+  border-left: 4px solid var(--pro-accent, #4b8fe8);
+}
+
+/* Simplified delivered card — single-line style */
+.order-card--delivered {
+  padding: 0.625rem 1rem;
+  opacity: 0.7;
+}
+
+.order-card__summary {
+  font-size: 0.875rem;
+  color: var(--pro-text-muted, #64748b);
+}
+
+/* Header row: #id · time · badge */
+.order-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.order-card__id {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--pro-text, #1e293b);
+}
+
+.order-card__time {
+  font-size: 0.875rem;
+  color: var(--pro-text-muted, #64748b);
+}
+
+/* Type badge — outlined pill */
+.order-card__badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--pro-border, #e2e8f0);
+  color: var(--pro-text-muted, #64748b);
+  text-transform: capitalize;
+}
+
+.order-card__badge--livraison {
+  border-color: var(--pro-accent, #4b8fe8);
+  color: var(--pro-accent, #4b8fe8);
+}
+
+.order-card__badge--retrait {
+  border-color: var(--pro-success, #10b981);
+  color: var(--pro-success, #10b981);
+}
+
+/* Items summary */
+.order-card__items {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--pro-text, #1e293b);
+  line-height: 1.4;
+}
+
+/* Details row: customer name + price */
+.order-card__details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.order-card__customer {
+  font-size: 0.8125rem;
+  color: var(--pro-text-muted, #64748b);
+}
+
+.order-card__price {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--pro-text, #1e293b);
+}
+
+/* Action button */
+.order-card__action {
+  align-self: flex-start;
+  padding: 0.375rem 0.875rem;
+  border-radius: 0.5rem;
+  border: none;
+  background-color: var(--pro-accent, #4b8fe8);
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.order-card__action:hover {
+  background-color: var(--pro-accent-hover, #3b7dd8);
+}

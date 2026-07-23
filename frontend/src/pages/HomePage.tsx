@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { fetchBakeries } from '../api/bakeries';
 import { isAuthenticated, clearToken } from '../api/client';
 import { useI18n } from '../i18n';
+import { useBundles } from '../hooks/useBundles';
 import Footer from '../components/Footer';
 import BakeryMap from '../components/BakeryMap';
+import { HomeBundleCard } from '../components/HomeBundleCard';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import type { BakeryCard } from '../types/bakery';
 import './HomePage.css';
@@ -13,7 +15,12 @@ export default function HomePage() {
   const navigate = useNavigate();
   const authenticated = isAuthenticated();
   const [bakeries, setBakeries] = useState<BakeryCard[]>([]);
+  const [userLatitude, setUserLatitude] = useState<number | undefined>(undefined);
+  const [userLongitude, setUserLongitude] = useState<number | undefined>(undefined);
   const { t } = useI18n();
+
+  // Fetch bundles for the HomeBundleCard
+  const { data: bundlesData } = useBundles({});
 
   // Hover indicator for nav links
   const heroLinksRef = useRef<HTMLDivElement>(null);
@@ -37,6 +44,20 @@ export default function HomePage() {
     fetchBakeries()
       .then((res) => setBakeries(res.items.slice(0, 5)))
       .catch(() => {});
+  }, []);
+
+  // Request geolocation for HomeBundleCard distance display
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLatitude(position.coords.latitude);
+        setUserLongitude(position.coords.longitude);
+      },
+      () => {
+        // Geolocation denied or unavailable — gracefully degrade
+      }
+    );
   }, []);
 
   function handleSignOut() {
@@ -155,6 +176,17 @@ export default function HomePage() {
               <h2 className="open-now-card__heading">Bakeries near you</h2>
               <BakeryMap bakeries={bakeries} />
             </section>
+
+            {/* Surplus bundles — HomeBundleCard */}
+            {bundlesData && bundlesData.items.length > 0 && (
+              <div style={{ marginTop: '1.5rem' }}>
+                <HomeBundleCard
+                  bundles={bundlesData.items}
+                  userLatitude={userLatitude}
+                  userLongitude={userLongitude}
+                />
+              </div>
+            )}
           </div>
 
           {/* Right: Quick reserve widget */}

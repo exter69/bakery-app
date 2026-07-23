@@ -22,10 +22,12 @@ type User struct {
 	PasswordHash     string     `json:"-"`
 	Role             UserRole   `json:"role"`
 	ContactEmail     string     `json:"contactEmail,omitempty"`
+	Locale           string     `json:"locale,omitempty"` // "en", "fr", "nl" — defaults to "en"
 	HolidayMode      bool       `json:"holidayMode"`
 	HolidayFrom      *time.Time `json:"holidayFrom,omitempty"`
 	HolidayTo        *time.Time `json:"holidayTo,omitempty"`
 	FavoriteProducts []string   `json:"favoriteProducts"`
+	StripeCustomerID string     `json:"-"` // Stripe Customer ID — internal only, never exposed via API
 	CreatedAt        time.Time  `json:"createdAt"`
 }
 
@@ -130,18 +132,20 @@ func (p Product) MarshalJSON() ([]byte, error) {
 
 // Order represents a delivery order with online payment.
 type Order struct {
-	ID            string        `json:"id"`
-	BakeryID      string        `json:"bakeryId"`
-	UserID        string        `json:"userId"`
-	Items         []OrderItem   `json:"items"`
-	ScheduledDay  DayOfWeek     `json:"scheduledDay"`
-	ScheduledTime TimeSlot      `json:"scheduledTime"`
-	Status        OrderStatus   `json:"status"`
-	TotalAmount   int64         `json:"totalAmount"` // total in cents
-	PaymentMethod PaymentMethod `json:"paymentMethod"`
-	SelectionMode SelectionMode `json:"selectionMode,omitempty"`
-	CreatedAt     time.Time     `json:"createdAt"`
-	UpdatedAt     time.Time     `json:"updatedAt"`
+	ID              string        `json:"id"`
+	BakeryID        string        `json:"bakeryId"`
+	UserID          string        `json:"userId"`
+	Items           []OrderItem   `json:"items"`
+	ScheduledDay    DayOfWeek     `json:"scheduledDay"`
+	ScheduledTime   TimeSlot      `json:"scheduledTime"`
+	Status          OrderStatus   `json:"status"`
+	TotalAmount     int64         `json:"totalAmount"` // total in cents
+	PaymentMethod   PaymentMethod `json:"paymentMethod"`
+	SelectionMode   SelectionMode `json:"selectionMode,omitempty"`
+	PaymentIntentID string        `json:"paymentIntentId,omitempty"` // Stripe PaymentIntent ID for delayed capture
+	RefundStatus    string        `json:"refundStatus,omitempty"`    // "", "pending", "refunded", "partial"
+	CreatedAt       time.Time     `json:"createdAt"`
+	UpdatedAt       time.Time     `json:"updatedAt"`
 }
 
 // OrderItem represents a single line item in an order or reservation.
@@ -171,6 +175,23 @@ type Reservation struct {
 	TotalAmount   int64             `json:"totalAmount"` // total in cents
 	PaymentMethod PaymentMethod     `json:"paymentMethod"` // always OnSpot
 	CreatedAt     time.Time         `json:"createdAt"`
+}
+
+// ProductSearchParams holds search and filter parameters.
+type ProductSearchParams struct {
+	Query            string   // text search on product name (case-insensitive ILIKE)
+	Category         string   // filter by category (exact match)
+	ExcludeAllergens []string // exclude products containing any of these allergens
+	MinHealthScore   *int     // filter: health_score >= this value
+	OnlyAvailable    bool     // only return available products
+	PaginationParams
+}
+
+// ProductSearchResult pairs a product with its bakery info for search results.
+type ProductSearchResult struct {
+	Product    Product `json:"product"`
+	BakeryID   string  `json:"bakeryId"`
+	BakeryName string  `json:"bakeryName"`
 }
 
 // RecurringFrequency represents how often a recurring order repeats.

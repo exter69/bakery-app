@@ -1,29 +1,54 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
+	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 	"github.com/lucatorrekens/bakery-app/internal/api"
+	"github.com/lucatorrekens/bakery-app/internal/domain"
 	"github.com/lucatorrekens/bakery-app/internal/email"
 	"github.com/lucatorrekens/bakery-app/internal/invoice"
 	appmw "github.com/lucatorrekens/bakery-app/internal/middleware"
 	"github.com/lucatorrekens/bakery-app/internal/notification"
 	"github.com/lucatorrekens/bakery-app/internal/payment"
+	"github.com/lucatorrekens/bakery-app/internal/push"
 	"github.com/lucatorrekens/bakery-app/internal/repository/memory"
+	"github.com/lucatorrekens/bakery-app/internal/repository/postgres"
 	"github.com/lucatorrekens/bakery-app/internal/service"
+	"github.com/lucatorrekens/bakery-app/internal/upload"
+	"github.com/lucatorrekens/bakery-app/internal/ws"
 )
 
 func main() {
 	// Load .env file if it exists (won't error if missing)
 	_ = godotenv.Load()
+
+	// Initialize Sentry error tracking (no-op if DSN is empty)
+	if dsn := os.Getenv("SENTRY_DSN"); dsn != "" {
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn:              dsn,
+			Environment:      os.Getenv("APP_ENV"),
+			Release:          os.Getenv("APP_VERSION"),
+			TracesSampleRate: 0.1,
+		})
+		if err != nil {
+			log.Printf("[SENTRY] init failed: %v", err)
+		} else {
+			log.Println("[SENTRY] initialized")
+			defer sentry.Flush(2 * time.Second)
+		}
+	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -58,16 +83,33 @@ func main() {
 	// --- Global middleware ---
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
+	r.Use(appmw.SentryMiddleware())
 	r.Use(chimw.RequestID)
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{frontendOrigin},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Request-ID"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
-		MaxAge:           300,
-	}))
+	r.Use(appmw.SecurityHeaders)
+	r.Use(appmw.CORS(appmw.CORSConfig{AllowedOrigin: frontendOrigin}))
+	r.Use(appmw.BodyLimit(appmw.DefaultBodyLimit))
 	r.Use(appmw.InputSanitizer)
+
+	// --- Image upload storage ---
+	var uploadStorage upload.Storage
+	if os.Getenv("UPLOAD_STORAGE") == "s3" {
+		uploadStorage = &upload.S3Storage{
+			Bucket:  os.Getenv("S3_BUCKET"),
+			Region:  os.Getenv("S3_REGION"),
+			CDNBase: os.Getenv("S3_CDN_BASE"),
+		}
+		log.Println("Upload storage: S3")
+	} else {
+		localStorage, err := upload.NewLocalStorage("./uploads", "/uploads")
+		if err != nil {
+			log.Fatalf("Failed to initialize upload storage: %v", err)
+		}
+		uploadStorage = localStorage
+		log.Println("Upload storage: local (./uploads)")
+	}
+
+	// Serve uploaded files as static assets
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 
 	// --- Health check (public) ---
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -77,15 +119,53 @@ func main() {
 	})
 
 	// --- Initialize repositories ---
-	bakeryRepo := memory.NewBakeryRepo()
-	orderRepo := memory.NewOrderRepo()
-	reservationRepo := memory.NewReservationRepo()
-	userRepo := memory.NewUserRepo()
-	recurringOrderRepo := memory.NewRecurringOrderRepo()
-	tokenRepo := memory.NewTokenRepo()
+	databaseURL := os.Getenv("DATABASE_URL")
 
-	// --- Seed demo data ---
-	seedDemoData(bakeryRepo, userRepo, orderRepo, reservationRepo, recurringOrderRepo, tokenRepo)
+	var (
+		bakeryRepo         domain.BakeryRepository
+		orderRepo          domain.OrderRepository
+		reservationRepo    domain.ReservationRepository
+		userRepo           domain.UserRepository
+		recurringOrderRepo domain.RecurringOrderRepository
+		tokenRepo          domain.RegistrationTokenRepository
+		bundleRepo         domain.BundleRepository
+	)
+
+	if databaseURL != "" {
+		pool, err := postgres.NewPool(context.Background(), postgres.Config{DatabaseURL: databaseURL})
+		if err != nil {
+			log.Fatalf("Failed to connect to database: %v", err)
+		}
+		defer pool.Close()
+		log.Println("Database: PostgreSQL (connected)")
+
+		bakeryRepo = postgres.NewBakeryRepo(pool)
+		orderRepo = postgres.NewOrderRepo(pool)
+		reservationRepo = postgres.NewReservationRepo(pool)
+		userRepo = postgres.NewUserRepo(pool)
+		recurringOrderRepo = postgres.NewRecurringOrderRepo(pool)
+		tokenRepo = postgres.NewTokenRepo(pool)
+		bundleRepo = postgres.NewBundleRepo(pool)
+	} else {
+		log.Println("Database: In-memory (set DATABASE_URL for PostgreSQL)")
+
+		memBakeryRepo := memory.NewBakeryRepo()
+		memOrderRepo := memory.NewOrderRepo()
+		memReservationRepo := memory.NewReservationRepo()
+		memUserRepo := memory.NewUserRepo()
+		memRecurringOrderRepo := memory.NewRecurringOrderRepo()
+		memTokenRepo := memory.NewTokenRepo()
+
+		bakeryRepo = memBakeryRepo
+		orderRepo = memOrderRepo
+		reservationRepo = memReservationRepo
+		userRepo = memUserRepo
+		recurringOrderRepo = memRecurringOrderRepo
+		tokenRepo = memTokenRepo
+
+		// Seed demo data only for in-memory mode
+		seedDemoData(memBakeryRepo, memUserRepo, memOrderRepo, memReservationRepo, memRecurringOrderRepo, memTokenRepo)
+	}
 
 	// --- Initialize services ---
 	bakerySvc := service.NewBakeryService(bakeryRepo)
@@ -98,6 +178,7 @@ func main() {
 	})
 
 	var paymentGateway payment.PaymentGateway
+	var stripeCustomerSvc *payment.StripeCustomerService
 	if paymentMode == "stripe" {
 		stripeKey := os.Getenv("STRIPE_SECRET_KEY")
 		if stripeKey == "" {
@@ -107,7 +188,10 @@ func main() {
 			SecretKey:  stripeKey,
 			SuccessURL: frontendOrigin + "/schedule?payment=success",
 			CancelURL:  frontendOrigin + "/schedule?payment=cancelled",
+			UserRepo:   userRepo,
+			OrderRepo:  orderRepo,
 		})
+		stripeCustomerSvc = payment.NewStripeCustomerService(stripeKey, userRepo)
 		log.Println("Payment gateway: Stripe")
 	} else {
 		paymentGateway = payment.NewStubGateway()
@@ -137,14 +221,33 @@ func main() {
 		log.Println("Email sender: Log (dev mode — set SMTP_HOST to enable real emails)")
 	}
 
+	// --- WebSocket hub for real-time notifications ---
+	wsHub := ws.NewHub()
+
+	// --- Push notification sender (Web Push via VAPID) ---
+	vapidPublic := os.Getenv("VAPID_PUBLIC_KEY")
+	vapidPrivate := os.Getenv("VAPID_PRIVATE_KEY")
+	var pushSender *push.Sender
+	var pushStore *push.Store
+	if vapidPublic != "" && vapidPrivate != "" {
+		pushStore = push.NewStore()
+		pushSender = push.NewSender(vapidPublic, vapidPrivate, contactEmail, pushStore)
+		log.Println("Push notifications: enabled")
+	} else {
+		log.Println("Push notifications: disabled (set VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY)")
+	}
+
 	// --- Invoice store & notification service ---
 	invoiceStore := invoice.NewStore()
 	notificationSvc := notification.NewService(notification.ServiceConfig{
-		EmailSender:  emailSender,
-		InvoiceStore: invoiceStore,
-		OrderRepo:    orderRepo,
-		BakeryRepo:   bakeryRepo,
-		UserRepo:     userRepo,
+		EmailSender:     emailSender,
+		InvoiceStore:    invoiceStore,
+		OrderRepo:       orderRepo,
+		BakeryRepo:      bakeryRepo,
+		UserRepo:        userRepo,
+		ReservationRepo: reservationRepo,
+		WSHub:           wsHub,
+		PushSender:      pushSender,
 	})
 
 	paymentSvc := payment.NewPaymentService(payment.ServiceConfig{
@@ -154,15 +257,19 @@ func main() {
 	})
 
 	orderSvc := service.NewOrderService(service.OrderServiceConfig{
-		OrderRepo:  orderRepo,
-		BakeryRepo: bakeryRepo,
-		UserRepo:   userRepo,
-		PaymentSvc: paymentSvc,
+		OrderRepo:        orderRepo,
+		BakeryRepo:       bakeryRepo,
+		UserRepo:         userRepo,
+		PaymentSvc:       paymentSvc,
+		PaymentGateway:   paymentGateway,
+		OnOrderCancelled: notificationSvc.OnOrderCancelled,
+		OnNewOrder:       notificationSvc.OnNewOrder,
 	})
 
 	reservationSvc := service.NewReservationService(service.ReservationServiceConfig{
 		BakeryRepo:      bakeryRepo,
 		ReservationRepo: reservationRepo,
+		Notifications:   notificationSvc,
 	})
 
 	// --- Initialize handlers ---
@@ -173,10 +280,14 @@ func main() {
 	authHandler := api.NewAuthHandler(authSvc)
 	invoiceHandler := api.NewInvoiceHandler(invoiceStore, orderRepo)
 
+	uploadHandler := api.NewUploadHandler(uploadStorage)
+
 	sellerSvc := service.NewSellerService(service.SellerServiceConfig{
 		BakeryRepo:      bakeryRepo,
 		OrderRepo:       orderRepo,
 		ReservationRepo: reservationRepo,
+		PaymentGateway:  paymentGateway,
+		Notifications:   notificationSvc,
 	})
 	sellerHandler := api.NewSellerHandler(sellerSvc)
 
@@ -188,6 +299,30 @@ func main() {
 
 	userSvc := service.NewUserService(userRepo)
 	userHandler := api.NewUserHandler(userSvc)
+
+	// --- Payment method handler (only when Stripe is active) ---
+	var paymentMethodHandler *api.PaymentMethodHandler
+	if stripeCustomerSvc != nil {
+		paymentMethodHandler = api.NewPaymentMethodHandler(stripeCustomerSvc)
+	}
+
+	// --- Push notification handler (only when VAPID keys are configured) ---
+	var pushHandler *api.PushHandler
+	if pushSender != nil {
+		pushHandler = api.NewPushHandler(pushSender, pushStore)
+	}
+
+	// --- Bundle service and handler (requires bundleRepo) ---
+	var bundleSvc domain.BundleService
+	var bundleHandler *api.BundleHandler
+	if bundleRepo != nil {
+		bundleSvc = service.NewBundleService(service.BundleServiceConfig{
+			Repo:       bundleRepo,
+			BakeryRepo: bakeryRepo,
+			Hub:        wsHub,
+		})
+		bundleHandler = api.NewBundleHandler(bundleSvc, bakeryRepo, bundleRepo, wsHub)
+	}
 
 	// --- Rate limiter for order/reservation submission ---
 	rateLimiter := appmw.NewRateLimiter(appmw.RateLimitConfig{
@@ -217,8 +352,23 @@ func main() {
 	r.With(authRateLimiter.Middleware).Post("/api/auth/login", authHandler.Login)
 	r.Post("/api/auth/request-access", authHandler.RequestAccess)
 
+	// WebSocket endpoint — auth via token query param during upgrade
+	r.Get("/api/ws", wsHub.HandleUpgrade(jwtSecret))
+
+	// VAPID public key endpoint — public (browser needs it to subscribe)
+	if pushHandler != nil {
+		r.Get("/api/push/vapid-key", pushHandler.GetVAPIDKey)
+	}
+
 	// Bakery browsing endpoints are public (no auth required)
 	bakeryHandler.RegisterRoutes(r)
+
+	// Bundle browsing endpoints (list, get, impact) are public
+	if bundleHandler != nil {
+		r.Get("/api/bundles/impact", bundleHandler.GetImpact)
+		r.Get("/api/bundles", bundleHandler.ListBundles)
+		r.Get("/api/bundles/{id}", bundleHandler.GetBundle)
+	}
 
 	// --- Protected API routes (require JWT auth) ---
 	// Order, reservation, and payment endpoints require authentication.
@@ -243,6 +393,9 @@ func main() {
 		// Seller portal routes (role check is done in handler)
 		sellerHandler.RegisterRoutes(r)
 
+		// Image upload (role check is done in handler — seller or admin)
+		uploadHandler.RegisterRoutes(r)
+
 		// Recurring order routes
 		recurringHandler.RegisterRoutes(r)
 
@@ -254,13 +407,42 @@ func main() {
 		r.Put("/api/user/holiday", userHandler.UpdateHoliday)
 		r.Get("/api/user/favorites", userHandler.GetFavorites)
 		r.Put("/api/user/favorites", userHandler.UpdateFavorites)
+
+		// Saved payment methods (only when Stripe is active)
+		if paymentMethodHandler != nil {
+			paymentMethodHandler.RegisterRoutes(r)
+		}
+
+		// Push notification subscription management (only when VAPID keys are configured)
+		if pushHandler != nil {
+			r.Post("/api/user/push/subscribe", pushHandler.Subscribe)
+			r.Delete("/api/user/push/unsubscribe", pushHandler.Unsubscribe)
+		}
+
+		// Bundle mutation routes (reserve, confirm, cancel, create, publish)
+		if bundleHandler != nil {
+			r.Post("/api/bundles", bundleHandler.CreateBundle)
+			r.Post("/api/bundles/{id}/publish", bundleHandler.PublishBundle)
+			r.Post("/api/bundles/{id}/reserve", bundleHandler.ReserveBundle)
+			r.Post("/api/bundles/{id}/reserve/confirm", bundleHandler.ConfirmReservation)
+			r.Delete("/api/bundle-reservations/{id}", bundleHandler.CancelReservation)
+		}
 	})
 
 	// --- Stripe webhook (public — Stripe needs to reach it without JWT) ---
 	if paymentMode == "stripe" {
 		webhookSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
-		stripeWebhook := payment.NewStripeWebhookHandler(webhookSecret, paymentSvc)
+		stripeWebhook := payment.NewStripeWebhookHandler(webhookSecret, paymentSvc, orderRepo)
 		r.Post("/api/stripe/webhook", stripeWebhook.HandleWebhook)
+	}
+
+	// --- Context for background workers (cancelled on SIGINT/SIGTERM) ---
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	// --- Start bundle expiration worker ---
+	if bundleSvc != nil {
+		go service.StartExpirationWorker(ctx, bundleSvc, wsHub)
 	}
 
 	log.Printf("Starting bakery-app server on :%s", port)

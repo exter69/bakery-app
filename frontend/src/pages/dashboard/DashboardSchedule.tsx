@@ -131,7 +131,7 @@ export default function DashboardSchedule() {
         {useGoogleMaps && (
           <div style={{ marginTop: '1rem', padding: '1rem', background: '#f0fdf4', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
             <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', color: '#166534' }}>
-              ✓ Google Maps sync is active. Hours fetched from your linked profile:
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:'0.3rem'}}><polyline points="20 6 9 17 4 12"/></svg>Google Maps sync is active. Hours fetched from your linked profile:
             </p>
             <div className="dash-table-wrap" style={{ opacity: 0.85 }}>
               <table className="dash-table">

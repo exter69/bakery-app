@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/lucatorrekens/bakery-app/internal/domain"
+	"github.com/lucatorrekens/bakery-app/internal/notification"
+	"github.com/lucatorrekens/bakery-app/internal/payment"
 )
 
 // SellerServiceConfig holds dependencies for the seller service.
@@ -14,6 +16,8 @@ type SellerServiceConfig struct {
 	BakeryRepo      domain.BakeryRepository
 	OrderRepo       domain.OrderRepository
 	ReservationRepo domain.ReservationRepository
+	PaymentGateway  payment.PaymentGateway // for delayed capture on delivery
+	Notifications   notification.Dispatcher
 }
 
 // SellerService handles seller-specific operations.
@@ -21,6 +25,8 @@ type SellerService struct {
 	bakeryRepo      domain.BakeryRepository
 	orderRepo       domain.OrderRepository
 	reservationRepo domain.ReservationRepository
+	paymentGateway  payment.PaymentGateway
+	notifications   notification.Dispatcher
 }
 
 // NewSellerService creates a new SellerService.
@@ -29,6 +35,8 @@ func NewSellerService(cfg SellerServiceConfig) *SellerService {
 		bakeryRepo:      cfg.BakeryRepo,
 		orderRepo:       cfg.OrderRepo,
 		reservationRepo: cfg.ReservationRepo,
+		paymentGateway:  cfg.PaymentGateway,
+		notifications:   cfg.Notifications,
 	}
 }
 
@@ -288,12 +296,25 @@ func (s *SellerService) UpdateOrderStatus(ctx context.Context, orderID, ownerID 
 		return nil, ErrInvalidStatusTransition
 	}
 
+	// Capture the authorized payment before marking as delivered
+	if newStatus == domain.OrderStatusDelivered && order.PaymentIntentID != "" && s.paymentGateway != nil {
+		if err := s.paymentGateway.CapturePayment(ctx, order.PaymentIntentID); err != nil {
+			return nil, fmt.Errorf("capturing payment: %w", err)
+		}
+	}
+
 	order.Status = newStatus
 	order.UpdatedAt = time.Now()
 
 	if err := s.orderRepo.Save(ctx, order); err != nil {
 		return nil, fmt.Errorf("saving order: %w", err)
 	}
+
+	// Fire-and-forget notification (never blocks the main flow)
+	if s.notifications != nil {
+		go s.notifications.OnOrderStatusChanged(context.Background(), orderID, newStatus)
+	}
+
 	return order, nil
 }
 

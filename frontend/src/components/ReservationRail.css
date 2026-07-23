@@ -1,0 +1,112 @@
+/* ReservationRail — sidebar panel for active reservation */
+.reservation-rail {
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-offset);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.reservation-rail__title {
+  font-family: var(--font-hand-heading);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+/* Bundle info section */
+.reservation-rail__bundle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.reservation-rail__bundle-name {
+  font-family: var(--font-hand-body);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.reservation-rail__price {
+  font-family: var(--font-hand-heading);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+/* Pickup info */
+.reservation-rail__pickup {
+  font-family: var(--font-hand-body);
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Warning */
+.reservation-rail__warning {
+  font-family: var(--font-hand-body);
+  font-size: 0.85rem;
+  color: var(--alert);
+  font-weight: 600;
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  background: rgba(196, 64, 52, 0.06);
+  border-radius: 8px;
+  line-height: 1.4;
+}
+
+/* Confirm button */
+.reservation-rail__confirm-btn {
+  width: 100%;
+  padding: 0.7rem 1.25rem;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--accent);
+  color: var(--ink);
+  font-family: var(--font-hand-body);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.reservation-rail__confirm-btn:hover:not(:disabled) {
+  background: #d9a23e;
+  box-shadow: 2px 2px 0 rgba(58, 46, 34, 0.25);
+}
+
+.reservation-rail__confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Cancel button */
+.reservation-rail__cancel-btn {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-pill);
+  border: var(--border);
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: var(--font-hand-body);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.reservation-rail__cancel-btn:hover:not(:disabled) {
+  background: var(--bg-panel);
+}
+
+.reservation-rail__cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

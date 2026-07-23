@@ -78,3 +78,47 @@ export function deleteOrder(orderId: string): Promise<void> {
 export function deleteReservation(reservationId: string): Promise<void> {
   return apiFetch<void>(`/reservations/${reservationId}`, { method: 'DELETE' });
 }
+
+/** Fetch order history (delivered orders + picked-up reservations) */
+export function fetchOrderHistory(page?: number): Promise<ScheduleListResponse> {
+  const params = new URLSearchParams();
+  if (page) params.set('page', String(page));
+  params.set('sortBy', 'createdAt');
+  params.set('sortDirection', 'desc');
+  return apiFetch<ScheduleListResponse>(`/orders?${params.toString()}`).then((response) => {
+    // Filter to terminal states client-side (delivered orders + picked-up reservations)
+    const filtered = response.items.filter(
+      (item) => item.status === 'delivered' || item.status === 'picked_up'
+    );
+    return {
+      ...response,
+      items: filtered,
+      total: filtered.length,
+    };
+  });
+}
+
+/** Data structure for re-order items stored in sessionStorage */
+export interface ReorderData {
+  bakeryId: string;
+  items: { productId: string; productName: string; quantity: number }[];
+}
+
+const REORDER_STORAGE_KEY = 'reorder_items';
+
+/** Store re-order items in sessionStorage and return the bakeryId for navigation */
+export function storeReorderData(data: ReorderData): void {
+  sessionStorage.setItem(REORDER_STORAGE_KEY, JSON.stringify(data));
+}
+
+/** Consume re-order items from sessionStorage (returns null if none) */
+export function consumeReorderData(): ReorderData | null {
+  const raw = sessionStorage.getItem(REORDER_STORAGE_KEY);
+  if (!raw) return null;
+  sessionStorage.removeItem(REORDER_STORAGE_KEY);
+  try {
+    return JSON.parse(raw) as ReorderData;
+  } catch {
+    return null;
+  }
+}

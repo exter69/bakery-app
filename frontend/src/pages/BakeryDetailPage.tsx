@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchBakery, fetchMenu } from '../api/bakeries';
-import { createOrder, createReservation } from '../api/orders';
+import { createOrder, createReservation, consumeReorderData } from '../api/orders';
 import { isAuthenticated } from '../api/client';
 import ProductSelectionModal from '../components/ProductSelectionModal';
 import HealthScoreDisplay from '../components/HealthScoreDisplay';
@@ -28,6 +28,8 @@ export default function BakeryDetailPage() {
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [initialOrderItems, setInitialOrderItems] = useState<OrderItem[]>([]);
+  const [unavailableItems, setUnavailableItems] = useState<{ productName: string }[]>([]);
 
   // Allergen detail modal state
   const [allergenModalProduct, setAllergenModalProduct] = useState<Product | null>(null);
@@ -134,6 +136,36 @@ export default function BakeryDetailPage() {
   const allProducts = useMemo<Product[]>(() => {
     if (!menu) return [];
     return Object.values(menu).flat();
+  }, [menu]);
+
+  // Consume re-order data from sessionStorage once menu is loaded
+  useEffect(() => {
+    if (!menu || !id) return;
+    const reorderData = consumeReorderData();
+    if (!reorderData || reorderData.bakeryId !== id) return;
+
+    const products = Object.values(menu).flat();
+    const matched: OrderItem[] = [];
+    const unavailable: { productName: string }[] = [];
+
+    for (const reorderItem of reorderData.items) {
+      const product = products.find(
+        (p) => p.id === reorderItem.productId && p.isAvailable
+      );
+      if (product) {
+        matched.push({ product, quantity: reorderItem.quantity });
+      } else {
+        unavailable.push({ productName: reorderItem.productName });
+      }
+    }
+
+    if (matched.length > 0 || unavailable.length > 0) {
+      setInitialOrderItems(matched);
+      setUnavailableItems(unavailable);
+      setModalOpen(true);
+    }
+  // Only run once when menu loads — intentionally omitting id from deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [menu]);
 
   const categories = useMemo(() => {
@@ -384,6 +416,8 @@ export default function BakeryDetailPage() {
         schedule={bakery.schedule}
         minDeliveryAmount={bakery.minDeliveryAmount}
         onSubmit={handleModalSubmit}
+        initialItems={initialOrderItems}
+        unavailableItems={unavailableItems}
       />
 
       {/* Allergen Detail Modal */}

@@ -1,0 +1,56 @@
+.stock-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stock-stepper__btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--pro-accent, #4b8fe8);
+  background: transparent;
+  color: var(--pro-accent, #4b8fe8);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s, color 0.15s, opacity 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+
+.stock-stepper__btn:hover:not(:disabled) {
+  background-color: var(--pro-accent, #4b8fe8);
+  color: #ffffff;
+}
+
+.stock-stepper__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.stock-stepper__value {
+  font-size: 1rem;
+  font-weight: 700;
+  min-width: 1.5rem;
+  text-align: center;
+  color: var(--pro-text, #1e293b);
+}
+
+/* Danger variant — red styling when stock is low */
+.stock-stepper--danger .stock-stepper__btn {
+  border-color: var(--pro-danger, #ef4444);
+  color: var(--pro-danger, #ef4444);
+}
+
+.stock-stepper--danger .stock-stepper__btn:hover:not(:disabled) {
+  background-color: var(--pro-danger, #ef4444);
+  color: #ffffff;
+}
+
+.stock-stepper--danger .stock-stepper__value {
+  color: var(--pro-danger, #ef4444);
+}

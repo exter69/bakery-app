@@ -26,3 +26,18 @@ func (g *StubGateway) CreateCheckoutURL(_ context.Context, orderID string, _ int
 func (g *StubGateway) VerifyPayment(_ context.Context, _ string) (bool, error) {
 	return true, nil
 }
+
+// CapturePayment is a no-op for the stub gateway.
+func (g *StubGateway) CapturePayment(_ context.Context, _ string) error {
+	return nil
+}
+
+// VoidAuthorization is a no-op for the stub gateway.
+func (g *StubGateway) VoidAuthorization(_ context.Context, _ string) error {
+	return nil
+}
+
+// RefundPayment is a no-op for the stub gateway.
+func (g *StubGateway) RefundPayment(_ context.Context, _ string, _ int64) error {
+	return nil
+}

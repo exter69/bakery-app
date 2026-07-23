@@ -128,3 +128,13 @@ type UserProfileResponse struct {
 type FavoritesResponse struct {
 	ProductIDs []string `json:"productIds"`
 }
+
+// PushSubscribeResponse is returned after successfully subscribing to push notifications.
+type PushSubscribeResponse struct {
+	ID string `json:"id"`
+}
+
+// VAPIDKeyResponse returns the public VAPID key for push subscription.
+type VAPIDKeyResponse struct {
+	PublicKey string `json:"publicKey"`
+}

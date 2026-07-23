@@ -30,6 +30,9 @@ type BakeryRepository interface {
 
 	// DeleteProduct removes a product by ID.
 	DeleteProduct(ctx context.Context, id string) error
+
+	// SearchProducts searches products by name across all bakeries with optional filters.
+	SearchProducts(ctx context.Context, params ProductSearchParams) ([]ProductSearchResult, int, error)
 }
 
 // ReservationRepository provides data access for reservations.
@@ -102,4 +105,46 @@ type RegistrationTokenRepository interface {
 
 	// MarkUsed marks a registration token as used.
 	MarkUsed(ctx context.Context, tokenStr string) error
+}
+
+// BundleRepository provides data access for surplus bundles and reservations.
+type BundleRepository interface {
+	// CreateBundle persists a new surplus bundle with its items.
+	CreateBundle(ctx context.Context, bundle *SurplusBundle) error
+
+	// UpdateBundle persists changes to a surplus bundle.
+	UpdateBundle(ctx context.Context, bundle *SurplusBundle) error
+
+	// GetByID returns a surplus bundle by ID with items, or nil if not found.
+	GetByID(ctx context.Context, id string) (*SurplusBundle, error)
+
+	// ListPublished returns published bundles with optional filters and pagination.
+	ListPublished(ctx context.Context, filters BundleFilters, params PaginationParams) ([]SurplusBundle, int, error)
+
+	// GetExpiredBundles returns published bundles whose expires_at is in the past.
+	GetExpiredBundles(ctx context.Context) ([]SurplusBundle, error)
+
+	// CreateReservation persists a new bundle reservation.
+	CreateReservation(ctx context.Context, reservation *BundleReservation) error
+
+	// GetReservation returns a bundle reservation by ID, or nil if not found.
+	GetReservation(ctx context.Context, id string) (*BundleReservation, error)
+
+	// GetActiveReservation returns the active reservation (pending/confirmed) for a user+bundle, or nil.
+	GetActiveReservation(ctx context.Context, userID string, bundleID string) (*BundleReservation, error)
+
+	// UpdateReservation persists changes to a bundle reservation.
+	UpdateReservation(ctx context.Context, reservation *BundleReservation) error
+
+	// GetOverdueReservations returns pending/confirmed reservations past their bundle's pickup_end_time.
+	GetOverdueReservations(ctx context.Context) ([]BundleReservation, error)
+
+	// CountPickedUpThisMonth returns the number of picked-up reservations in the current month.
+	CountPickedUpThisMonth(ctx context.Context) (int, error)
+
+	// DecrementStock atomically decrements quantity_remaining by 1. Returns error if already 0.
+	DecrementStock(ctx context.Context, bundleID string) error
+
+	// IncrementStock atomically increments quantity_remaining by 1.
+	IncrementStock(ctx context.Context, bundleID string) error
 }

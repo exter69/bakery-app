@@ -68,6 +68,14 @@ export default function CustomerLayout() {
           >
             {t('nav.bakeries')}
           </NavLink>
+          <NavLink
+            to="/paniers-du-soir"
+            className={({ isActive }) =>
+              `pill-nav__link${isActive ? ' pill-nav__link--active' : ''}`
+            }
+          >
+            {t('bundles.title')}
+          </NavLink>
           {authenticated && (
             <NavLink
               to="/schedule"
@@ -76,6 +84,16 @@ export default function CustomerLayout() {
               }
             >
               {t('nav.orders')}
+            </NavLink>
+          )}
+          {authenticated && (
+            <NavLink
+              to="/history"
+              className={({ isActive }) =>
+                `pill-nav__link${isActive ? ' pill-nav__link--active' : ''}`
+              }
+            >
+              {t('nav.history')}
             </NavLink>
           )}
           <NavLink

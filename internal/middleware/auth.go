@@ -144,3 +144,15 @@ func writeAuthError(w http.ResponseWriter, status int, code, message string) {
 		Message: message,
 	})
 }
+
+// WithUserID returns a new context with the given user ID set.
+// Intended for use in tests to inject auth context.
+func WithUserID(ctx context.Context, userID string) context.Context {
+	return context.WithValue(ctx, userIDKey, userID)
+}
+
+// WithUserRole returns a new context with the given user role set.
+// Intended for use in tests to inject auth context.
+func WithUserRole(ctx context.Context, role int) context.Context {
+	return context.WithValue(ctx, userRoleKey, role)
+}

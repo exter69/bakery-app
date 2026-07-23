@@ -6,6 +6,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -37,6 +38,7 @@ func (h *BakeryHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/api/bakeries", h.ListBakeries)
 	r.Get("/api/bakeries/{id}", h.GetBakery)
 	r.Get("/api/bakeries/{id}/menu", h.GetMenu)
+	r.Get("/api/products/search", h.SearchProducts)
 }
 
 // GetBakery handles GET /api/bakeries/{id} — returns a single bakery by ID.
@@ -246,6 +248,72 @@ func (h *BakeryHandler) GetMenu(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, menu)
+}
+
+// SearchProducts handles GET /api/products/search.
+// Searches products by name across all bakeries with optional filters.
+func (h *BakeryHandler) SearchProducts(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+
+	page := 1
+	if p := q.Get("page"); p != "" {
+		parsed, err := strconv.Atoi(p)
+		if err != nil || parsed < 1 {
+			writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
+				Code:    "INVALID_PAGE",
+				Message: "page must be a positive integer",
+			})
+			return
+		}
+		page = parsed
+	}
+
+	params := domain.ProductSearchParams{
+		Query:         q.Get("q"),
+		Category:      q.Get("category"),
+		OnlyAvailable: true, // default: only show available products
+		PaginationParams: domain.PaginationParams{
+			Page:     page,
+			PageSize: 20,
+		},
+	}
+
+	if allergens := q.Get("excludeAllergens"); allergens != "" {
+		params.ExcludeAllergens = strings.Split(allergens, ",")
+	}
+
+	if minHS := q.Get("minHealthScore"); minHS != "" {
+		score, err := strconv.Atoi(minHS)
+		if err != nil || score < 1 || score > 5 {
+			writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
+				Code:    "INVALID_HEALTH_SCORE",
+				Message: "minHealthScore must be an integer between 1 and 5",
+			})
+			return
+		}
+		params.MinHealthScore = &score
+	}
+
+	result, err := h.svc.SearchProducts(r.Context(), params)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, dto.ErrorResponse{
+			Code:    "INTERNAL_ERROR",
+			Message: "failed to search products",
+		})
+		return
+	}
+
+	items := result.Items
+	if items == nil {
+		items = []domain.ProductSearchResult{}
+	}
+
+	writeJSON(w, http.StatusOK, dto.ListResponse[domain.ProductSearchResult]{
+		Items:    items,
+		Page:     result.Page,
+		PageSize: result.PageSize,
+		Total:    result.Total,
+	})
 }
 
 // writeJSON marshals v as JSON and writes it to the response.

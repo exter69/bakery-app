@@ -197,3 +197,54 @@ func TestProcessPaymentCallback_RejectsNonPendingOrder(t *testing.T) {
 	err = svc.ProcessPaymentCallback(context.Background(), "order-1", "ref-123")
 	assert.ErrorIs(t, err, ErrInvalidOrderStatus)
 }
+
+func TestInitiateRefund_CallsGatewayRefundPayment(t *testing.T) {
+	repo := newFakeOrderRepo()
+	order := &domain.Order{
+		ID:              "order-refund-1",
+		Status:          domain.OrderStatusCancelled,
+		PaymentIntentID: "pi_captured_123",
+		TotalAmount:     5000,
+	}
+	_ = repo.Save(context.Background(), order)
+
+	gateway := NewStubGateway() // StubGateway.RefundPayment returns nil
+	svc := NewPaymentService(ServiceConfig{
+		Gateway:   gateway,
+		OrderRepo: repo,
+	})
+
+	err := svc.InitiateRefund(context.Background(), "order-refund-1", 5000)
+	require.NoError(t, err)
+}
+
+func TestInitiateRefund_ReturnsNilWhenNoPaymentIntent(t *testing.T) {
+	repo := newFakeOrderRepo()
+	order := &domain.Order{
+		ID:              "order-no-pi",
+		Status:          domain.OrderStatusCancelled,
+		PaymentIntentID: "", // no payment intent
+		TotalAmount:     5000,
+	}
+	_ = repo.Save(context.Background(), order)
+
+	svc := NewPaymentService(ServiceConfig{
+		Gateway:   NewStubGateway(),
+		OrderRepo: repo,
+	})
+
+	err := svc.InitiateRefund(context.Background(), "order-no-pi", 5000)
+	require.NoError(t, err)
+}
+
+func TestInitiateRefund_ReturnsErrorForUnknownOrder(t *testing.T) {
+	repo := newFakeOrderRepo()
+
+	svc := NewPaymentService(ServiceConfig{
+		Gateway:   NewStubGateway(),
+		OrderRepo: repo,
+	})
+
+	err := svc.InitiateRefund(context.Background(), "nonexistent", 5000)
+	assert.ErrorIs(t, err, ErrOrderNotFound)
+}

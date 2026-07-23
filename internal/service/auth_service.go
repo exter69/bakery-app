@@ -160,7 +160,7 @@ func (s *AuthService) CreateRegistrationToken(ctx context.Context, email, bakery
 		return nil, fmt.Errorf("saving token: %w", err)
 	}
 
-	log.Printf("[EMAIL] Token %s created for baker %s (%s). Send notification to admin: %s", token.Token, email, bakeryName, s.contactEmail)
+	log.Printf("[EMAIL] Registration token created for baker %s (%s). Send notification to admin: %s", email, bakeryName, s.contactEmail)
 
 	return token, nil
 }

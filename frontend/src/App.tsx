@@ -11,6 +11,7 @@ import HomePage from './pages/HomePage';
 import BakeriesPage from './pages/BakeriesPage';
 import BakeryDetailPage from './pages/BakeryDetailPage';
 import ScheduleOrdersPage from './pages/ScheduleOrdersPage';
+import OrderHistoryPage from './pages/OrderHistoryPage';
 import RecurringOrdersPage from './pages/RecurringOrdersPage';
 import AboutPage from './pages/AboutPage';
 import GuidePage from './pages/GuidePage';
@@ -20,7 +21,8 @@ import DashboardBakery from './pages/dashboard/DashboardBakery';
 import DashboardProducts from './pages/dashboard/DashboardProducts';
 import DashboardSchedule from './pages/dashboard/DashboardSchedule';
 import DashboardOrders from './pages/dashboard/DashboardOrders';
-import DashboardReservations from './pages/dashboard/DashboardReservations';
+import DashboardBundles from './pages/dashboard/DashboardBundles';
+import BundlePage from './pages/BundlePage';
 import './App.css';
 
 /** Listens for auth:unauthorized events and redirects to login */
@@ -56,7 +58,9 @@ function App() {
         <Route element={<CustomerLayout />}>
           <Route path="/bakeries" element={<BakeriesPage />} />
           <Route path="/bakeries/:id" element={<BakeryDetailPage />} />
+          <Route path="/paniers-du-soir" element={<BundlePage />} />
           <Route path="/schedule" element={<ProtectedRoute><ScheduleOrdersPage /></ProtectedRoute>} />
+          <Route path="/history" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
           <Route path="/recurring" element={<ProtectedRoute><RecurringOrdersPage /></ProtectedRoute>} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/guide" element={<GuidePage />} />
@@ -67,9 +71,9 @@ function App() {
           <Route index element={<DashboardOverview />} />
           <Route path="bakery" element={<DashboardBakery />} />
           <Route path="products" element={<DashboardProducts />} />
-          <Route path="schedule" element={<DashboardSchedule />} />
+          <Route path="stats" element={<DashboardSchedule />} />
           <Route path="orders" element={<DashboardOrders />} />
-          <Route path="reservations" element={<DashboardReservations />} />
+          <Route path="bundles" element={<DashboardBundles />} />
         </Route>
 
         {/* Catch-all */}

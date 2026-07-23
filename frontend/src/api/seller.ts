@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, getToken, API_BASE } from './client';
 import type { Bakery, DaySchedule, Product, ListResponse } from '../types/bakery';
 import type { ScheduleEntry } from '../types/order';
 
@@ -7,6 +7,28 @@ export type Order = ScheduleEntry;
 
 /** Reservation type as returned by bakery-specific endpoints */
 export type Reservation = ScheduleEntry;
+
+/** Upload an image and return the stored URL */
+export async function uploadImage(file: File, type: 'products' | 'bakeries'): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('type', type);
+
+  const token = getToken();
+  const response = await fetch(`${API_BASE}/uploads`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData, // Don't set Content-Type — browser sets it with boundary
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ message: 'Upload failed' }));
+    throw new Error(body.message || 'Upload failed');
+  }
+
+  const result = await response.json();
+  return result.url;
+}
 
 /** Fetch the current seller's bakery */
 export async function fetchMyBakery(): Promise<Bakery | null> {

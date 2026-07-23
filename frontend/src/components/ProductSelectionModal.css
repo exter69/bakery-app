@@ -796,3 +796,31 @@
     display: none;
   }
 }
+
+/* Unavailable items (re-order flow) */
+.psm__unavailable-items {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  background: #fef2f2;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+.psm__unavailable-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.psm__unavailable-item-name {
+  text-decoration: line-through;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.psm__unavailable-item-label {
+  font-size: 11px;
+  color: #dc2626;
+  font-weight: 500;
+}

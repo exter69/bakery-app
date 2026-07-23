@@ -151,3 +151,25 @@ func (s *bakeryService) GetMenu(ctx context.Context, bakeryID string) (map[strin
 
 	return menu, nil
 }
+
+// SearchProducts searches products across bakeries with filters.
+func (s *bakeryService) SearchProducts(ctx context.Context, params domain.ProductSearchParams) (*domain.ListResult[domain.ProductSearchResult], error) {
+	if params.PageSize <= 0 {
+		params.PageSize = 20
+	}
+	if params.Page < 1 {
+		params.Page = 1
+	}
+
+	results, total, err := s.repo.SearchProducts(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("searching products: %w", err)
+	}
+
+	return &domain.ListResult[domain.ProductSearchResult]{
+		Items:    results,
+		Page:     params.Page,
+		PageSize: params.PageSize,
+		Total:    total,
+	}, nil
+}

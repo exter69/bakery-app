@@ -68,7 +68,7 @@ export default function DashboardBakery() {
       {/* Google Maps Integration */}
       <div className="dash-card" style={{ marginBottom: '1.5rem' }}>
         <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', fontWeight: 600 }}>
-          🗺️ Link to Google Maps
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:'0.4rem'}}><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Link to Google Maps
         </h3>
         <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: '#64748b' }}>
           Link your Google Maps listing to automatically sync your address, opening hours, and photos.
@@ -109,7 +109,7 @@ export default function DashboardBakery() {
         </div>
         {googlePlaceId && (
           <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0', fontSize: '0.85rem', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>✓ Linked to: {googlePlaceId}</span>
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:'0.3rem'}}><polyline points="20 6 9 17 4 12"/></svg>Linked to: {googlePlaceId}</span>
             <button
               type="button"
               className="dash-btn dash-btn--danger dash-btn--sm"

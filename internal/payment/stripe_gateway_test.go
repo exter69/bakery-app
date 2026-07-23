@@ -56,7 +56,7 @@ func TestStripeGateway_VerifyPayment_InvalidKey(t *testing.T) {
 }
 
 func TestStripeWebhookHandler_InvalidSignature(t *testing.T) {
-	handler := NewStripeWebhookHandler("whsec_test_secret", NewMockPaymentService())
+	handler := NewStripeWebhookHandler("whsec_test_secret", NewMockPaymentService(), nil)
 
 	// Send request without a valid Stripe-Signature header
 	req := httptest.NewRequest(http.MethodPost, "/api/stripe/webhook", strings.NewReader(`{"type":"checkout.session.completed"}`))
@@ -69,7 +69,7 @@ func TestStripeWebhookHandler_InvalidSignature(t *testing.T) {
 }
 
 func TestStripeWebhookHandler_EmptyBody(t *testing.T) {
-	handler := NewStripeWebhookHandler("whsec_test_secret", NewMockPaymentService())
+	handler := NewStripeWebhookHandler("whsec_test_secret", NewMockPaymentService(), nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/stripe/webhook", strings.NewReader(""))
 	req.Header.Set("Stripe-Signature", "t=123,v1=abc")
@@ -82,7 +82,7 @@ func TestStripeWebhookHandler_EmptyBody(t *testing.T) {
 }
 
 func TestStripeWebhookHandler_MissingSignatureHeader(t *testing.T) {
-	handler := NewStripeWebhookHandler("whsec_test_secret", NewMockPaymentService())
+	handler := NewStripeWebhookHandler("whsec_test_secret", NewMockPaymentService(), nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/stripe/webhook", strings.NewReader(`{}`))
 	// No Stripe-Signature header

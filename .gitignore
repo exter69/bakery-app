@@ -33,3 +33,6 @@ Thumbs.db
 # Frontend
 frontend/node_modules/
 frontend/dist/
+
+# Uploads (local dev storage)
+uploads/

@@ -23,6 +23,10 @@ export interface ProductSelectionModalProps {
   schedule: DaySchedule[];
   minDeliveryAmount?: number; // in cents
   onSubmit: (items: OrderItem[], days: string[], time: string, mode: 'delivery' | 'reservation', frequency?: DeliveryFrequency) => void;
+  /** Pre-filled items for re-order flow */
+  initialItems?: OrderItem[];
+  /** Items that are no longer available (shown as struck-through) */
+  unavailableItems?: { productName: string }[];
 }
 
 const DAY_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -59,6 +63,8 @@ export default function ProductSelectionModal({
   schedule,
   minDeliveryAmount,
   onSubmit,
+  initialItems,
+  unavailableItems,
 }: ProductSelectionModalProps) {
   // Selection state
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -87,6 +93,13 @@ export default function ProductSelectionModal({
       setActiveCategory(null); // null = show all
     }
   }, [categories, activeCategory]);
+
+  // Pre-fill order items for re-order flow
+  useEffect(() => {
+    if (initialItems && initialItems.length > 0) {
+      setOrderItems(initialItems);
+    }
+  }, [initialItems]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -408,6 +421,7 @@ export default function ProductSelectionModal({
               minDeliveryAmount={minDeliveryAmount}
               canSubmit={canSubmit}
               onSubmit={handleSubmit}
+              unavailableItems={unavailableItems}
             />
           </div>
         </div>
@@ -475,6 +489,7 @@ export default function ProductSelectionModal({
                 minDeliveryAmount={minDeliveryAmount}
                 canSubmit={canSubmit}
                 onSubmit={handleSubmit}
+                unavailableItems={unavailableItems}
               />
             </div>
           )}
@@ -514,6 +529,7 @@ interface SetupContentProps {
   minDeliveryAmount?: number;
   canSubmit: boolean;
   onSubmit: () => void;
+  unavailableItems?: { productName: string }[];
 }
 
 function SetupContent({
@@ -534,6 +550,7 @@ function SetupContent({
   minDeliveryAmount,
   canSubmit,
   onSubmit,
+  unavailableItems,
 }: SetupContentProps) {
   return (
     <div className="psm__setup">
@@ -634,6 +651,18 @@ function SetupContent({
       {belowMinimum && minDeliveryAmount != null && (
         <div className="psm__min-warning" role="alert">
           Minimum delivery: €{(minDeliveryAmount / 100).toFixed(2)}
+        </div>
+      )}
+
+      {/* Unavailable items from re-order */}
+      {unavailableItems && unavailableItems.length > 0 && (
+        <div className="psm__unavailable-items">
+          {unavailableItems.map((item, idx) => (
+            <div key={idx} className="psm__unavailable-item">
+              <span className="psm__unavailable-item-name">{item.productName}</span>
+              <span className="psm__unavailable-item-label">No longer available</span>
+            </div>
+          ))}
         </div>
       )}
 

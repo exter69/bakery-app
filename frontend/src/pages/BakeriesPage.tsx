@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchBakeries } from '../api/bakeries';
 import { useI18n } from '../i18n';
+import SearchBar from '../components/SearchBar';
 import type { BakeryCard } from '../types/bakery';
 import './BakeriesPage.css';
 
@@ -94,6 +95,9 @@ export default function BakeriesPage() {
           {t('bakeries.subtitle')}
         </p>
       </div>
+
+      {/* Product search */}
+      <SearchBar />
 
       {/* Filter chips (visible on mobile, hidden on desktop) */}
       <div className="bakeries-filters">

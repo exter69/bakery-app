@@ -75,3 +75,20 @@ type UpdateHolidayRequest struct {
 type UpdateFavoritesRequest struct {
 	ProductIDs []string `json:"productIds"`
 }
+
+// PushSubscribeRequest is the request body for subscribing to push notifications.
+type PushSubscribeRequest struct {
+	Endpoint string          `json:"endpoint"`
+	Keys     PushKeysRequest `json:"keys"`
+}
+
+// PushKeysRequest holds the cryptographic keys from the browser push subscription.
+type PushKeysRequest struct {
+	P256dh string `json:"p256dh"`
+	Auth   string `json:"auth"`
+}
+
+// PushUnsubscribeRequest is the request body for unsubscribing from push notifications.
+type PushUnsubscribeRequest struct {
+	Endpoint string `json:"endpoint"`
+}

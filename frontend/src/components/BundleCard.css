@@ -1,0 +1,231 @@
+/* BundleCard — artisan theme */
+.bundle-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--bg-card);
+  border: var(--border);
+  box-shadow: var(--shadow-offset);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  position: relative;
+}
+
+.bundle-card:hover {
+  box-shadow: 5px 5px 0 rgba(58, 46, 34, 0.18);
+  transform: translateY(-2px);
+}
+
+.bundle-card--sold-out {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.bundle-card--sold-out .bundle-card__reserve-btn {
+  pointer-events: auto;
+}
+
+/* Image container */
+.bundle-card__image-container {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  overflow: hidden;
+}
+
+.bundle-card__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--bg-panel);
+}
+
+/* Badges (top-right) */
+.bundle-card__badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-hand-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.bundle-card__badge--stock {
+  background: var(--bg-card);
+  border: var(--border);
+  color: var(--ink);
+}
+
+.bundle-card__badge--sold-out {
+  background: var(--alert);
+  color: #fff;
+  border: none;
+}
+
+/* Body */
+.bundle-card__body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  flex: 1;
+}
+
+/* Header: name + type badge */
+.bundle-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.bundle-card__name {
+  font-family: var(--font-hand-heading);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.bundle-card__type {
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-hand-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bundle-card__type--compose {
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  background: transparent;
+}
+
+.bundle-card__type--surprise {
+  background: var(--accent);
+  color: var(--ink);
+  border: none;
+}
+
+/* Meta line */
+.bundle-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-family: var(--font-hand-body);
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.bundle-card__bakery {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.bundle-card__distance {
+  color: var(--ink-muted);
+}
+
+.bundle-card__pickup {
+  color: var(--ink-muted);
+}
+
+.bundle-card__pickup-time {
+  color: var(--alert);
+  font-weight: 600;
+}
+
+/* Contents */
+.bundle-card__contents {
+  font-family: var(--font-hand-body);
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  line-height: 1.4;
+}
+
+.bundle-card__items-list {
+  margin: 0;
+}
+
+.bundle-card__surprise-value {
+  margin: 0;
+  font-style: italic;
+}
+
+/* Sold-out info */
+.bundle-card__sold-out-info {
+  font-family: var(--font-hand-body);
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.bundle-card__sold-out-info p {
+  margin: 0.15rem 0;
+}
+
+.bundle-card__sold-out-bakery {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.bundle-card__sold-out-message {
+  color: var(--alert);
+  font-weight: 600;
+}
+
+/* Footer: pricing + button */
+.bundle-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.bundle-card__pricing {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.bundle-card__original-price {
+  font-family: var(--font-hand-body);
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  text-decoration: line-through;
+}
+
+.bundle-card__discounted-price {
+  font-family: var(--font-hand-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Reserve button */
+.bundle-card__reserve-btn {
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--accent);
+  color: var(--ink);
+  font-family: var(--font-hand-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bundle-card__reserve-btn:hover:not(:disabled) {
+  background: #d9a23e;
+  box-shadow: 2px 2px 0 rgba(58, 46, 34, 0.25);
+}
+
+.bundle-card__reserve-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

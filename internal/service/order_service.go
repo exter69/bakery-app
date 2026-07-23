@@ -3,32 +3,43 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"math/rand"
 	"time"
 
 	"github.com/lucatorrekens/bakery-app/internal/domain"
+	"github.com/lucatorrekens/bakery-app/internal/payment"
 	"github.com/lucatorrekens/bakery-app/internal/validation"
 )
 
+// PaymentGateway is a local alias to avoid circular imports.
+type PaymentGateway = payment.PaymentGateway
+
 // orderService is the concrete implementation of domain.OrderService.
 type orderService struct {
-	orderRepo  domain.OrderRepository
-	bakeryRepo domain.BakeryRepository
-	userRepo   domain.UserRepository
-	paymentSvc domain.PaymentService
-	idGen      func() string
-	now        func() time.Time
-	rng        *rand.Rand
+	orderRepo        domain.OrderRepository
+	bakeryRepo       domain.BakeryRepository
+	userRepo         domain.UserRepository
+	paymentSvc       domain.PaymentService
+	paymentGateway   PaymentGateway
+	onOrderCancelled func(ctx context.Context, orderID string, refunded bool) error
+	onNewOrder       func(ctx context.Context, orderID string) error
+	idGen            func() string
+	now              func() time.Time
+	rng              *rand.Rand
 }
 
 // OrderServiceConfig holds dependencies for the order service.
 type OrderServiceConfig struct {
-	OrderRepo  domain.OrderRepository
-	BakeryRepo domain.BakeryRepository
-	UserRepo   domain.UserRepository
-	PaymentSvc domain.PaymentService
-	IDGen      func() string
-	Now        func() time.Time
+	OrderRepo        domain.OrderRepository
+	BakeryRepo       domain.BakeryRepository
+	UserRepo         domain.UserRepository
+	PaymentSvc       domain.PaymentService
+	PaymentGateway   PaymentGateway
+	OnOrderCancelled func(ctx context.Context, orderID string, refunded bool) error
+	OnNewOrder       func(ctx context.Context, orderID string) error
+	IDGen            func() string
+	Now              func() time.Time
 }
 
 // NewOrderService creates a new OrderService with the given dependencies.
@@ -42,13 +53,16 @@ func NewOrderService(cfg OrderServiceConfig) domain.OrderService {
 		now = time.Now
 	}
 	return &orderService{
-		orderRepo:  cfg.OrderRepo,
-		bakeryRepo: cfg.BakeryRepo,
-		userRepo:   cfg.UserRepo,
-		paymentSvc: cfg.PaymentSvc,
-		idGen:      idGen,
-		now:        now,
-		rng:        rand.New(rand.NewSource(time.Now().UnixNano())),
+		orderRepo:        cfg.OrderRepo,
+		bakeryRepo:       cfg.BakeryRepo,
+		userRepo:         cfg.UserRepo,
+		paymentSvc:       cfg.PaymentSvc,
+		paymentGateway:   cfg.PaymentGateway,
+		onOrderCancelled: cfg.OnOrderCancelled,
+		onNewOrder:       cfg.OnNewOrder,
+		idGen:            idGen,
+		now:              now,
+		rng:              rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 
@@ -164,6 +178,15 @@ func (s *orderService) CreateOrder(ctx context.Context, userID string, order dom
 		return nil, nil, fmt.Errorf("initiating payment: %w", err)
 	}
 
+	// Fire-and-forget: alert the baker about the new order
+	if s.onNewOrder != nil {
+		go func() {
+			if err := s.onNewOrder(context.Background(), order.ID); err != nil {
+				log.Printf("[NOTIFICATION] new order alert failed for order %s: %v", order.ID, err)
+			}
+		}()
+	}
+
 	return &order, paymentLink, nil
 }
 
@@ -270,8 +293,12 @@ func (s *orderService) DeleteOrder(ctx context.Context, orderID string, userID s
 		return ErrOrderNotCancellable
 	}
 
-	// Check if refund is needed before status change
-	needsRefund := order.Status == domain.OrderStatusConfirmed || order.Status == domain.OrderStatusPreparing
+	// Determine payment action needed based on state *before* cancellation
+	previousStatus := order.Status
+	hasPaymentIntent := order.PaymentIntentID != ""
+	wasPaid := previousStatus == domain.OrderStatusConfirmed ||
+		previousStatus == domain.OrderStatusPreparing ||
+		previousStatus == domain.OrderStatusReady
 
 	order.Status = domain.OrderStatusCancelled
 	order.UpdatedAt = s.now()
@@ -279,12 +306,40 @@ func (s *orderService) DeleteOrder(ctx context.Context, orderID string, userID s
 		return fmt.Errorf("saving order: %w", err)
 	}
 
-	// Initiate refund for orders that had payment confirmed
-	if needsRefund {
+	// Void the authorization (delayed capture: funds were held, not captured)
+	if hasPaymentIntent && wasPaid && s.paymentGateway != nil {
+		refunded := false
+		if err := s.paymentGateway.VoidAuthorization(ctx, order.PaymentIntentID); err != nil {
+			// Void failed — payment was likely already captured. Try a full refund.
+			log.Printf("[PAYMENT] void failed for order %s, attempting refund: %v", order.ID, err)
+			if refErr := s.paymentGateway.RefundPayment(ctx, order.PaymentIntentID, 0); refErr != nil {
+				log.Printf("[PAYMENT] refund also failed for order %s: %v", order.ID, refErr)
+			} else {
+				refunded = true
+				order.RefundStatus = "refunded"
+				_ = s.orderRepo.Save(ctx, order) // best-effort status update
+			}
+		}
+		// Send cancellation notification (non-blocking)
+		if s.onOrderCancelled != nil {
+			if err := s.onOrderCancelled(ctx, order.ID, refunded); err != nil {
+				log.Printf("[NOTIFICATION] cancellation notification failed for order %s: %v", order.ID, err)
+			}
+		}
+		return nil
+	}
+
+	// Fallback: initiate refund for orders without delayed capture (legacy flow)
+	if !hasPaymentIntent && wasPaid && order.TotalAmount > 0 {
 		if err := s.paymentSvc.InitiateRefund(ctx, order.ID, order.TotalAmount); err != nil {
-			// Log the error but don't fail the cancellation
-			// In production, this would be handled by a retry mechanism
-			return fmt.Errorf("initiating refund: %w", err)
+			log.Printf("[PAYMENT] failed to initiate refund for order %s: %v", order.ID, err)
+		}
+	}
+
+	// Send cancellation notification for non-payment-intent orders
+	if s.onOrderCancelled != nil {
+		if err := s.onOrderCancelled(ctx, order.ID, false); err != nil {
+			log.Printf("[NOTIFICATION] cancellation notification failed for order %s: %v", order.ID, err)
 		}
 	}
 

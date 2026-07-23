@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/lucatorrekens/bakery-app/internal/domain"
@@ -188,4 +189,80 @@ func (r *BakeryRepo) DeleteProduct(_ context.Context, id string) error {
 		}
 	}
 	return nil
+}
+
+// SearchProducts searches products by name across all bakeries with optional filters.
+func (r *BakeryRepo) SearchProducts(_ context.Context, params domain.ProductSearchParams) ([]domain.ProductSearchResult, int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	var all []domain.ProductSearchResult
+
+	for bakeryID, products := range r.products {
+		bakery, ok := r.bakeries[bakeryID]
+		if !ok {
+			continue
+		}
+		for _, p := range products {
+			if !matchesSearchParams(p, params) {
+				continue
+			}
+			if p.Allergens == nil {
+				p.Allergens = []string{}
+			}
+			all = append(all, domain.ProductSearchResult{
+				Product:    p,
+				BakeryID:   bakeryID,
+				BakeryName: bakery.Name,
+			})
+		}
+	}
+
+	total := len(all)
+
+	page := params.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := params.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+
+	start := (page - 1) * pageSize
+	if start >= total {
+		return []domain.ProductSearchResult{}, total, nil
+	}
+	end := start + pageSize
+	if end > total {
+		end = total
+	}
+
+	return all[start:end], total, nil
+}
+
+// matchesSearchParams checks if a product matches the given search filters.
+func matchesSearchParams(p domain.Product, params domain.ProductSearchParams) bool {
+	if params.Query != "" && !strings.Contains(strings.ToLower(p.Name), strings.ToLower(params.Query)) {
+		return false
+	}
+	if params.Category != "" && p.Category != params.Category {
+		return false
+	}
+	if params.OnlyAvailable && !p.IsAvailable {
+		return false
+	}
+	if params.MinHealthScore != nil && (p.HealthScore == nil || *p.HealthScore < *params.MinHealthScore) {
+		return false
+	}
+	if len(params.ExcludeAllergens) > 0 {
+		for _, excluded := range params.ExcludeAllergens {
+			for _, allergen := range p.Allergens {
+				if strings.EqualFold(allergen, excluded) {
+					return false
+				}
+			}
+		}
+	}
+	return true
 }

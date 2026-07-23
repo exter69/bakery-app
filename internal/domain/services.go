@@ -58,6 +58,9 @@ type BakeryService interface {
 
 	// GetMenu returns products grouped by category for a given bakery.
 	GetMenu(ctx context.Context, bakeryID string) (map[string][]Product, error)
+
+	// SearchProducts searches products across bakeries with filters.
+	SearchProducts(ctx context.Context, params ProductSearchParams) (*ListResult[ProductSearchResult], error)
 }
 
 // OrderService handles order creation, retrieval, and deletion.
@@ -94,4 +97,44 @@ type PaymentService interface {
 
 	// InitiateRefund initiates a refund for a cancelled order that had already been paid.
 	InitiateRefund(ctx context.Context, orderID string, amount int64) error
+}
+
+// BundleFilters holds filtering options for bundle list queries.
+type BundleFilters struct {
+	Type         *BundleType `json:"type,omitempty"`
+	PickupBefore *TimeOfDay  `json:"pickupBefore,omitempty"` // filter: pickup_end_time before this
+}
+
+// BundleService handles surplus bundle lifecycle and reservations.
+type BundleService interface {
+	// CreateBundle validates and stores a new bundle in draft status.
+	CreateBundle(ctx context.Context, sellerID string, bundle SurplusBundle) (*SurplusBundle, error)
+
+	// PublishBundle transitions a draft bundle to published status.
+	PublishBundle(ctx context.Context, sellerID string, bundleID string) (*SurplusBundle, error)
+
+	// ListBundles returns published bundles, optionally filtered.
+	ListBundles(ctx context.Context, filters BundleFilters, params PaginationParams) (*ListResult[SurplusBundle], error)
+
+	// GetBundle returns a single bundle by ID.
+	GetBundle(ctx context.Context, bundleID string) (*SurplusBundle, error)
+
+	// ReserveBundle creates a reservation for a customer, decrementing stock.
+	ReserveBundle(ctx context.Context, customerID string, bundleID string) (*BundleReservation, error)
+
+	// CancelReservation releases the reservation and increments stock.
+	CancelReservation(ctx context.Context, customerID string, reservationID string) error
+
+	// ConfirmReservation transitions a pending reservation to confirmed.
+	ConfirmReservation(ctx context.Context, customerID string, reservationID string) (*BundleReservation, error)
+
+	// ExpireOverdueBundles finds and expires bundles past their expires_at time.
+	// Called by the expiration worker goroutine.
+	ExpireOverdueBundles(ctx context.Context) (int, error)
+
+	// ReleaseOverdueReservations releases unconfirmed reservations past pickup_end_time.
+	ReleaseOverdueReservations(ctx context.Context) (int, error)
+
+	// GetImpact returns community impact metrics for the current month.
+	GetImpact(ctx context.Context) (*BundleImpact, error)
 }
