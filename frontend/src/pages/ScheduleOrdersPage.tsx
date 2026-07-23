@@ -33,12 +33,9 @@ function formatStatus(status: string): string {
   return status.replace(/_/g, ' ');
 }
 
-function formatDateTime(iso: string): string {
-  const date = new Date(iso);
-  return date.toLocaleString(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+function formatDateTime(scheduledTime: import('../types/order').TimeSlotResponse): string {
+  // scheduledTime is { startTime: "HH:MM", endTime: "HH:MM" }
+  return `${scheduledTime.startTime} – ${scheduledTime.endTime}`;
 }
 
 export default function ScheduleOrdersPage() {

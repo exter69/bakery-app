@@ -1,0 +1,155 @@
+.comptoir-nav {
+  background: var(--comptoir-surface);
+  border-bottom: 1px solid var(--comptoir-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.comptoir-nav__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  height: 56px;
+  gap: 1.5rem;
+}
+
+.comptoir-nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.comptoir-nav__brand-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--comptoir-text);
+}
+
+.comptoir-nav__brand-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--comptoir-accent);
+  color: #fff;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+}
+
+.comptoir-nav__tabs {
+  display: flex;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.comptoir-nav__tab {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--comptoir-text-secondary);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.comptoir-nav__tab:hover {
+  background: #f1f5f9;
+  color: var(--comptoir-text);
+}
+
+.comptoir-nav__tab--active {
+  background: var(--comptoir-accent);
+  color: #fff;
+}
+
+.comptoir-nav__tab--active:hover {
+  background: var(--comptoir-accent-hover);
+  color: #fff;
+}
+
+.comptoir-nav__right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.comptoir-nav__account {
+  position: relative;
+}
+
+.comptoir-nav__account-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: 1px solid var(--comptoir-border);
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--comptoir-text);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.comptoir-nav__account-btn:hover {
+  border-color: var(--comptoir-accent);
+}
+
+.comptoir-nav__dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  background: var(--comptoir-surface);
+  border: 1px solid var(--comptoir-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 150px;
+  overflow: hidden;
+  z-index: 200;
+}
+
+.comptoir-nav__dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  color: var(--comptoir-text);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.comptoir-nav__dropdown-item:hover {
+  background: #f1f5f9;
+}
+
+@media (max-width: 768px) {
+  .comptoir-nav__inner {
+    padding: 0 1rem;
+    gap: 0.75rem;
+  }
+
+  .comptoir-nav__tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .comptoir-nav__tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .comptoir-nav__tab {
+    white-space: nowrap;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}

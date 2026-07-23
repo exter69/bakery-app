@@ -8,6 +8,9 @@ import HealthScoreDisplay from '../components/HealthScoreDisplay';
 import { AllergenIndicator } from '../components/AllergenIndicator';
 import AllergenDetailModal from '../components/AllergenDetailModal';
 import AllergenInfoIcon from '../components/AllergenInfoIcon';
+import StarRating from '../components/StarRating';
+import ReviewList from '../components/ReviewList';
+import ReviewPrompt, { isReviewDismissed } from '../components/ReviewPrompt';
 import type { OrderItem, DeliveryFrequency } from '../components/ProductSelectionModal';
 import type { Bakery, DaySchedule, Menu, Product } from '../types/bakery';
 import './BakeryDetailPage.css';
@@ -33,6 +36,10 @@ export default function BakeryDetailPage() {
 
   // Allergen detail modal state
   const [allergenModalProduct, setAllergenModalProduct] = useState<Product | null>(null);
+
+  // Review prompt state
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false);
+  const [reviewListKey, setReviewListKey] = useState(0);
 
   // Mobile active category filter
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -77,6 +84,13 @@ export default function BakeryDetailPage() {
     }
     load();
   }, [id, loadMenu]);
+
+  // Show review prompt for authenticated users who haven't dismissed it
+  useEffect(() => {
+    if (bakery && id && isAuthenticated() && !isReviewDismissed(id)) {
+      setShowReviewPrompt(true);
+    }
+  }, [bakery, id]);
 
   // Set initial active category for mobile
   useEffect(() => {
@@ -254,6 +268,10 @@ export default function BakeryDetailPage() {
           </div>
           <div className="bakery-page__info">
             <h1 className="bakery-page__name">{bakery.name}</h1>
+            <div className="bakery-page__rating-row">
+              <StarRating rating={bakery.ratingAvg ?? 0} size="md" />
+              <span className="bakery-page__rating-count">({bakery.ratingCount})</span>
+            </div>
             <p className="bakery-page__address">{bakery.address}</p>
             <p className="bakery-page__hours">{todayHours}</p>
             {travelInfo && (
@@ -386,6 +404,9 @@ export default function BakeryDetailPage() {
           </div>
         )}
 
+        {/* Reviews section */}
+        {id && <ReviewList bakeryId={id} key={reviewListKey} />}
+
         {/* Floating order button (desktop) */}
         {isAuthenticated() && (
           <button
@@ -432,6 +453,18 @@ export default function BakeryDetailPage() {
 
       {/* Page-level allergen info floating button */}
       <AllergenInfoIcon />
+
+      {/* Review Prompt Modal */}
+      {showReviewPrompt && id && (
+        <ReviewPrompt
+          bakeryId={id}
+          onClose={() => setShowReviewPrompt(false)}
+          onSubmitted={() => {
+            setShowReviewPrompt(false);
+            setReviewListKey((k) => k + 1);
+          }}
+        />
+      )}
     </div>
   );
 }

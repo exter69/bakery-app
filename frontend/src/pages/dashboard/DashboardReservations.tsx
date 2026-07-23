@@ -66,9 +66,8 @@ export default function DashboardReservations() {
   const formatItems = (reservation: Reservation) =>
     reservation.items.map((i) => `${i.productName} x${i.quantity}`).join(', ');
 
-  const formatTime = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+  const formatTime = (scheduledTime: { startTime: string; endTime: string }) => {
+    return `${scheduledTime.startTime} – ${scheduledTime.endTime}`;
   };
 
   const renderAction = (reservation: Reservation) => {

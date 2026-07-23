@@ -36,10 +36,12 @@ function formatFrenchDay(date: Date): string {
   return date.toLocaleDateString('fr-FR', { weekday: 'long' });
 }
 
-/** Format time from ISO string as HH:MM */
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+/** Format time from TimeSlotResponse object as HH:MM */
+function formatTime(scheduledTime: Order['scheduledTime']): string {
+  if (typeof scheduledTime === 'object' && scheduledTime !== null && 'startTime' in scheduledTime) {
+    return scheduledTime.startTime;
+  }
+  return '--:--';
 }
 
 /** Format item summary for order card */

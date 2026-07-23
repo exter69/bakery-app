@@ -1,0 +1,53 @@
+/* ─── StarRating Component ─────────────────────────────────────────────── */
+
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Sizes */
+.star-rating--sm .star-rating__icon {
+  width: 14px;
+  height: 14px;
+}
+
+.star-rating--md .star-rating__icon {
+  width: 20px;
+  height: 20px;
+}
+
+.star-rating--lg .star-rating__icon {
+  width: 28px;
+  height: 28px;
+}
+
+/* Star elements */
+.star-rating__star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.star-rating__star--interactive {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: transform 150ms ease;
+}
+
+.star-rating__star--interactive:hover {
+  transform: scale(1.15);
+}
+
+.star-rating__star--interactive:focus-visible {
+  outline: 2px solid var(--accent, #e8b04b);
+  outline-offset: 2px;
+}
+
+.star-rating__icon {
+  display: block;
+}

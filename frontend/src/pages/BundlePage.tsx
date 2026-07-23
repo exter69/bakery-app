@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { isAuthenticated } from '../api/client';
 import { useI18n } from '../i18n';
 import {
   useBundles,
@@ -43,6 +45,7 @@ function haversineDistance(
 
 export default function BundlePage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [activeFilters, setActiveFilters] = useState<Set<FilterKey>>(new Set(['all']));
   const [userLatitude, setUserLatitude] = useState<number | undefined>(undefined);
@@ -166,6 +169,11 @@ export default function BundlePage() {
   }, [activeReservation, bundles]);
 
   const handleReserve = useCallback(async (bundleId: string) => {
+    // Redirect unauthenticated users to login instead of calling the API
+    if (!isAuthenticated()) {
+      navigate('/login', { state: { from: '/paniers-du-soir' } });
+      return;
+    }
     setReservingBundleId(bundleId);
     try {
       const reservation = await reserveBundle.mutate(bundleId);
@@ -181,7 +189,7 @@ export default function BundlePage() {
     } finally {
       setReservingBundleId(null);
     }
-  }, [reserveBundle, refetch, t]);
+  }, [reserveBundle, refetch, t, navigate]);
 
   const handleConfirm = useCallback(async () => {
     if (!activeReservation) return;

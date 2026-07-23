@@ -1,0 +1,34 @@
+:root {
+  --comptoir-accent: #4b8fe8;
+  --comptoir-accent-hover: #3a7dd6;
+  --comptoir-bg: #f8fafc;
+  --comptoir-surface: #ffffff;
+  --comptoir-text: #1e293b;
+  --comptoir-text-secondary: #64748b;
+  --comptoir-border: #e2e8f0;
+  --comptoir-success: #16a34a;
+  --comptoir-warning: #ea580c;
+  --comptoir-danger: #dc2626;
+}
+
+.comptoir-layout {
+  min-height: 100vh;
+  background: var(--comptoir-bg);
+  color: var(--comptoir-text);
+  display: flex;
+  flex-direction: column;
+}
+
+.comptoir-main {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .comptoir-main {
+    padding: 1rem;
+  }
+}

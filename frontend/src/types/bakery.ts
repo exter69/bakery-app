@@ -7,6 +7,8 @@ export interface BakeryCard {
   longitude: number;
   todaySchedule: TodaySchedule;
   distance?: number; // distance in km, only present when user location is available
+  ratingAvg?: number | null;
+  ratingCount: number;
 }
 
 /** Today's schedule for a bakery */
@@ -29,6 +31,8 @@ export interface Bakery {
   minDeliveryAmount?: number; // in cents
   schedule: DaySchedule[];
   createdAt: string;
+  ratingAvg?: number | null;
+  ratingCount: number;
 }
 
 /** Schedule for a single day */

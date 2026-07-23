@@ -1,0 +1,142 @@
+/* ─── ReviewPrompt Modal ───────────────────────────────────────────────── */
+
+.review-prompt-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(58, 46, 34, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: review-fade-in 250ms ease forwards;
+}
+
+.review-prompt {
+  position: relative;
+  width: min(440px, 90vw);
+  background: var(--bg-card, #fffdf8);
+  border: 1.5px solid var(--ink, #3a2e22);
+  border-radius: 16px;
+  box-shadow: 4px 4px 0 rgba(58, 46, 34, 0.25);
+  padding: 28px 24px;
+  animation: review-scale-in 250ms ease forwards;
+}
+
+.review-prompt__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink, #3a2e22);
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 150ms;
+}
+
+.review-prompt__close:hover {
+  background: rgba(58, 46, 34, 0.08);
+}
+
+.review-prompt__title {
+  font-family: var(--font-hand-heading, 'Caveat', cursive);
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 16px;
+  color: var(--ink, #3a2e22);
+}
+
+.review-prompt__label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted, #7a5c3e);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.review-prompt__stars {
+  margin-bottom: 16px;
+}
+
+.review-prompt__textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1.5px solid rgba(58, 46, 34, 0.2);
+  border-radius: 10px;
+  background: var(--bg-card, #fffdf8);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink, #3a2e22);
+  resize: vertical;
+  min-height: 80px;
+  box-sizing: border-box;
+  transition: border-color 150ms;
+}
+
+.review-prompt__textarea:focus {
+  outline: none;
+  border-color: var(--accent, #e8b04b);
+}
+
+.review-prompt__textarea::placeholder {
+  color: var(--ink-muted, #7a5c3e);
+  opacity: 0.7;
+}
+
+.review-prompt__error {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--alert, #b3543a);
+}
+
+.review-prompt__submit {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1.5px solid var(--ink, #3a2e22);
+  background: var(--accent, #e8b04b);
+  font-family: var(--font-hand-body, 'Patrick Hand', cursive);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink, #3a2e22);
+  transition: background 150ms, opacity 150ms;
+}
+
+.review-prompt__submit:hover:not(:disabled) {
+  background: #d9a03e;
+}
+
+.review-prompt__submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.review-prompt__thank-you {
+  text-align: center;
+  padding: 24px 0;
+}
+
+.review-prompt__thank-you p {
+  font-family: var(--font-hand-heading, 'Caveat', cursive);
+  font-size: 22px;
+  color: var(--ink, #3a2e22);
+  margin: 0;
+}
+
+/* ─── Animations ──────────────────────────────────────────────────────────── */
+
+@keyframes review-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes review-scale-in {
+  from { transform: scale(0.97); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

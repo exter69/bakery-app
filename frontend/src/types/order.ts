@@ -22,13 +22,20 @@ export interface ScheduleItem {
   subtotal: number;
 }
 
+/** Time slot as returned by the API */
+export interface TimeSlotResponse {
+  startTime: string; // HH:MM format
+  endTime: string;   // HH:MM format
+}
+
 /** An order or reservation entry in the schedule list */
 export interface ScheduleEntry {
   id: string;
   type: 'order' | 'reservation';
   bakeryId: string;
   items: ScheduleItem[];
-  scheduledTime: string;
+  scheduledDay: string;
+  scheduledTime: TimeSlotResponse;
   status: OrderStatus | ReservationStatus;
   totalAmount: number;
   createdAt: string;

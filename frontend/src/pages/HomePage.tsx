@@ -8,6 +8,7 @@ import Footer from '../components/Footer';
 import BakeryMap from '../components/BakeryMap';
 import { HomeBundleCard } from '../components/HomeBundleCard';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { ThemeSwitcher } from '../components/ThemeSwitcher';
 import type { BakeryCard } from '../types/bakery';
 import './HomePage.css';
 
@@ -88,6 +89,7 @@ export default function HomePage() {
             {authenticated && <Link to="/schedule" className="pill-nav__link" onMouseEnter={handleLinkHover}>{t('nav.orders')}</Link>}
             <Link to="/about" className="pill-nav__link" onMouseEnter={handleLinkHover}>{t('nav.about')}</Link>
           </div>
+          <ThemeSwitcher />
           <LanguageSwitcher />
           <div className="pill-nav__actions">
             {authenticated ? (

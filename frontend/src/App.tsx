@@ -22,7 +22,15 @@ import DashboardProducts from './pages/dashboard/DashboardProducts';
 import DashboardSchedule from './pages/dashboard/DashboardSchedule';
 import DashboardOrders from './pages/dashboard/DashboardOrders';
 import DashboardBundles from './pages/dashboard/DashboardBundles';
+import DashboardB2BPage from './pages/dashboard/DashboardB2BPage';
 import BundlePage from './pages/BundlePage';
+import ComptoirLayout from './pages/comptoir/ComptoirLayout';
+import CommanderPage from './pages/comptoir/CommanderPage';
+import RecurrencesPage from './pages/comptoir/RecurrencesPage';
+import LivraisonsPage from './pages/comptoir/LivraisonsPage';
+import FacturesPage from './pages/comptoir/FacturesPage';
+import ComptoirProfilePage from './pages/comptoir/ComptoirProfilePage';
+import { SiteProvider } from './components/comptoir/SiteSwitcher';
 import './App.css';
 
 /** Listens for auth:unauthorized events and redirects to login */
@@ -74,6 +82,16 @@ function App() {
           <Route path="stats" element={<DashboardSchedule />} />
           <Route path="orders" element={<DashboardOrders />} />
           <Route path="bundles" element={<DashboardBundles />} />
+          <Route path="b2b" element={<DashboardB2BPage />} />
+        </Route>
+
+        {/* B2B Comptoir (role 3) */}
+        <Route path="/comptoir" element={<RoleRoute allowedRoles={[3]}><SiteProvider><ComptoirLayout /></SiteProvider></RoleRoute>}>
+          <Route index element={<CommanderPage />} />
+          <Route path="recurrences" element={<RecurrencesPage />} />
+          <Route path="livraisons" element={<LivraisonsPage />} />
+          <Route path="factures" element={<FacturesPage />} />
+          <Route path="profile" element={<ComptoirProfilePage />} />
         </Route>
 
         {/* Catch-all */}

@@ -1,0 +1,82 @@
+/* ─── ReviewList Component ─────────────────────────────────────────────── */
+
+.review-list {
+  margin-top: 24px;
+}
+
+.review-list__title {
+  font-family: var(--font-hand-heading, 'Caveat', cursive);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink, #3a2e22);
+  margin: 0 0 16px;
+}
+
+.review-list__items {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.review-list__item {
+  background: var(--bg-card, #fffdf8);
+  border: 1.5px solid rgba(58, 46, 34, 0.12);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.review-list__item-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.review-list__author {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink, #3a2e22);
+}
+
+.review-list__time {
+  font-size: 12px;
+  color: var(--ink-muted, #7a5c3e);
+  margin-left: auto;
+}
+
+.review-list__text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink, #3a2e22);
+  margin: 8px 0 0;
+}
+
+.review-list__empty {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--ink-muted, #7a5c3e);
+  font-size: 14px;
+}
+
+.review-list__load-more {
+  display: block;
+  margin: 16px auto 0;
+  padding: 8px 20px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1.5px solid var(--ink, #3a2e22);
+  background: var(--bg-card, #fffdf8);
+  font-family: var(--font-hand-body, 'Patrick Hand', cursive);
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--ink, #3a2e22);
+  transition: background 150ms;
+}
+
+.review-list__load-more:hover {
+  background: var(--bg-panel, #f7f1e5);
+}
+
+.review-list__load-more:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

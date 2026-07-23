@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchBakeries } from '../api/bakeries';
 import { useI18n } from '../i18n';
 import SearchBar from '../components/SearchBar';
+import StarRating from '../components/StarRating';
 import type { BakeryCard } from '../types/bakery';
 import './BakeriesPage.css';
 
@@ -137,6 +138,10 @@ export default function BakeriesPage() {
             />
             <div className="bakery-card__info">
               <h2 className="bakery-card__name">{bakery.name}</h2>
+              <div className="bakery-card__rating">
+                <StarRating rating={bakery.ratingAvg ?? 0} size="sm" />
+                <span className="bakery-card__rating-count">({bakery.ratingCount})</span>
+              </div>
               <p className={`bakery-card__schedule${!bakery.todaySchedule.isOpen ? ' bakery-card__schedule--closed' : ''}`}>
                 {bakery.todaySchedule.isOpen
                   ? `${t('common.open')} · ${bakery.todaySchedule.openTime} – ${bakery.todaySchedule.closeTime}`
@@ -170,6 +175,10 @@ export default function BakeriesPage() {
             />
             <div className="ledger-row__center">
               <span className="ledger-row__name">{bakery.name}</span>
+              <span className="ledger-row__rating">
+                <StarRating rating={bakery.ratingAvg ?? 0} size="sm" />
+                <span className="ledger-row__rating-count">({bakery.ratingCount})</span>
+              </span>
               {bakery.distance != null && (
                 <span className="ledger-row__address">
                   {bakery.distance < 1

@@ -110,18 +110,33 @@ export default function DashboardOverview() {
   // Greeting with bakery name
   const greeting = `Bonjour ${bakery.name.split(' ')[0]}`;
 
+  // Helper: extract comparable minutes from a TimeSlotResponse or plain string
+  const getTimeMinutes = (entry: Order | Reservation): number => {
+    const st = entry.scheduledTime;
+    // scheduledTime is a TimeSlotResponse object: { startTime: "HH:MM", endTime: "HH:MM" }
+    if (typeof st === 'object' && st !== null && 'startTime' in st) {
+      const parts = st.startTime.split(':');
+      return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    }
+    // Fallback for unexpected string format
+    const fallback = new Date(st as unknown as string);
+    return isNaN(fallback.getTime()) ? 0 : fallback.getHours() * 60 + fallback.getMinutes();
+  };
+
   // Orders to prepare: confirmed orders + reservations, sorted by time
   const toPrepare = [...todayOrders, ...todayReservations]
     .filter((o) => o.status === 'confirmed')
-    .sort((a, b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime())
+    .sort((a, b) => getTimeMinutes(a) - getTimeMinutes(b))
     .slice(0, 5);
 
   // Next pickup/delivery time
   const nextEntry = [...todayOrders, ...todayReservations]
     .filter((r) => r.status === 'confirmed')
-    .sort((a, b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime())[0];
+    .sort((a, b) => getTimeMinutes(a) - getTimeMinutes(b))[0];
   const nextTime = nextEntry
-    ? new Date(nextEntry.scheduledTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    ? (typeof nextEntry.scheduledTime === 'object' && nextEntry.scheduledTime !== null && 'startTime' in nextEntry.scheduledTime
+        ? nextEntry.scheduledTime.startTime
+        : null)
     : null;
 
   // Revenue: sum of orders' totals today
@@ -143,8 +158,15 @@ export default function DashboardOverview() {
   // Estimated unsold value
   const unsoldEstimate = lowStockProducts.reduce((sum, p) => sum + p.price, 0) / 100;
 
-  const formatTime = (iso: string) => {
-    return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const formatTime = (st: Order['scheduledTime']) => {
+    // scheduledTime is a TimeSlotResponse object: { startTime: "HH:MM", endTime: "HH:MM" }
+    if (typeof st === 'object' && st !== null && 'startTime' in st) {
+      return st.startTime;
+    }
+    // Fallback for unexpected string format
+    const d = new Date(st as unknown as string);
+    if (isNaN(d.getTime())) return '--:--';
+    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   };
 
   const formatItems = (items: Order['items']) =>
