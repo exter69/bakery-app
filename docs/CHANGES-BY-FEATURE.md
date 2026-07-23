@@ -56,8 +56,10 @@ All rows are `pre-1.0`: the app is not deployed yet — the first production dep
 |------|--------|---------|--------|
 | 2026-07-17 | — | pre-1.0 | JWT auth + roles (Admin/Seller/Customer) |
 | 2026-07-23 | MA-55 | pre-1.0 | SSO / social login (Google, Apple) |
+| 2026-07-28 | MA-68 | pre-1.0 | Removed Apple SSO button stub from LoginPage (kept backend provider + icon for future use) |
 | 2026-07-23 | MA-58 | pre-1.0 | GDPR: data export, account deletion, cookie consent, privacy/terms pages |
 | 2026-07-28 | MA-66 | pre-1.0 | Auth hardening: prod boot guard for secrets, server-signed OAuth state (CSRF), safe account linking, crypto/rand tokens, removed X-User-ID header fallback |
+| 2026-07-28 | — | pre-1.0 | GDPR completeness: full PII deletion (social logins, B2B, push, Stripe), JWT invalidation for deleted users, reviews in data export |
 
 ## Surplus boxes — "Panier du soir"
 
@@ -98,6 +100,7 @@ All rows are `pre-1.0`: the app is not deployed yet — the first production dep
 | 2026-07-23 | MA-31 | pre-1.0 | Security hardening & vulnerability review |
 | 2026-07-23 | MA-22 | pre-1.0 | Error tracking (Sentry) |
 | 2026-07-23 | MA-19 | pre-1.0 | Image upload for products & bakeries |
+| 2026-07-28 | MA-68 | pre-1.0 | Added explicit `case "s3":` to UPLOAD_STORAGE switch with targeted fatal message |
 | 2026-07-23 | — | pre-1.0 | GitHub Actions CI/CD pipeline |
 | 2026-07-23 | MA-20 | pre-1.0 | OpenAPI 3.0 specification |
 | 2026-07-23 | MA-21 | pre-1.0 | Storybook component library |

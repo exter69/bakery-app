@@ -6,8 +6,8 @@ This plan verifies and completes the security hardening for MA-66. Much of the w
 
 ## Tasks
 
-- [ ] 1. Verify and harden production secret checks
-  - [ ] 1.1 Audit `cmd/server/main.go` secret validation logic
+- [x] 1. Verify and harden production secret checks
+  - [x] 1.1 Audit `cmd/server/main.go` secret validation logic
     - Confirm `log.Fatal` fires for empty JWT_SECRET when APP_ENV=production
     - Confirm `log.Fatal` fires for empty STRIPE_WEBHOOK_SECRET when APP_ENV=production and PAYMENT_GATEWAY=stripe
     - Confirm no secret values are logged (only warnings about missing vars)
@@ -21,8 +21,8 @@ This plan verifies and completes the security hardening for MA-66. Much of the w
     - Test that secret values never appear in error messages
     - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 2. Verify OAuth state token implementation
-  - [ ] 2.1 Audit `internal/api/oauth_handler.go` state token logic
+- [x] 2. Verify OAuth state token implementation
+  - [x] 2.1 Audit `internal/api/oauth_handler.go` state token logic
     - Confirm `generateOAuthState` uses crypto/rand for nonce (16 bytes)
     - Confirm HMAC-SHA256 signing with `stateKey`
     - Confirm `verifyOAuthState` checks signature, checks TTL (10 min)
@@ -44,8 +44,8 @@ This plan verifies and completes the security hardening for MA-66. Much of the w
     - Generate tokens at time T, verify acceptance at T+delta for delta <= 10min and rejection for delta > 10min
     - **Validates: Requirements 2.3**
 
-- [ ] 3. Verify OAuth account linking safety
-  - [ ] 3.1 Audit `internal/service/oauth_service.go` linking logic
+- [x] 3. Verify OAuth account linking safety
+  - [x] 3.1 Audit `internal/service/oauth_service.go` linking logic
     - Confirm password-protected accounts reject auto-linking (returns ErrOAuthAccountLinkRequiresVerification)
     - Confirm social-only accounts (empty PasswordHash) allow auto-linking
     - Confirm new emails create new accounts
@@ -56,8 +56,8 @@ This plan verifies and completes the security hardening for MA-66. Much of the w
     - Generate random users (with/without password) and OAuth emails, verify linking outcome matches rules
     - **Validates: Requirements 3.1, 3.2, 3.3**
 
-- [ ] 4. Verify and test rate limiter hardening
-  - [ ] 4.1 Audit `internal/middleware/ratelimit.go` and `cmd/server/main.go` rate limiter config
+- [x] 4. Verify and test rate limiter hardening
+  - [x] 4.1 Audit `internal/middleware/ratelimit.go` and `cmd/server/main.go` rate limiter config
     - Confirm auth rate limiter keys on `r.RemoteAddr`
     - Confirm `/api/auth/register` uses `authRateLimiter` middleware
     - Confirm `evictStale` logic removes entries after 5x window with no activity
@@ -74,8 +74,8 @@ This plan verifies and completes the security hardening for MA-66. Much of the w
     - Generate entries, advance time past eviction interval, verify all stale entries removed
     - **Validates: Requirements 4.3**
 
-- [ ] 5. Verify cryptographic token generation
-  - [ ] 5.1 Audit `internal/service/auth_service.go` token generation
+- [x] 5. Verify cryptographic token generation
+  - [x] 5.1 Audit `internal/service/auth_service.go` token generation
     - Confirm `generateTokenCode` uses `crypto/rand.Int` (not math/rand)
     - Confirm 8-character output from 32-char alphabet (40+ bits entropy)
     - Run `grep -r "math/rand" internal/` to verify no math/rand in security paths
@@ -86,8 +86,8 @@ This plan verifies and completes the security hardening for MA-66. Much of the w
     - Generate 100+ tokens, verify each is 8 chars from alphabet "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     - **Validates: Requirements 5.1, 5.3**
 
-- [ ] 6. Verify identity extraction safety
-  - [ ] 6.1 Audit `internal/api/helpers.go` and `internal/middleware/auth.go`
+- [x] 6. Verify identity extraction safety
+  - [x] 6.1 Audit `internal/api/helpers.go` and `internal/middleware/auth.go`
     - Confirm `extractUserID` calls only `GetUserIDFromContext`
     - Confirm no X-User-ID header reading anywhere in the function
     - Confirm returns empty string when no context value set
@@ -98,14 +98,14 @@ This plan verifies and completes the security hardening for MA-66. Much of the w
     - Generate requests with random X-User-ID headers but no JWT context, verify empty string returned
     - **Validates: Requirements 6.1, 6.2, 6.3**
 
-- [ ] 7. Static analysis and CI verification
-  - [ ] 7.1 Run static analysis checks
+- [x] 7. Static analysis and CI verification
+  - [x] 7.1 Run static analysis checks
     - Run `go vet ./...` and `staticcheck ./...`
     - Run `grep -rn "math/rand" internal/ cmd/` to verify no math/rand in auth/token paths
     - Verify all existing tests pass with `go test ./...`
     - _Requirements: 5.2_
 
-- [ ] 8. Final checkpoint
+- [x] 8. Final checkpoint
   - Ensure all tests pass, ask the user if questions arise.
   - Verify no regressions in existing auth flows (login, register, OAuth callback)
   - Confirm the codebase matches all 6 requirements

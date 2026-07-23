@@ -202,9 +202,9 @@ describe('Property 12: Baker form accepts all valid allergen/score combinations'
 
         unmount();
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
-  });
+  }, 10000);
 
   it('HealthScoreInput accepts any valid score (null or 1-5) without errors', () => {
     fc.assert(

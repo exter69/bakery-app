@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { I18nProvider } from '../../i18n/I18nContext';
 import DashboardBundles from './DashboardBundles';
 
 // Mock seller API (the routed component uses fetchMyBakery + fetchProducts)
@@ -26,7 +27,7 @@ const mockProducts = [
 ];
 
 function renderBundles() {
-  return render(<DashboardBundles />);
+  return render(<I18nProvider><DashboardBundles /></I18nProvider>);
 }
 
 describe('DashboardBundles (routed bundle composer)', () => {
@@ -55,26 +56,26 @@ describe('DashboardBundles (routed bundle composer)', () => {
     });
 
     // Select first product
-    const checkbox = screen.getByLabelText('Sélectionner Croissant');
+    const checkbox = screen.getByLabelText('Croissant');
     await user.click(checkbox);
 
     // Pricing section should appear with a discounted price
     await waitFor(() => {
-      expect(screen.getByText('Publier les paniers')).not.toBeDisabled();
+      expect(screen.getByText('Publish bundles')).not.toBeDisabled();
     });
   });
 
   it('shows loading state initially', () => {
     (fetchMyBakery as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(() => {}));
     renderBundles();
-    expect(screen.getByText(/Chargement/)).toBeInTheDocument();
+    expect(screen.getByText(/Loading/)).toBeInTheDocument();
   });
 
   it('shows empty state when no bakery found', async () => {
     (fetchMyBakery as ReturnType<typeof vi.fn>).mockResolvedValue(null);
     renderBundles();
     await waitFor(() => {
-      expect(screen.getByText(/Aucune boulangerie/)).toBeInTheDocument();
+      expect(screen.getByText(/No bakery found/)).toBeInTheDocument();
     });
   });
 
@@ -84,7 +85,7 @@ describe('DashboardBundles (routed bundle composer)', () => {
     ]);
     renderBundles();
     await waitFor(() => {
-      expect(screen.getByText(/Aucun produit disponible/)).toBeInTheDocument();
+      expect(screen.getByText(/No products available/)).toBeInTheDocument();
     });
   });
 });

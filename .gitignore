@@ -1,4 +1,5 @@
 # Binaries
+/server
 bin/
 *.exe
 *.exe~

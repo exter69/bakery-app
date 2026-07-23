@@ -78,6 +78,34 @@ func (r *ReviewRepo) GetByUserAndBakery(ctx context.Context, userID, bakeryID st
 	return review, nil
 }
 
+func (r *ReviewRepo) ListByUser(ctx context.Context, userID string) ([]domain.Review, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, bakery_id, user_id, order_id, rating, text, hidden, created_at
+		FROM reviews
+		WHERE user_id = $1
+		ORDER BY created_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var reviews []domain.Review
+	for rows.Next() {
+		var rev domain.Review
+		var text *string
+		err := rows.Scan(&rev.ID, &rev.BakeryID, &rev.UserID, &rev.OrderID,
+			&rev.Rating, &text, &rev.Hidden, &rev.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		if text != nil {
+			rev.Text = *text
+		}
+		reviews = append(reviews, rev)
+	}
+	return reviews, rows.Err()
+}
+
 func (r *ReviewRepo) ListByBakery(ctx context.Context, bakeryID string, params domain.PaginationParams) ([]domain.Review, int, error) {
 	limit, offset := paginationToOffset(params)
 

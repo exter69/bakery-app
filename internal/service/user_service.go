@@ -3,10 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/lucatorrekens/bakery-app/internal/api/dto"
 	"github.com/lucatorrekens/bakery-app/internal/domain"
+	"github.com/lucatorrekens/bakery-app/internal/payment"
+	"github.com/lucatorrekens/bakery-app/internal/push"
 )
 
 // UserServiceConfig holds the configuration for the UserService.
@@ -18,6 +21,8 @@ type UserServiceConfig struct {
 	ReviewRepo         domain.ReviewRepository
 	SocialLoginRepo    domain.SocialLoginRepository
 	B2BRepo            domain.B2BRepository
+	PushStore          *push.Store
+	StripeCustomerSvc  *payment.StripeCustomerService
 }
 
 // UserService handles user profile, holiday mode, data export, and account deletion.
@@ -29,6 +34,8 @@ type UserService struct {
 	reviewRepo         domain.ReviewRepository
 	socialLoginRepo    domain.SocialLoginRepository
 	b2bRepo            domain.B2BRepository
+	pushStore          *push.Store
+	stripeCustomerSvc  *payment.StripeCustomerService
 }
 
 // NewUserService creates a new UserService.
@@ -46,6 +53,8 @@ func NewUserServiceFull(cfg UserServiceConfig) *UserService {
 		reviewRepo:         cfg.ReviewRepo,
 		socialLoginRepo:    cfg.SocialLoginRepo,
 		b2bRepo:            cfg.B2BRepo,
+		pushStore:          cfg.PushStore,
+		stripeCustomerSvc:  cfg.StripeCustomerSvc,
 	}
 }
 
@@ -277,10 +286,24 @@ func (s *UserService) ExportData(ctx context.Context, userID string) (*dto.DataE
 		}
 	}
 
-	// Fetch reviews — ReviewRepository does not have a ListByUser method,
-	// so we skip reviews in the export if not available via order data.
-	// Reviews are included via the bakery-level review listing; for a full export
-	// a dedicated query would be needed. We leave this as empty for now.
+	// Fetch reviews
+	if s.reviewRepo != nil {
+		reviews, err := s.reviewRepo.ListByUser(ctx, userID)
+		if err != nil {
+			// Graceful degradation: log and return empty reviews
+			log.Printf("[EXPORT] failed to fetch reviews for user %s: %v", userID, err)
+		} else {
+			for _, rev := range reviews {
+				export.Reviews = append(export.Reviews, dto.DataExportReview{
+					ID:        rev.ID,
+					BakeryID:  rev.BakeryID,
+					Rating:    rev.Rating,
+					Text:      rev.Text,
+					CreatedAt: rev.CreatedAt,
+				})
+			}
+		}
+	}
 
 	return export, nil
 }
@@ -295,6 +318,9 @@ func (s *UserService) DeleteAccount(ctx context.Context, userID string) error {
 	if user == nil {
 		return ErrUserNotFound
 	}
+
+	// Capture Stripe Customer ID before clearing it (needed for Stripe deletion)
+	stripeCustomerID := user.StripeCustomerID
 
 	// Anonymize user record
 	user.Username = "deleted-" + userID[:8]
@@ -311,6 +337,27 @@ func (s *UserService) DeleteAccount(ctx context.Context, userID string) error {
 		return fmt.Errorf("saving anonymized user: %w", err)
 	}
 
+	// Delete social logins
+	if s.socialLoginRepo != nil {
+		if err := s.socialLoginRepo.DeleteByUser(ctx, userID); err != nil {
+			return fmt.Errorf("deleting social logins: %w", err)
+		}
+	}
+
+	// Delete B2B profile
+	if s.b2bRepo != nil {
+		if err := s.b2bRepo.DeleteProfile(ctx, userID); err != nil {
+			return fmt.Errorf("deleting B2B profile: %w", err)
+		}
+	}
+
+	// Delete B2B saved lists
+	if s.b2bRepo != nil {
+		if err := s.b2bRepo.DeleteSavedListsByUser(ctx, userID); err != nil {
+			return fmt.Errorf("deleting saved lists: %w", err)
+		}
+	}
+
 	// Delete recurring orders
 	if s.recurringOrderRepo != nil {
 		recOrders, _, err := s.recurringOrderRepo.ListByUser(ctx, userID, domain.PaginationParams{Page: 1, PageSize: 10000})
@@ -321,13 +368,25 @@ func (s *UserService) DeleteAccount(ctx context.Context, userID string) error {
 		}
 	}
 
-	// Delete B2B profile and delivery sites
+	// Delete B2B delivery sites
 	if s.b2bRepo != nil {
 		sites, err := s.b2bRepo.ListSitesByUser(ctx, userID)
 		if err == nil {
 			for _, site := range sites {
 				_ = s.b2bRepo.DeleteSite(ctx, site.ID)
 			}
+		}
+	}
+
+	// Clear push subscriptions
+	if s.pushStore != nil {
+		s.pushStore.DeleteByUser(userID)
+	}
+
+	// Delete Stripe Customer (best-effort: log error, don't fail)
+	if s.stripeCustomerSvc != nil && stripeCustomerID != "" {
+		if err := s.stripeCustomerSvc.DeleteCustomer(ctx, stripeCustomerID); err != nil {
+			log.Printf("[GDPR] failed to delete Stripe customer %s for user %s: %v", stripeCustomerID, userID, err)
 		}
 	}
 

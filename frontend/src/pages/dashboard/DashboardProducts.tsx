@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchMyBakery, fetchProducts, createProduct, updateProduct } from '../../api/seller';
 import { ApiError } from '../../api/client';
+import { useI18n } from '../../i18n';
 import type { Product } from '../../types/bakery';
 import { FilterChips } from '../../components/pro/FilterChips';
 import { ProductCard } from '../../components/pro/ProductCard';
@@ -38,6 +39,7 @@ const DAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'] as const;
 const ALL_FILTER = 'toutes';
 
 export default function DashboardProducts() {
+  const { t } = useI18n();
   const [bakeryId, setBakeryId] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,9 +67,9 @@ export default function DashboardProducts() {
       setStockMap(new Map(prods.map((p) => [p.id, 0])));
       setError(null);
     } catch {
-      setError('Impossible de charger les produits.');
+      setError(t('dashboard.products.loadError'));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,26 +80,26 @@ export default function DashboardProducts() {
         setBakeryId(b.id);
         await loadProducts(b.id);
       } else {
-        setError('Aucune boulangerie trouvée.');
+        setError(t('dashboard.products.noBakery'));
       }
       setLoading(false);
     }
     init();
     return () => { cancelled = true; };
-  }, [loadProducts]);
+  }, [loadProducts, t]);
 
   // Build category chip options from product data
   const categoryOptions = useMemo(() => {
     const cats = new Set(products.map((p) => p.category.toLowerCase()));
     const options: { value: string; label: string }[] = [
-      { value: ALL_FILTER, label: 'Toutes' },
+      { value: ALL_FILTER, label: t('dashboard.products.allCategories') },
     ];
     // Prioritize known categories in order, then any extras
     const knownOrder = ['viennoiseries', 'pains', 'pâtisseries'];
     const knownLabels: Record<string, string> = {
       viennoiseries: 'Viennoiseries',
       pains: 'Pains',
-      pâtisseries: 'Pâtisseries',
+      'pâtisseries': 'Pâtisseries',
     };
     for (const cat of knownOrder) {
       if (cats.has(cat)) {
@@ -110,7 +112,7 @@ export default function DashboardProducts() {
       options.push({ value: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) });
     }
     return options;
-  }, [products]);
+  }, [products, t]);
 
   // Filtered products
   const filteredProducts = useMemo(() => {
@@ -134,7 +136,7 @@ export default function DashboardProducts() {
       } catch (err) {
         // 409 Conflict: another user modified the product concurrently
         if (err instanceof ApiError && err.status === 409) {
-          setError('Les données ont été modifiées. Rechargement…');
+          setError(t('dashboard.products.conflictError'));
           if (bakeryId) {
             await loadProducts(bakeryId);
           }
@@ -142,7 +144,7 @@ export default function DashboardProducts() {
         // Other errors are silent — stock is local anyway
       }
     },
-    [bakeryId, loadProducts],
+    [bakeryId, loadProducts, t],
   );
 
   // Visibility toggle
@@ -154,10 +156,10 @@ export default function DashboardProducts() {
         const updated = await updateProduct(productId, { isAvailable: !product.isAvailable });
         setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       } catch {
-        setError('Impossible de modifier la visibilité.');
+        setError(t('dashboard.products.visibilityError'));
       }
     },
-    [products],
+    [products, t],
   );
 
   // Day toggle handler
@@ -189,7 +191,7 @@ export default function DashboardProducts() {
       setShowModal(false);
       await loadProducts(bakeryId);
     } catch {
-      setError('Impossible de créer le produit.');
+      setError(t('dashboard.products.createError'));
     } finally {
       setSubmitting(false);
     }
@@ -197,14 +199,14 @@ export default function DashboardProducts() {
 
   // Loading state
   if (loading) {
-    return <div className="dash-loading">Chargement des produits…</div>;
+    return <div className="dash-loading">{t('dashboard.products.loading')}</div>;
   }
 
   // Error state with retry — full-page error only when no stale data exists
   if (error && products.length === 0) {
     return (
       <div className="pro-products">
-        <h1 className="pro-products__title">Menu &amp; stock</h1>
+        <h1 className="pro-products__title">{t('dashboard.products.title')}</h1>
         <ErrorBanner
           message={error}
           onRetry={bakeryId ? () => loadProducts(bakeryId) : undefined}
@@ -217,7 +219,7 @@ export default function DashboardProducts() {
     <div className="pro-products">
       {/* Header */}
       <div className="pro-products__header">
-        <h1 className="pro-products__title">Menu &amp; stock</h1>
+        <h1 className="pro-products__title">{t('dashboard.products.title')}</h1>
       </div>
 
       {/* Inline error (non-blocking — stale data retained) */}
@@ -236,14 +238,14 @@ export default function DashboardProducts() {
           className="pro-products__add-btn"
           onClick={openAddModal}
         >
-          + Nouveau produit
+          {t('dashboard.products.addProduct')}
         </button>
       </div>
 
       {/* Product cards list */}
       {filteredProducts.length === 0 ? (
         <div className="pro-products__empty">
-          Aucun produit dans cette catégorie.
+          {t('dashboard.products.emptyCategory')}
         </div>
       ) : (
         <div className="pro-products__list">
@@ -262,9 +264,9 @@ export default function DashboardProducts() {
       {/* Day availability toggles */}
       <div className="pro-products__availability">
         <p className="pro-products__availability-label">
-          Disponibilité par défaut
+          {t('dashboard.products.availability')}
         </p>
-        <div className="pro-products__day-toggles" role="group" aria-label="Jours de disponibilité">
+        <div className="pro-products__day-toggles" role="group" aria-label={t('dashboard.products.availability')}>
           {DAY_LABELS.map((label, index) => (
             <button
               key={index}
@@ -279,7 +281,7 @@ export default function DashboardProducts() {
           ))}
         </div>
         <p className="pro-products__note">
-          le stock se remet à zéro chaque soir ↺
+          {t('dashboard.products.stockResetNote')} ↺
         </p>
       </div>
 
@@ -287,10 +289,10 @@ export default function DashboardProducts() {
       {showModal && (
         <div className="dash-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="dash-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="dash-modal__title">Nouveau produit</h2>
+            <h2 className="dash-modal__title">{t('dashboard.products.modal.title')}</h2>
             <form className="dash-form" onSubmit={handleSubmit}>
               <div className="dash-form__field">
-                <label className="dash-form__label" htmlFor="prod-name">Nom</label>
+                <label className="dash-form__label" htmlFor="prod-name">{t('dashboard.products.modal.name')}</label>
                 <input
                   id="prod-name"
                   className="dash-form__input"
@@ -300,7 +302,7 @@ export default function DashboardProducts() {
                 />
               </div>
               <div className="dash-form__field">
-                <label className="dash-form__label" htmlFor="prod-desc">Description</label>
+                <label className="dash-form__label" htmlFor="prod-desc">{t('dashboard.products.modal.description')}</label>
                 <textarea
                   id="prod-desc"
                   className="dash-form__textarea"
@@ -310,7 +312,7 @@ export default function DashboardProducts() {
                 />
               </div>
               <div className="dash-form__field">
-                <label className="dash-form__label" htmlFor="prod-price">Prix (€)</label>
+                <label className="dash-form__label" htmlFor="prod-price">{t('dashboard.products.modal.price')}</label>
                 <input
                   id="prod-price"
                   className="dash-form__input"
@@ -323,7 +325,7 @@ export default function DashboardProducts() {
                 />
               </div>
               <div className="dash-form__field">
-                <label className="dash-form__label" htmlFor="prod-category">Catégorie</label>
+                <label className="dash-form__label" htmlFor="prod-category">{t('dashboard.products.modal.category')}</label>
                 <input
                   id="prod-category"
                   className="dash-form__input"
@@ -335,7 +337,7 @@ export default function DashboardProducts() {
               <ImageUpload
                 value={form.photoUrl}
                 onChange={(url) => setForm({ ...form, photoUrl: url })}
-                label="Photo"
+                label={t('dashboard.products.modal.photo')}
                 type="products"
               />
               <AllergenMultiSelect
@@ -352,14 +354,14 @@ export default function DashboardProducts() {
                   className="dash-btn dash-btn--secondary"
                   onClick={() => setShowModal(false)}
                 >
-                  Annuler
+                  {t('dashboard.products.modal.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="dash-btn dash-btn--primary"
                   disabled={submitting}
                 >
-                  {submitting ? 'Création…' : 'Créer'}
+                  {submitting ? t('dashboard.products.modal.creating') : t('dashboard.products.modal.create')}
                 </button>
               </div>
             </form>

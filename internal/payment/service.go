@@ -130,8 +130,11 @@ func (s *paymentService) ProcessPaymentCallback(ctx context.Context, orderID str
 		return ErrInvalidOrderStatus
 	}
 
-	// Update order status to Confirmed
-	order.Status = domain.OrderStatusConfirmed
+	// Transition order via state machine (defense in depth — the guard above
+	// already ensures PendingPayment, but TransitionOrder makes the contract explicit).
+	if err := domain.TransitionOrder(order, domain.OrderStatusConfirmed); err != nil {
+		return fmt.Errorf("transitioning order to confirmed: %w", err)
+	}
 	order.PaymentIntentID = paymentRef // Store for delayed capture/void
 	order.UpdatedAt = now
 

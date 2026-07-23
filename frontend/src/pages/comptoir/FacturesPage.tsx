@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '../../i18n';
 import { listInvoices, downloadInvoicePDF } from '../../api/b2b-client';
+import { ErrorState } from '../../components/ErrorState';
 import type { B2BInvoice } from '../../types/b2b';
 
 export default function FacturesPage() {
@@ -9,19 +10,22 @@ export default function FacturesPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const result = await listInvoices(page);
       setInvoices(result.items);
       setTotal(result.total);
     } catch {
-      setInvoices([]);
+      setError(t('comptoir.common.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, t]);
 
   useEffect(() => {
     fetchData();
@@ -32,7 +36,10 @@ export default function FacturesPage() {
   const handleDownload = async (invoiceId: string, invoiceNumber: number) => {
     try {
       const resp = await downloadInvoicePDF(invoiceId);
-      if (!resp.ok) return;
+      if (!resp.ok) {
+        setDownloadError(t('comptoir.error.generic'));
+        return;
+      }
       const blob = await resp.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -43,9 +50,17 @@ export default function FacturesPage() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch {
-      // Silently fail
+      setDownloadError(t('comptoir.error.generic'));
     }
   };
+
+  // Auto-dismiss download error after 5 seconds
+  useEffect(() => {
+    if (downloadError) {
+      const timer = setTimeout(() => setDownloadError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [downloadError]);
 
   const fmt = (cents: number) => (cents / 100).toFixed(2);
 
@@ -73,8 +88,16 @@ export default function FacturesPage() {
     <div className="factures-page">
       <h1>{t('comptoir.invoices.title')}</h1>
 
+      {downloadError && (
+        <div className="factures-page__download-error" role="alert">
+          {downloadError}
+        </div>
+      )}
+
       {loading ? (
         <p>{t('comptoir.common.loading')}</p>
+      ) : error ? (
+        <ErrorState message={error} onRetry={fetchData} retryLabel={t('comptoir.common.retry')} />
       ) : invoices.length === 0 ? (
         <p className="factures-page__empty">{t('comptoir.invoices.empty')}</p>
       ) : (

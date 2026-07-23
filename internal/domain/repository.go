@@ -127,6 +127,9 @@ type ReviewRepository interface {
 	// ListByBakery returns non-hidden reviews for a bakery, paginated, newest first.
 	ListByBakery(ctx context.Context, bakeryID string, params PaginationParams) ([]Review, int, error)
 
+	// ListByUser returns all reviews authored by a user (regardless of hidden status).
+	ListByUser(ctx context.Context, userID string) ([]Review, error)
+
 	// SetHidden toggles the hidden flag and recalculates bakery rating aggregates.
 	SetHidden(ctx context.Context, reviewID string, hidden bool) error
 

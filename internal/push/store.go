@@ -75,3 +75,10 @@ func (s *Store) DeleteByEndpoint(userID, endpoint string) {
 		}
 	}
 }
+
+// DeleteByUser removes all push subscriptions for a given user ID.
+func (s *Store) DeleteByUser(userID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.subs, userID)
+}

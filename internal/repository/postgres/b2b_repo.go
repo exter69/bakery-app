@@ -540,3 +540,15 @@ func scanB2BInvoiceRow(rows pgx.Rows) (domain.B2BInvoice, error) {
 		&inv.TVAAmount, &inv.TotalTTC, &inv.PaymentStatus, &inv.IssuedAt, &inv.PaidAt)
 	return inv, err
 }
+
+// --- GDPR Deletion ---
+
+func (r *B2BRepo) DeleteProfile(ctx context.Context, userID string) error {
+	_, err := r.pool.Exec(ctx, `DELETE FROM business_profiles WHERE user_id = $1`, userID)
+	return err
+}
+
+func (r *B2BRepo) DeleteSavedListsByUser(ctx context.Context, userID string) error {
+	_, err := r.pool.Exec(ctx, `DELETE FROM saved_lists WHERE user_id = $1`, userID)
+	return err
+}

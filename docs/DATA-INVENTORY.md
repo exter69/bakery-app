@@ -72,13 +72,15 @@ This document inventories all personal data collected, processed, and stored by 
 | Data Category | Retention Period | Deletion Method |
 |---------------|-----------------|-----------------|
 | Active accounts | Until account deletion | Anonymization |
-| Deleted accounts | Immediate anonymization | Username → "deleted-{id}", email/password cleared |
+| Deleted accounts | Immediate anonymization | Username → "deleted-{id}", email/password cleared; JWT invalidated via middleware check |
 | Order history | Indefinite (anonymized on account deletion) | User reference anonymized |
 | Reviews | Indefinite (anonymized on account deletion) | User reference anonymized |
 | Recurring orders | Until account deletion | Hard delete |
-| B2B profiles | Until account deletion | Hard delete |
+| B2B profiles | Until account deletion | Hard delete (profile + saved lists) |
 | Delivery sites | Until account deletion | Hard delete |
-| Social logins | Until account deletion | Record retained for login integrity |
+| Social logins | Until account deletion | Hard delete |
+| Push subscriptions | Until account deletion | Cleared from memory |
+| Stripe Customer | Until account deletion | Deleted via Stripe API (best-effort) |
 
 ## 4. Data Subject Rights Implementation
 

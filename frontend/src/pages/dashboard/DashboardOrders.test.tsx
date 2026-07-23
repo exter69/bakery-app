@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { I18nProvider } from '../../i18n/I18nContext';
 import DashboardOrders from './DashboardOrders';
 
 // Mock seller API
@@ -56,9 +57,11 @@ const mockOrders = {
 
 function renderOrders() {
   return render(
-    <MemoryRouter>
-      <DashboardOrders />
-    </MemoryRouter>,
+    <I18nProvider>
+      <MemoryRouter>
+        <DashboardOrders />
+      </MemoryRouter>
+    </I18nProvider>,
   );
 }
 
@@ -70,42 +73,38 @@ describe('DashboardOrders', () => {
     (updateOrderStatus as ReturnType<typeof vi.fn>).mockResolvedValue(makeOrder('o1', 'preparing'));
   });
 
-  it('renders 4 kanban columns with correct French labels', async () => {
+  it('renders 4 kanban columns with correct labels', async () => {
     renderOrders();
     await waitFor(() => {
-      expect(screen.getByText('À PRÉPARER')).toBeInTheDocument();
-      expect(screen.getByText('EN PRÉPARATION')).toBeInTheDocument();
-      expect(screen.getByText('PRÊT')).toBeInTheDocument();
-      expect(screen.getByText('REMIS / LIVRÉ')).toBeInTheDocument();
+      expect(screen.getByText('TO PREPARE')).toBeInTheDocument();
+      expect(screen.getByText('PREPARING')).toBeInTheDocument();
+      expect(screen.getByText('READY')).toBeInTheDocument();
+      expect(screen.getByText('DELIVERED')).toBeInTheDocument();
     });
   });
 
-  it('filter chips show/hide orders by type (livraison vs retrait)', async () => {
+  it('filter chips show/hide orders by type (delivery vs pickup)', async () => {
     const user = userEvent.setup();
     renderOrders();
 
     await waitFor(() => {
-      expect(screen.getByText('À PRÉPARER')).toBeInTheDocument();
+      expect(screen.getByText('TO PREPARE')).toBeInTheDocument();
     });
 
-    // Initially all orders are shown — we see counts for all columns
-    // Click "Livraison" filter to show only orders of type 'order'
-    await user.click(screen.getByText('Livraison'));
+    // Click "Delivery" filter to show only orders of type 'order'
+    await user.click(screen.getByText('Delivery'));
 
     // Only 'order' type entries should be visible (o1 confirmed, o2 preparing)
-    // Column counts should update
     await waitFor(() => {
-      // The confirmed column should show 1 (o1 is order type)
-      const confirmedColumn = screen.getByRole('group', { name: 'Colonne À PRÉPARER' });
+      const confirmedColumn = screen.getByRole('group', { name: 'TO PREPARE' });
       expect(confirmedColumn).toHaveTextContent('(1)');
     });
 
-    // Click "Retrait" filter
-    await user.click(screen.getByText('Retrait'));
+    // Click "Pickup" filter
+    await user.click(screen.getByText('Pickup'));
 
     await waitFor(() => {
-      // The confirmed column should show 0 (o1 is not a reservation)
-      const confirmedColumn = screen.getByRole('group', { name: 'Colonne À PRÉPARER' });
+      const confirmedColumn = screen.getByRole('group', { name: 'TO PREPARE' });
       expect(confirmedColumn).toHaveTextContent('(0)');
     });
   });
@@ -115,7 +114,7 @@ describe('DashboardOrders', () => {
     renderOrders();
 
     await waitFor(() => {
-      expect(screen.getByText('À PRÉPARER')).toBeInTheDocument();
+      expect(screen.getByText('TO PREPARE')).toBeInTheDocument();
     });
 
     // The confirmed order should have "Commencer" action button
@@ -130,14 +129,14 @@ describe('DashboardOrders', () => {
   it('shows loading state initially', () => {
     (fetchMyBakery as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(() => {}));
     renderOrders();
-    expect(screen.getByText(/Chargement des commandes/)).toBeInTheDocument();
+    expect(screen.getByText(/Loading orders/)).toBeInTheDocument();
   });
 
   it('shows error banner when API fails and no orders loaded', async () => {
     (fetchMyBakery as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
     renderOrders();
     await waitFor(() => {
-      expect(screen.getByText(/Impossible de charger la boulangerie/)).toBeInTheDocument();
+      expect(screen.getByText(/Unable to load bakery/)).toBeInTheDocument();
     });
   });
 });

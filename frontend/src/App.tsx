@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { isGuestMode } from './api/client';
+import { AuthProvider } from './auth/AuthProvider';
+import { UserRole } from './auth/roles';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleRoute from './components/RoleRoute';
 import CustomerLayout from './components/CustomerLayout';
@@ -65,6 +67,7 @@ function AuthRedirectListener() {
 function App() {
   return (
     <BrowserRouter>
+      <AuthProvider>
       <AuthRedirectListener />
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
@@ -92,11 +95,11 @@ function App() {
           </Route>
 
           {/* Seller dashboard (role 0 or 1) */}
-          <Route path="/dashboard" element={<RoleRoute allowedRoles={[0, 1]}><DashboardLayout /></RoleRoute>}>
+          <Route path="/dashboard" element={<RoleRoute allowedRoles={[UserRole.Admin, UserRole.Seller]}><DashboardLayout /></RoleRoute>}>
             <Route index element={<DashboardOverview />} />
             <Route path="bakery" element={<DashboardBakery />} />
             <Route path="products" element={<DashboardProducts />} />
-            <Route path="stats" element={<DashboardSchedule />} />
+            <Route path="schedule" element={<DashboardSchedule />} />
             <Route path="orders" element={<DashboardOrders />} />
             <Route path="bundles" element={<DashboardBundles />} />
             <Route path="payouts" element={<DashboardPayouts />} />
@@ -104,7 +107,7 @@ function App() {
           </Route>
 
           {/* B2B Comptoir (role 3) */}
-          <Route path="/comptoir" element={<RoleRoute allowedRoles={[3]}><SiteProvider><ComptoirLayout /></SiteProvider></RoleRoute>}>
+          <Route path="/comptoir" element={<RoleRoute allowedRoles={[UserRole.B2B]}><SiteProvider><ComptoirLayout /></SiteProvider></RoleRoute>}>
             <Route index element={<CommanderPage />} />
             <Route path="recurrences" element={<RecurrencesPage />} />
             <Route path="livraisons" element={<LivraisonsPage />} />
@@ -116,6 +119,7 @@ function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

@@ -106,7 +106,10 @@ func (s *reservationService) CreateReservation(ctx context.Context, userID strin
 	}
 	reservation.TotalAmount = domain.CalculateOrderTotal(reservation.Items)
 
-	// Step 5: Always set payment method to OnSpot and status to Confirmed
+	// Step 5: Always set payment method to OnSpot and status to Confirmed.
+	// NOTE: This direct assignment is the sole permitted bypass of TransitionReservation.
+	// A new entity has no prior state to transition FROM, so the state machine cannot
+	// be applied here. All subsequent status changes MUST use domain.TransitionReservation.
 	reservation.PaymentMethod = domain.PaymentMethodOnSpot
 	reservation.Status = domain.ReservationStatusConfirmed
 
@@ -162,10 +165,11 @@ func (s *reservationService) DeleteReservation(ctx context.Context, reservationI
 	if reservation.UserID != userID {
 		return ErrForbidden
 	}
-	if reservation.Status == domain.ReservationStatusPickedUp || reservation.Status == domain.ReservationStatusCancelled {
+	// Use the state machine for cancellation — TransitionReservation rejects
+	// transitions from terminal states (PickedUp, Cancelled) automatically.
+	if err := domain.TransitionReservation(reservation, domain.ReservationStatusCancelled); err != nil {
 		return ErrReservationNotCancellable
 	}
 
-	reservation.Status = domain.ReservationStatusCancelled
 	return s.reservationRepo.Save(ctx, *reservation)
 }

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/lucatorrekens/bakery-app/internal/domain"
 )
 
 // contextKey is a private type for context keys in this package.
@@ -29,7 +30,9 @@ type authErrorResponse struct {
 
 // JWTAuth returns an HTTP middleware that validates JWT tokens from the Authorization header.
 // It extracts the user ID from the "sub" claim and stores it in the request context.
-func JWTAuth(secret string) func(http.Handler) http.Handler {
+// If userRepo is provided, it also checks whether the user has been deleted and rejects
+// requests with 401 ACCOUNT_DELETED.
+func JWTAuth(secret string, userRepo domain.UserRepository) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -96,6 +99,19 @@ func JWTAuth(secret string) func(http.Handler) http.Handler {
 			if userID == "" {
 				writeAuthError(w, http.StatusUnauthorized, "INVALID_TOKEN", "invalid token")
 				return
+			}
+
+			// Check if user has been deleted (username starts with "deleted-" and email is empty)
+			if userRepo != nil {
+				user, err := userRepo.GetByID(r.Context(), userID)
+				if err == nil && user != nil {
+					if strings.HasPrefix(user.Username, "deleted-") && user.ContactEmail == "" {
+						writeAuthError(w, http.StatusUnauthorized, "ACCOUNT_DELETED", "account has been deleted")
+						return
+					}
+				}
+				// If user is nil (not found) or error occurred, allow through
+				// to avoid blocking on transient DB issues
 			}
 
 			// Extract role from claims (optional)

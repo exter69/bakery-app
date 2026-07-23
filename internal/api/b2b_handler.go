@@ -56,13 +56,13 @@ func requireSellerRole(next http.Handler) http.Handler {
 }
 
 // RegisterRoutes mounts B2B routes on the chi router.
-func (h *B2BHandler) RegisterRoutes(r chi.Router, jwtSecret string) {
+func (h *B2BHandler) RegisterRoutes(r chi.Router, jwtSecret string, userRepo domain.UserRepository) {
 	// Public: B2B registration (no auth required)
 	r.Post("/api/comptoir/register", h.Register)
 
 	// Protected: requires JWT + RoleBusiness (role 3)
 	r.Route("/api/comptoir", func(r chi.Router) {
-		r.Use(appmw.JWTAuth(jwtSecret))
+		r.Use(appmw.JWTAuth(jwtSecret, userRepo))
 		r.Use(requireB2BRole)
 
 		// Profile
@@ -106,7 +106,7 @@ func (h *B2BHandler) RegisterRoutes(r chi.Router, jwtSecret string) {
 
 	// Baker-facing B2B management (requires JWT + seller/admin role)
 	r.Route("/api/dashboard/b2b", func(r chi.Router) {
-		r.Use(appmw.JWTAuth(jwtSecret))
+		r.Use(appmw.JWTAuth(jwtSecret, userRepo))
 		r.Use(requireSellerRole)
 
 		r.Get("/access", h.ListAccessRequests)

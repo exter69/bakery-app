@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { I18nProvider } from '../../i18n/I18nContext';
 import DashboardProducts from './DashboardProducts';
 
 // Mock seller API
@@ -63,7 +64,7 @@ const mockProducts = [
 ];
 
 function renderProducts() {
-  return render(<DashboardProducts />);
+  return render(<I18nProvider><DashboardProducts /></I18nProvider>);
 }
 
 describe('DashboardProducts', () => {
@@ -148,6 +149,6 @@ describe('DashboardProducts', () => {
   it('shows loading state initially', () => {
     (fetchMyBakery as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(() => {}));
     renderProducts();
-    expect(screen.getByText(/Chargement des produits/)).toBeInTheDocument();
+    expect(screen.getByText(/Loading products/)).toBeInTheDocument();
   });
 });

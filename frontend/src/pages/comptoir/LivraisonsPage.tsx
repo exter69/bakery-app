@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '../../i18n';
-import { listDeliveries } from '../../api/b2b-client';
+import { listDeliveries, editOrder, getProducts } from '../../api/b2b-client';
+import { ErrorState } from '../../components/ErrorState';
+import type { Product } from '../../types/bakery';
 
 interface DeliveryEntry {
   id: string;
@@ -22,20 +24,29 @@ export default function LivraisonsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<{ bakeryId?: string; status?: string; dateFrom?: string; dateTo?: string }>({});
+
+  // Edit modal state
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [editItems, setEditItems] = useState<{ productId: string; quantity: number }[]>([]);
+  const [editProducts, setEditProducts] = useState<Product[]>([]);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const result = await listDeliveries({ ...filters, page });
       setDeliveries(result.items);
       setTotal(result.total);
     } catch {
-      setDeliveries([]);
+      setError(t('comptoir.common.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [page, filters]);
+  }, [page, filters, t]);
 
   useEffect(() => {
     fetchData();
@@ -43,7 +54,6 @@ export default function LivraisonsPage() {
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  // Separate upcoming from past based on status
   const upcoming = deliveries.filter((d) => ['confirmed', 'preparing', 'ready'].includes(d.status));
   const past = deliveries.filter((d) => d.status === 'delivered');
 
@@ -55,6 +65,48 @@ export default function LivraisonsPage() {
   const statusLabel = (status: string) => {
     const key = `comptoir.deliveries.status.${status}` as const;
     return t(key);
+  };
+
+  const handleEditOpen = async (delivery: DeliveryEntry) => {
+    setEditingOrderId(delivery.id);
+    setEditItems(delivery.items.map((i) => ({ ...i })));
+    setEditError(null);
+    try {
+      const categorizedProducts = await getProducts(delivery.bakeryId);
+      const allProducts = Object.values(categorizedProducts).flat();
+      setEditProducts(allProducts);
+    } catch {
+      setEditProducts([]);
+    }
+  };
+
+  const handleEditClose = () => {
+    setEditingOrderId(null);
+    setEditItems([]);
+    setEditProducts([]);
+    setEditError(null);
+  };
+
+  const handleEditQuantity = (productId: string, quantity: number) => {
+    setEditItems((prev) =>
+      prev.map((item) => item.productId === productId ? { ...item, quantity: Math.max(0, quantity) } : item)
+    );
+  };
+
+  const handleEditSave = async () => {
+    if (!editingOrderId) return;
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      const filteredItems = editItems.filter((i) => i.quantity > 0);
+      await editOrder(editingOrderId, filteredItems);
+      handleEditClose();
+      fetchData();
+    } catch {
+      setEditError(t('comptoir.error.generic'));
+    } finally {
+      setEditSaving(false);
+    }
   };
 
   return (
@@ -89,6 +141,8 @@ export default function LivraisonsPage() {
 
       {loading ? (
         <p>{t('comptoir.common.loading')}</p>
+      ) : error ? (
+        <ErrorState message={error} onRetry={fetchData} retryLabel={t('comptoir.common.retry')} />
       ) : deliveries.length === 0 ? (
         <p className="livraisons-page__empty">{t('comptoir.deliveries.empty')}</p>
       ) : (
@@ -110,9 +164,13 @@ export default function LivraisonsPage() {
                     <tr key={d.id}>
                       <td>{formatDate(d.createdAt)}</td>
                       <td>{statusLabel(d.status)}</td>
-                      <td>{d.items.length} items</td>
+                      <td>{t('comptoir.deliveries.itemCount', { n: String(d.items.length) })}</td>
                       <td>
-                        <button type="button" className="livraisons-page__edit-btn">
+                        <button
+                          type="button"
+                          className="livraisons-page__edit-btn"
+                          onClick={() => handleEditOpen(d)}
+                        >
                           {t('comptoir.deliveries.edit')}
                         </button>
                       </td>
@@ -139,7 +197,7 @@ export default function LivraisonsPage() {
                     <tr key={d.id}>
                       <td>{formatDate(d.createdAt)}</td>
                       <td>{statusLabel(d.status)}</td>
-                      <td>{d.items.length} items</td>
+                      <td>{t('comptoir.deliveries.itemCount', { n: String(d.items.length) })}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -157,6 +215,50 @@ export default function LivraisonsPage() {
             </button>
           </div>
         </>
+      )}
+
+      {/* Inline edit modal */}
+      {editingOrderId && (
+        <div className="livraisons-page__modal-overlay" onClick={handleEditClose}>
+          <div className="livraisons-page__modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <h3>{t('comptoir.deliveries.edit')}</h3>
+            {editError && <p className="livraisons-page__modal-error" role="alert">{editError}</p>}
+            <table className="livraisons-page__edit-table">
+              <thead>
+                <tr>
+                  <th>{t('comptoir.commander.product')}</th>
+                  <th>{t('comptoir.commander.quantity')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {editItems.map((item) => {
+                  const product = editProducts.find((p) => p.id === item.productId);
+                  return (
+                    <tr key={item.productId}>
+                      <td>{product?.name ?? item.productId}</td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          value={item.quantity}
+                          onChange={(e) => handleEditQuantity(item.productId, Number(e.target.value))}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div className="livraisons-page__modal-actions">
+              <button type="button" onClick={handleEditClose}>
+                {t('comptoir.common.cancel')}
+              </button>
+              <button type="button" onClick={handleEditSave} disabled={editSaving}>
+                {t('comptoir.common.save')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

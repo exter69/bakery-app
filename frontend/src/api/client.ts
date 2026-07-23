@@ -33,9 +33,21 @@ export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-/** Check if the user currently has a token */
+/** Check if the user currently has a token that is not expired */
 export function isAuthenticated(): boolean {
-  return getToken() !== null;
+  const token = getToken();
+  if (!token) return false;
+  const payload = decodeTokenPayload(token);
+  if (!payload) return false;
+  // If exp claim exists and is a number, check it against current time
+  if (typeof payload.exp === 'number') {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (nowSeconds >= payload.exp) {
+      clearToken();
+      return false;
+    }
+  }
+  return true;
 }
 
 /** Enable guest mode */
@@ -56,19 +68,47 @@ export function clearGuestMode(): void {
 // --- JWT Decode Utility ---
 
 /**
+ * Safely decode a base64url-encoded string to a standard string.
+ * Translates URL-safe alphabet (-/_ → +//) and adds padding before calling atob().
+ */
+export function decodeBase64Url(base64url: string): string {
+  const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+  return atob(padded);
+}
+
+export interface TokenPayload {
+  role?: number;
+  exp?: number;
+  sub?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Decode a JWT token's payload segment into a typed object.
+ * Returns null if the token is malformed or cannot be parsed.
+ */
+export function decodeTokenPayload(token: string): TokenPayload | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const json = decodeBase64Url(parts[1]);
+    const payload = JSON.parse(json);
+    if (typeof payload !== 'object' || payload === null) return null;
+    return payload as TokenPayload;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Decode the JWT payload and extract the role claim.
  * Returns the numeric role or null if decoding fails.
  */
 export function decodeTokenRole(token: string): number | null {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(atob(parts[1]));
-    if (typeof payload.role === 'number') return payload.role;
-    return null;
-  } catch {
-    return null;
-  }
+  const payload = decodeTokenPayload(token);
+  if (payload === null || typeof payload.role !== 'number') return null;
+  return payload.role;
 }
 
 // --- API Fetch with Auth ---

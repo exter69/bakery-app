@@ -5,7 +5,6 @@ import { useI18n } from '../i18n';
 import BakerCard from '../components/BakerCard';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import GoogleIcon from '../components/icons/GoogleIcon';
-import AppleIcon from '../components/icons/AppleIcon';
 import './LoginPage.css';
 
 interface LoginResponse {
@@ -156,17 +155,6 @@ export default function LoginPage() {
               <GoogleIcon className="login-card__social-icon" />
               <span>{t('login.signInWithGoogle')}</span>
             </button>
-            {import.meta.env.VITE_APPLE_OAUTH_ENABLED === 'true' && (
-              <button
-                type="button"
-                className="login-card__social-btn login-card__social-btn--apple"
-                onClick={() => handleOAuthLogin('apple')}
-                disabled={loading}
-              >
-                <AppleIcon className="login-card__social-icon" />
-                <span>{t('login.signInWithApple')}</span>
-              </button>
-            )}
           </div>
 
           <div className="login-card__divider"><span>{t('login.oauthSeparator')}</span></div>

@@ -1,5 +1,29 @@
 # Changelog
 
+## [2025-07-28] Frontend session quality: JWT fix, auth context, strict mode, dashboard i18n
+
+- **Module/App**: Frontend (React/TypeScript)
+- **Purpose**: Fix JWT base64url decode bug, add client-side token expiry checks, introduce a shared Role enum with reactive auth context, enable TypeScript strict mode, and migrate all dashboard pages to use the i18n system. Fix "today" stats to pass a date filter.
+- **Features/Areas**: Authentication, TypeScript strict mode, Dashboard i18n, Role management
+- **Summary**: Refactored `decodeTokenRole` in `client.ts` with proper base64url decode (translate -/_ to +/, pad with =). Updated `isAuthenticated()` to check JWT `exp` claim. Created `auth/roles.ts` (UserRole enum), `auth/AuthProvider.tsx` (reactive context), `auth/useAuth.ts` (hook). Updated `RoleRoute` and `App.tsx` to use enum and context. Added `"strict": true` to tsconfig.app.json (zero errors). Added ~120 dashboard translation keys to all 3 locales (EN/FR/NL). Refactored 7 dashboard pages to use `t()` calls. Added `date` param to seller API functions and passed today's date in DashboardOverview for accurate "today" stats. Updated all related tests.
+- **Tests**: 227 tests passing across 26 test files. `tsc --noEmit` exits 0 with strict mode.
+
+## [2025-07-28] GDPR completeness: full deletion, JWT invalidation, and export reviews
+
+- **Module/App**: Backend (service, middleware, domain, repository, payment, push, cmd/server)
+- **Purpose**: Achieve full GDPR Article 17 compliance by deleting PII from all auxiliary tables (social logins, B2B, push, Stripe) on account deletion, invalidating JWTs for deleted users in the auth middleware, and including reviews in the data export.
+- **Features/Areas**: GDPR deletion, JWT invalidation, data export
+- **Summary**: Added `DeleteByUser` to SocialLoginRepository and push.Store; added `DeleteProfile`/`DeleteSavedListsByUser` to B2BRepository; added `ListByUser` to ReviewRepository; added `DeleteCustomer` to StripeCustomerService. Extended `DeleteAccount` to call all new cleanup methods. Modified `JWTAuth` middleware to accept a `UserRepository` and reject deleted users with 401 ACCOUNT_DELETED. Updated `ExportData` to include reviews. Updated DATA-INVENTORY.md with correct retention info.
+- **Tests**: All existing tests pass (`go build ./...`, `go vet ./...`, `go test ./...`).
+
+## [2025-07-28] Remove Apple SSO button stub and add explicit S3 storage case (MA-68)
+
+- **Module/App**: Frontend (LoginPage), Backend (cmd/server)
+- **Purpose**: Remove dead Apple OAuth button that could render if env var was accidentally set; add explicit `UPLOAD_STORAGE=s3` handling so users get a targeted error instead of the generic "unknown value" message.
+- **Features/Areas**: Apple SSO, Upload storage configuration
+- **Summary**: Removed `AppleIcon` import and the `VITE_APPLE_OAUTH_ENABLED` conditional block from `LoginPage.tsx` (component and i18n key kept on disk for future use). Added `case "s3":` to the upload storage switch in `cmd/server/main.go` that fatals with `upload.ErrS3NotImplemented`. Verified no remaining `VITE_APPLE_OAUTH_ENABLED` references in frontend source.
+- **Tests**: `go build ./...` and `npx tsc --noEmit` pass.
+
 ## [2025-07-23] Add tests for Connect webhook onboarding sync and payout refund reversal
 
 - **Module/App**: Backend (payment, service)

@@ -65,7 +65,7 @@ func createTokenWithWrongSecret(userID string) string {
 func TestJWTAuth_ValidToken(t *testing.T) {
 	var capturedUserID string
 
-	handler := JWTAuth(testSecret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := JWTAuth(testSecret, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedUserID = GetUserIDFromContext(r.Context())
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -84,7 +84,7 @@ func TestJWTAuth_ValidToken(t *testing.T) {
 func TestJWTAuth_ValidTokenWithUserIDClaim(t *testing.T) {
 	var capturedUserID string
 
-	handler := JWTAuth(testSecret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := JWTAuth(testSecret, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedUserID = GetUserIDFromContext(r.Context())
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -101,7 +101,7 @@ func TestJWTAuth_ValidTokenWithUserIDClaim(t *testing.T) {
 }
 
 func TestJWTAuth_MissingAuthorizationHeader(t *testing.T) {
-	handler := JWTAuth(testSecret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := JWTAuth(testSecret, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("handler should not be called")
 	}))
 
@@ -118,7 +118,7 @@ func TestJWTAuth_MissingAuthorizationHeader(t *testing.T) {
 }
 
 func TestJWTAuth_MissingBearerPrefix(t *testing.T) {
-	handler := JWTAuth(testSecret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := JWTAuth(testSecret, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("handler should not be called")
 	}))
 
@@ -138,7 +138,7 @@ func TestJWTAuth_MissingBearerPrefix(t *testing.T) {
 }
 
 func TestJWTAuth_ExpiredToken(t *testing.T) {
-	handler := JWTAuth(testSecret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := JWTAuth(testSecret, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("handler should not be called")
 	}))
 
@@ -158,7 +158,7 @@ func TestJWTAuth_ExpiredToken(t *testing.T) {
 }
 
 func TestJWTAuth_TamperedToken(t *testing.T) {
-	handler := JWTAuth(testSecret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := JWTAuth(testSecret, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("handler should not be called")
 	}))
 
@@ -178,7 +178,7 @@ func TestJWTAuth_TamperedToken(t *testing.T) {
 }
 
 func TestJWTAuth_MalformedToken(t *testing.T) {
-	handler := JWTAuth(testSecret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := JWTAuth(testSecret, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("handler should not be called")
 	}))
 
@@ -197,7 +197,7 @@ func TestJWTAuth_MalformedToken(t *testing.T) {
 }
 
 func TestJWTAuth_EmptyBearerToken(t *testing.T) {
-	handler := JWTAuth(testSecret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := JWTAuth(testSecret, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("handler should not be called")
 	}))
 
@@ -223,7 +223,7 @@ func TestJWTAuth_TokenWithNoSubClaim(t *testing.T) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, _ := token.SignedString([]byte(testSecret))
 
-	handler := JWTAuth(testSecret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := JWTAuth(testSecret, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("handler should not be called")
 	}))
 

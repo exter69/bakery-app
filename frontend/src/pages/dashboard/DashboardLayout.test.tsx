@@ -68,7 +68,7 @@ describe('DashboardLayout', () => {
       expect(screen.getByText('Commandes')).toBeInTheDocument();
       expect(screen.getByText('Menu & stock')).toBeInTheDocument();
       expect(screen.getByText('Paniers du soir')).toBeInTheDocument();
-      expect(screen.getByText('Statistiques')).toBeInTheDocument();
+      expect(screen.getByText('Planning')).toBeInTheDocument();
       expect(screen.getByText('Boutique')).toBeInTheDocument();
     });
   });

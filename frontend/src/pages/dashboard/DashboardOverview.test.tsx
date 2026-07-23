@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { I18nProvider } from '../../i18n/I18nContext';
+import { AuthProvider } from '../../auth/AuthProvider';
 import DashboardOverview from './DashboardOverview';
 
 // Mock seller API
@@ -110,29 +111,29 @@ describe('DashboardOverview', () => {
     // Delay resolution so loading is visible
     (fetchMyBakery as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(() => {}));
     renderOverview();
-    expect(screen.getByText('Chargement…')).toBeInTheDocument();
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('renders greeting with bakery name', async () => {
     renderOverview();
     await waitFor(() => {
-      expect(screen.getByText(/Bonjour Le/)).toBeInTheDocument();
+      expect(screen.getByText(/Hello Le/)).toBeInTheDocument();
     });
   });
 
   it('renders 3 KPI stat cards with values from mock data', async () => {
     renderOverview();
     await waitFor(() => {
-      expect(screen.getByText('Commandes du jour')).toBeInTheDocument();
-      expect(screen.getByText('Prochain retrait')).toBeInTheDocument();
-      expect(screen.getByText('Recette du jour')).toBeInTheDocument();
+      expect(screen.getByText('Orders today')).toBeInTheDocument();
+      expect(screen.getByText('Next pickup')).toBeInTheDocument();
+      expect(screen.getByText('Revenue today')).toBeInTheDocument();
     });
   });
 
-  it('renders "À préparer maintenant" section with order items', async () => {
+  it('renders "To prepare now" section with order items', async () => {
     renderOverview();
     await waitFor(() => {
-      expect(screen.getByText('À préparer maintenant')).toBeInTheDocument();
+      expect(screen.getByText('To prepare now')).toBeInTheDocument();
       expect(screen.getByText(/3× Croissant/)).toBeInTheDocument();
       expect(screen.getByText(/1× Baguette/)).toBeInTheDocument();
     });
@@ -141,7 +142,7 @@ describe('DashboardOverview', () => {
   it('renders low stock products when some are unavailable', async () => {
     renderOverview();
     await waitFor(() => {
-      expect(screen.getByText('Stock faible')).toBeInTheDocument();
+      expect(screen.getByText('Low stock')).toBeInTheDocument();
       expect(screen.getByText('Baguette')).toBeInTheDocument();
     });
   });
@@ -149,8 +150,8 @@ describe('DashboardOverview', () => {
   it('renders anti-gaspi card', async () => {
     renderOverview();
     await waitFor(() => {
-      expect(screen.getByText(/Panier du soir/)).toBeInTheDocument();
-      expect(screen.getByText('Composer →')).toBeInTheDocument();
+      expect(screen.getByText(/Evening bundle/)).toBeInTheDocument();
+      expect(screen.getByText(/Compose/)).toBeInTheDocument();
     });
   });
 
@@ -158,14 +159,14 @@ describe('DashboardOverview', () => {
     (fetchMyBakery as ReturnType<typeof vi.fn>).mockResolvedValue(null);
     renderOverview();
     await waitFor(() => {
-      expect(screen.getByText('Aucune boulangerie trouvée.')).toBeInTheDocument();
+      expect(screen.getByText('No bakery found.')).toBeInTheDocument();
     });
   });
 
-  it('shows "tout voir" link pointing to orders page', async () => {
+  it('shows "view all" link pointing to orders page', async () => {
     renderOverview();
     await waitFor(() => {
-      const link = screen.getByText('tout voir →');
+      const link = screen.getByText(/view all/);
       expect(link).toBeInTheDocument();
       expect(link.closest('a')).toHaveAttribute('href', '/dashboard/orders');
     });
@@ -206,7 +207,7 @@ describe('DashboardOverview', () => {
     });
     renderOverview();
     await waitFor(() => {
-      expect(screen.getByText(/Bonjour Le/)).toBeInTheDocument();
+      expect(screen.getByText(/Hello Le/)).toBeInTheDocument();
     });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
@@ -215,7 +216,7 @@ describe('DashboardOverview', () => {
     (fetchConnectStatus as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Not found'));
     renderOverview();
     await waitFor(() => {
-      expect(screen.getByText(/Bonjour Le/)).toBeInTheDocument();
+      expect(screen.getByText(/Hello Le/)).toBeInTheDocument();
     });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });

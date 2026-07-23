@@ -218,6 +218,19 @@ func (s *StripeCustomerService) SetDefaultPaymentMethod(ctx context.Context, use
 	return nil
 }
 
+// DeleteCustomer deletes the Stripe Customer object. Returns nil if customerID is empty.
+func (s *StripeCustomerService) DeleteCustomer(ctx context.Context, customerID string) error {
+	if customerID == "" {
+		return nil
+	}
+	stripe.Key = s.secretKey
+	_, err := customer.Del(customerID, nil)
+	if err != nil {
+		return fmt.Errorf("stripe: failed to delete customer: %w", err)
+	}
+	return nil
+}
+
 // ChargeWithSavedMethod charges a saved payment method directly (no Checkout Session needed).
 // Creates an off-session PaymentIntent with confirm=true.
 // Returns the PaymentIntent status (e.g., "succeeded", "requires_action").

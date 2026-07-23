@@ -43,6 +43,24 @@ export interface HolidayUpdate {
   holidayTo?: string;
 }
 
+/** Payload for creating a new recurring order */
+export interface CreateRecurringOrderPayload {
+  bakeryId: string;
+  items: { productId: string; quantity: number }[];
+  scheduledDay: string;
+  scheduledTime: { startTime: string; endTime: string };
+  frequency: string;
+  selectionMode: string;
+}
+
+/** Create a new recurring order */
+export function createRecurringOrder(data: CreateRecurringOrderPayload): Promise<RecurringOrder> {
+  return apiFetch<RecurringOrder>('/recurring-orders', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
 /** Fetch paginated list of the current user's recurring orders */
 export function fetchRecurringOrders(page?: number): Promise<ListResponse<RecurringOrder>> {
   const params = new URLSearchParams();

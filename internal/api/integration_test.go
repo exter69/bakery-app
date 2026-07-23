@@ -73,7 +73,7 @@ func setupTestServer(t *testing.T) *testServer {
 
 	// Protected routes
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.JWTAuth(testJWTSecret))
+		r.Use(middleware.JWTAuth(testJWTSecret, nil))
 		orderHandler.RegisterRoutes(r)
 		reservationHandler.RegisterRoutes(r)
 		paymentHandler.RegisterRoutes(r)

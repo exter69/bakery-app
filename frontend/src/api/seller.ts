@@ -90,11 +90,12 @@ export function deleteProduct(id: string): Promise<void> {
 /** Fetch orders for a bakery */
 export function fetchBakeryOrders(
   bakeryId: string,
-  params?: { page?: number; status?: string }
+  params?: { page?: number; status?: string; date?: string }
 ): Promise<ListResponse<Order>> {
   const searchParams = new URLSearchParams();
   if (params?.page) searchParams.set('page', String(params.page));
   if (params?.status) searchParams.set('status', params.status);
+  if (params?.date) searchParams.set('date', params.date);
   const query = searchParams.toString();
   return apiFetch<ListResponse<Order>>(`/bakeries/${bakeryId}/orders${query ? `?${query}` : ''}`);
 }
@@ -102,11 +103,12 @@ export function fetchBakeryOrders(
 /** Fetch reservations for a bakery */
 export function fetchBakeryReservations(
   bakeryId: string,
-  params?: { page?: number; status?: string }
+  params?: { page?: number; status?: string; date?: string }
 ): Promise<ListResponse<Reservation>> {
   const searchParams = new URLSearchParams();
   if (params?.page) searchParams.set('page', String(params.page));
   if (params?.status) searchParams.set('status', params.status);
+  if (params?.date) searchParams.set('date', params.date);
   const query = searchParams.toString();
   return apiFetch<ListResponse<Reservation>>(`/bakeries/${bakeryId}/reservations${query ? `?${query}` : ''}`);
 }

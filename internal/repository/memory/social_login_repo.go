@@ -67,3 +67,16 @@ func (r *SocialLoginRepo) ListByUser(_ context.Context, userID string) ([]domain
 	}
 	return result, nil
 }
+
+// DeleteByUser removes all social login records for the given user.
+func (r *SocialLoginRepo) DeleteByUser(_ context.Context, userID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for id, sl := range r.logins {
+		if sl.UserID == userID {
+			delete(r.logins, id)
+		}
+	}
+	return nil
+}

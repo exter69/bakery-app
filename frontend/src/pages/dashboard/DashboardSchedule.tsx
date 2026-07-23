@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { fetchMyBakery, updateSchedule } from '../../api/seller';
+import { useI18n } from '../../i18n';
 import type { DaySchedule } from '../../types/bakery';
 import './Dashboard.css';
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 
 function defaultSchedule(): DaySchedule[] {
-  return DAYS.map((day) => ({
+  return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => ({
     day,
     openTime: { hour: 8, minute: 0 },
     closeTime: { hour: 18, minute: 0 },
@@ -28,6 +29,7 @@ function timeInMinutes(t: { hour: number; minute: number }): number {
 }
 
 export default function DashboardSchedule() {
+  const { t } = useI18n();
   const [bakeryId, setBakeryId] = useState<string | null>(null);
   const [schedule, setSchedule] = useState<DaySchedule[]>(defaultSchedule());
   const [useGoogleMaps, setUseGoogleMaps] = useState(false);
@@ -43,26 +45,30 @@ export default function DashboardSchedule() {
           if (b.schedule && b.schedule.length > 0) {
             setSchedule(b.schedule);
           }
-          // Auto-enable Google Maps if a place ID is linked
           const placeId = b.googlePlaceId;
           if (placeId) {
             setUseGoogleMaps(true);
           }
         }
       })
-      .catch(() => setMsg({ type: 'error', text: 'Failed to load schedule.' }))
+      .catch(() => setMsg({ type: 'error', text: t('dashboard.schedule.loadError') }))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   const updateDay = (idx: number, updates: Partial<DaySchedule>) => {
     setSchedule((prev) => prev.map((d, i) => (i === idx ? { ...d, ...updates } : d)));
+  };
+
+  const getDayLabel = (day: string): string => {
+    const key = day.toLowerCase() as typeof DAY_KEYS[number];
+    return t(`dashboard.schedule.days.${key}`);
   };
 
   const validate = (): string | null => {
     for (const day of schedule) {
       if (day.isOpen) {
         if (timeInMinutes(day.closeTime) <= timeInMinutes(day.openTime)) {
-          return `${day.day}: Close time must be after open time.`;
+          return t('dashboard.schedule.closeAfterOpen').replace('{day}', getDayLabel(day.day));
         }
       }
     }
@@ -81,29 +87,29 @@ export default function DashboardSchedule() {
     setMsg(null);
     try {
       await updateSchedule(bakeryId, schedule);
-      setMsg({ type: 'success', text: 'Schedule saved.' });
+      setMsg({ type: 'success', text: t('dashboard.schedule.saveSuccess') });
     } catch {
-      setMsg({ type: 'error', text: 'Failed to save schedule.' });
+      setMsg({ type: 'error', text: t('dashboard.schedule.saveError') });
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div className="dash-loading">Loading schedule…</div>;
+  if (loading) return <div className="dash-loading">{t('dashboard.schedule.loading')}</div>;
 
   if (!bakeryId) {
     return (
       <div className="dash-empty">
-        <h1 className="dash-page__title">Schedule</h1>
-        <p style={{ marginTop: '1rem' }}>No bakery found.</p>
+        <h1 className="dash-page__title">{t('dashboard.schedule.title')}</h1>
+        <p style={{ marginTop: '1rem' }}>{t('dashboard.schedule.noBakery')}</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="dash-page__title">Schedule</h1>
-      <p className="dash-page__subtitle">Set your bakery's opening hours for each day of the week.</p>
+      <h1 className="dash-page__title">{t('dashboard.schedule.title')}</h1>
+      <p className="dash-page__subtitle">{t('dashboard.schedule.subtitle')}</p>
 
       {msg && <div className={`dash-msg dash-msg--${msg.type}`}>{msg.text}</div>}
 
@@ -112,10 +118,10 @@ export default function DashboardSchedule() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <h3 style={{ margin: '0 0 0.25rem', fontSize: '1rem', fontWeight: 600 }}>
-              Use Google Maps hours
+              {t('dashboard.schedule.useGoogleMaps')}
             </h3>
             <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
-              Automatically sync opening hours from your Google Maps listing. No need to update multiple tools.
+              {t('dashboard.schedule.googleMapsDesc')}
             </p>
           </div>
           <label className="dash-toggle">
@@ -131,24 +137,24 @@ export default function DashboardSchedule() {
         {useGoogleMaps && (
           <div style={{ marginTop: '1rem', padding: '1rem', background: '#f0fdf4', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
             <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', color: '#166534' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:'0.3rem'}}><polyline points="20 6 9 17 4 12"/></svg>Google Maps sync is active. Hours fetched from your linked profile:
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:'0.3rem'}}><polyline points="20 6 9 17 4 12"/></svg>{t('dashboard.schedule.googleMapsActive')}
             </p>
             <div className="dash-table-wrap" style={{ opacity: 0.85 }}>
               <table className="dash-table">
                 <thead>
                   <tr>
-                    <th>Day</th>
-                    <th>Status</th>
-                    <th>Hours</th>
+                    <th>{t('dashboard.schedule.day')}</th>
+                    <th>{t('dashboard.schedule.status')}</th>
+                    <th>{t('dashboard.schedule.hours')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {schedule.map((day) => (
                     <tr key={day.day}>
-                      <td style={{ fontWeight: 500 }}>{day.day}</td>
+                      <td style={{ fontWeight: 500 }}>{getDayLabel(day.day)}</td>
                       <td>
                         <span style={{ fontSize: '0.8rem', padding: '2px 8px', borderRadius: '6px', background: day.isOpen ? '#dcfce7' : '#fee2e2', color: day.isOpen ? '#166534' : '#991b1b' }}>
-                          {day.isOpen ? 'Open' : 'Closed'}
+                          {day.isOpen ? t('dashboard.schedule.open') : t('dashboard.schedule.closed')}
                         </span>
                       </td>
                       <td style={{ color: '#475569', fontSize: '0.9rem' }}>
@@ -160,7 +166,7 @@ export default function DashboardSchedule() {
               </table>
             </div>
             <p style={{ margin: '0.75rem 0 0', fontSize: '0.8rem', color: '#64748b' }}>
-              To change these hours, update them on your Google Maps listing.
+              {t('dashboard.schedule.googleMapsHint')}
             </p>
           </div>
         )}
@@ -177,7 +183,7 @@ export default function DashboardSchedule() {
       >
         {useGoogleMaps && (
           <div style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>
-            Manual schedule disabled — using Google Maps data
+            {t('dashboard.schedule.manualDisabled')}
           </div>
         )}
         <form onSubmit={handleSave}>
@@ -185,16 +191,16 @@ export default function DashboardSchedule() {
             <table className="dash-table">
               <thead>
                 <tr>
-                  <th>Day</th>
-                  <th>Open</th>
-                  <th>From</th>
-                  <th>To</th>
+                  <th>{t('dashboard.schedule.day')}</th>
+                  <th>{t('dashboard.schedule.open')}</th>
+                  <th>{t('dashboard.schedule.from')}</th>
+                  <th>{t('dashboard.schedule.to')}</th>
                 </tr>
               </thead>
               <tbody>
                 {schedule.map((day, idx) => (
                   <tr key={day.day}>
-                    <td style={{ fontWeight: 500 }}>{day.day}</td>
+                    <td style={{ fontWeight: 500 }}>{getDayLabel(day.day)}</td>
                     <td>
                       <label className="dash-toggle">
                         <input
@@ -235,7 +241,7 @@ export default function DashboardSchedule() {
 
           <div style={{ marginTop: '1.25rem' }}>
             <button type="submit" className="dash-btn dash-btn--primary" disabled={saving || useGoogleMaps}>
-              {saving ? 'Saving…' : 'Save Schedule'}
+              {saving ? t('dashboard.schedule.saving') : t('dashboard.schedule.save')}
             </button>
           </div>
         </form>

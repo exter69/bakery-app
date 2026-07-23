@@ -28,4 +28,7 @@ type SocialLoginRepository interface {
 
 	// ListByUser returns all social logins for a user.
 	ListByUser(ctx context.Context, userID string) ([]SocialLogin, error)
+
+	// DeleteByUser removes all social login records for the given user.
+	DeleteByUser(ctx context.Context, userID string) error
 }

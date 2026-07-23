@@ -77,6 +77,11 @@ func (r *SocialLoginRepo) ListByUser(ctx context.Context, userID string) ([]doma
 	return logins, rows.Err()
 }
 
+func (r *SocialLoginRepo) DeleteByUser(ctx context.Context, userID string) error {
+	_, err := r.pool.Exec(ctx, `DELETE FROM social_logins WHERE user_id = $1`, userID)
+	return err
+}
+
 func (r *SocialLoginRepo) scanSocialLogin(ctx context.Context, query string, args ...any) (*domain.SocialLogin, error) {
 	var sl domain.SocialLogin
 	err := r.pool.QueryRow(ctx, query, args...).Scan(

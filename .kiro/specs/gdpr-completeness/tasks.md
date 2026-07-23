@@ -7,40 +7,40 @@ Extend `DeleteAccount` to fully erase PII from all auxiliary tables and external
 ## Tasks
 
 - [ ] 1. Add missing repository methods
-  - [ ] 1.1 Add `DeleteByUser(ctx, userID) error` to `SocialLoginRepository` interface in `internal/domain/social_login.go`
+  - [x] 1.1 Add `DeleteByUser(ctx, userID) error` to `SocialLoginRepository` interface in `internal/domain/social_login.go`
     - Implement in `internal/repository/postgres/social_login_repo.go`: `DELETE FROM social_logins WHERE user_id = $1`
     - Implement in `internal/repository/memory/social_login_repo.go` for tests
     - _Requirements: 1.1_
 
-  - [ ] 1.2 Add `DeleteProfile(ctx, userID) error` and `DeleteSavedListsByUser(ctx, userID) error` to `B2BRepository` interface in `internal/domain/b2b.go`
+  - [x] 1.2 Add `DeleteProfile(ctx, userID) error` and `DeleteSavedListsByUser(ctx, userID) error` to `B2BRepository` interface in `internal/domain/b2b.go`
     - Implement in `internal/repository/postgres/b2b_repo.go`: `DELETE FROM business_profiles WHERE user_id = $1` and `DELETE FROM saved_lists WHERE user_id = $1`
     - Implement in-memory variants for tests
     - _Requirements: 2.1, 2.2_
 
-  - [ ] 1.3 Add `ListByUser(ctx, userID) ([]Review, error)` to `ReviewRepository` interface in `internal/domain/repository.go`
+  - [x] 1.3 Add `ListByUser(ctx, userID) ([]Review, error)` to `ReviewRepository` interface in `internal/domain/repository.go`
     - Implement in `internal/repository/postgres/review_repo.go`: `SELECT * FROM reviews WHERE user_id = $1 ORDER BY created_at DESC`
     - Implement in-memory variant for tests
     - _Requirements: 6.1_
 
-  - [ ] 1.4 Add `DeleteByUser(userID string)` method to `push.Store` in `internal/push/store.go`
+  - [x] 1.4 Add `DeleteByUser(userID string)` method to `push.Store` in `internal/push/store.go`
     - Lock mutex, delete the user's key from the `subs` map
     - _Requirements: 3.1_
 
-- [ ] 2. Add Stripe Customer deletion method
-  - [ ] 2.1 Add `DeleteCustomer(ctx, customerID string) error` to `StripeCustomerService` in `internal/payment/stripe_customer.go`
+- [x] 2. Add Stripe Customer deletion method
+  - [x] 2.1 Add `DeleteCustomer(ctx, customerID string) error` to `StripeCustomerService` in `internal/payment/stripe_customer.go`
     - If customerID is empty, return nil immediately
     - Call `customer.Del(customerID, nil)` from the Stripe SDK
     - Return wrapped error on failure
     - _Requirements: 4.1_
 
-- [ ] 3. Extend DeleteAccount with full cleanup
-  - [ ] 3.1 Update `UserService` struct to accept `PushStore *push.Store` and `StripeCustomerSvc *payment.StripeCustomerService` dependencies
+- [x] 3. Extend DeleteAccount with full cleanup
+  - [x] 3.1 Update `UserService` struct to accept `PushStore *push.Store` and `StripeCustomerSvc *payment.StripeCustomerService` dependencies
     - Add fields to `UserServiceConfig` and `UserService`
     - Update `NewUserServiceFull` constructor
     - Update wiring in `cmd/server/main.go`
     - _Requirements: 3.1, 4.1_
 
-  - [ ] 3.2 Extend `DeleteAccount` in `internal/service/user_service.go` with new cleanup steps
+  - [x] 3.2 Extend `DeleteAccount` in `internal/service/user_service.go` with new cleanup steps
     - After existing anonymization: call `socialLoginRepo.DeleteByUser`
     - Call `b2bRepo.DeleteProfile` (if b2bRepo != nil)
     - Call `b2bRepo.DeleteSavedListsByUser` (if b2bRepo != nil)
@@ -60,14 +60,14 @@ Extend `DeleteAccount` to fully erase PII from all auxiliary tables and external
     - Mock Stripe client, verify delete called iff ID non-empty
     - **Validates: Requirements 4.1, 4.3**
 
-- [ ] 4. JWT invalidation for deleted users
-  - [ ] 4.1 Modify `JWTAuth` middleware in `internal/middleware/auth.go` to accept a `UserRepository` parameter
+- [x] 4. JWT invalidation for deleted users
+  - [x] 4.1 Modify `JWTAuth` middleware in `internal/middleware/auth.go` to accept a `UserRepository` parameter
     - After successful token validation, call `userRepo.GetByID(ctx, userID)`
     - If user is found and username starts with `deleted-` and contact_email is empty, return 401 with code `ACCOUNT_DELETED`
     - If user is nil (not found in DB), allow through (avoid blocking on transient failures)
     - _Requirements: 5.1, 5.2, 5.3_
 
-  - [ ] 4.2 Update all `JWTAuth` call sites in `cmd/server/main.go` to pass the `userRepo`
+  - [x] 4.2 Update all `JWTAuth` call sites in `cmd/server/main.go` to pass the `userRepo`
     - _Requirements: 5.1_
 
   - [ ]* 4.3 Write property test for deleted-user JWT rejection (Property 3)
@@ -80,11 +80,11 @@ Extend `DeleteAccount` to fully erase PII from all auxiliary tables and external
     - Use rapid to generate active users with valid JWTs, verify request proceeds
     - **Validates: Requirements 5.3**
 
-- [ ] 5. Checkpoint
+- [x] 5. Checkpoint
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. Include reviews in data export
-  - [ ] 6.1 Update `ExportData` in `internal/service/user_service.go` to call `ReviewRepository.ListByUser`
+- [x] 6. Include reviews in data export
+  - [x] 6.1 Update `ExportData` in `internal/service/user_service.go` to call `ReviewRepository.ListByUser`
     - Replace the existing comment/placeholder with actual review fetching
     - Map each `domain.Review` to `dto.DataExportReview` with ID, BakeryID, Rating, Text, CreatedAt
     - Handle nil reviewRepo gracefully (empty array)
@@ -95,8 +95,8 @@ Extend `DeleteAccount` to fully erase PII from all auxiliary tables and external
     - Use rapid to generate users with 0-10 reviews, verify export array length and field completeness
     - **Validates: Requirements 6.1, 6.2, 6.3**
 
-- [ ] 7. Update DATA-INVENTORY.md
-  - [ ] 7.1 Update `docs/DATA-INVENTORY.md` data retention table
+- [x] 7. Update DATA-INVENTORY.md
+  - [x] 7.1 Update `docs/DATA-INVENTORY.md` data retention table
     - Change "Social logins" retention to: "Until account deletion | Hard delete"
     - Change "B2B profiles" retention to: "Until account deletion | Hard delete (profile + saved lists)"
     - Add "Push subscriptions" row: "Until account deletion | Cleared from memory"
@@ -104,7 +104,7 @@ Extend `DeleteAccount` to fully erase PII from all auxiliary tables and external
     - Update "Deleted accounts" row to mention JWT invalidation via middleware check
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 8. Final checkpoint
+- [x] 8. Final checkpoint
   - Ensure all tests pass, ask the user if questions arise.
   - Verify `go build ./...` and `go vet ./...` succeed
   - Run property tests with `go test -run Property -count=1 ./internal/service/... ./internal/middleware/...`

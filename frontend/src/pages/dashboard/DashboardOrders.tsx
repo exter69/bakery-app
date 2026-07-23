@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchMyBakery, fetchBakeryOrders, updateOrderStatus } from '../../api/seller';
 import { useWebSocket } from '../../hooks/useWebSocket';
+import { useI18n } from '../../i18n';
 import { FilterChips } from '../../components/pro/FilterChips';
 import { OrderCard } from '../../components/pro/OrderCard';
 import { ErrorBanner } from '../../components/pro/ErrorBanner';
@@ -14,26 +15,12 @@ import type { Order } from '../../api/seller';
 import type { OrderStatus } from '../../types/order';
 import './DashboardOrders.css';
 
-/** Column display configuration */
-const COLUMN_LABELS: Record<KanbanStatus, string> = {
-  confirmed: 'À PRÉPARER',
-  preparing: 'EN PRÉPARATION',
-  ready: 'PRÊT',
-  delivered: 'REMIS / LIVRÉ',
-};
-
 /** Filter chip options */
 type DeliveryFilter = 'all' | 'livraison' | 'retrait';
 
-const FILTER_OPTIONS: { value: DeliveryFilter; label: string }[] = [
-  { value: 'livraison', label: 'Livraison' },
-  { value: 'retrait', label: 'Retrait' },
-  { value: 'all', label: 'Toutes' },
-];
-
-/** Format today's date in French */
-function formatFrenchDay(date: Date): string {
-  return date.toLocaleDateString('fr-FR', { weekday: 'long' });
+/** Format today's date using locale day name */
+function formatDayName(date: Date, locale: string): string {
+  return date.toLocaleDateString(locale, { weekday: 'long' });
 }
 
 /** Format time from TimeSlotResponse object as HH:MM */
@@ -55,6 +42,7 @@ function getDeliveryType(order: Order): 'livraison' | 'retrait' {
 }
 
 export default function DashboardOrders() {
+  const { t } = useI18n();
   const [bakeryId, setBakeryId] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +64,20 @@ export default function DashboardOrders() {
   // Real-time updates via WebSocket
   const { lastEvent } = useWebSocket();
 
+  /** Column display labels from translations */
+  const COLUMN_LABELS: Record<KanbanStatus, string> = {
+    confirmed: t('dashboard.orders.column.confirmed'),
+    preparing: t('dashboard.orders.column.preparing'),
+    ready: t('dashboard.orders.column.ready'),
+    delivered: t('dashboard.orders.column.delivered'),
+  };
+
+  const FILTER_OPTIONS: { value: DeliveryFilter; label: string }[] = [
+    { value: 'livraison', label: t('dashboard.orders.filter.delivery') },
+    { value: 'retrait', label: t('dashboard.orders.filter.pickup') },
+    { value: 'all', label: t('dashboard.orders.filter.all') },
+  ];
+
   function showToast(message: string, isError = false) {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ message, isError });
@@ -88,9 +90,9 @@ export default function DashboardOrders() {
       const res = await fetchBakeryOrders(bId);
       setOrders(res.items);
     } catch {
-      setError('Impossible de charger les commandes.');
+      setError(t('dashboard.orders.loadError'));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchMyBakery()
@@ -100,9 +102,9 @@ export default function DashboardOrders() {
           return loadOrders(b.id);
         }
       })
-      .catch(() => setError('Impossible de charger la boulangerie.'))
+      .catch(() => setError(t('dashboard.orders.bakeryError')))
       .finally(() => setLoading(false));
-  }, [loadOrders]);
+  }, [loadOrders, t]);
 
   // Refresh when a new order arrives via WebSocket
   useEffect(() => {
@@ -119,10 +121,10 @@ export default function DashboardOrders() {
         await updateOrderStatus(orderId, newStatus);
         await loadOrders(bakeryId);
       } catch {
-        showToast('Échec de la mise à jour du statut.', true);
+        showToast(t('dashboard.orders.statusError'), true);
       }
     },
-    [bakeryId, loadOrders]
+    [bakeryId, loadOrders, t]
   );
 
   // --- Drag-and-drop handlers ---
@@ -179,10 +181,7 @@ export default function DashboardOrders() {
 
     // Validate adjacent transition
     if (!isAdjacentTransition(sourceColumn, targetColumn)) {
-      showToast(
-        'Transition non valide. Les commandes doivent avancer une étape à la fois.',
-        true
-      );
+      showToast(t('dashboard.orders.invalidTransition'), true);
       return;
     }
 
@@ -191,7 +190,7 @@ export default function DashboardOrders() {
       await updateOrderStatus(orderId, targetColumn);
       await loadOrders(bakeryId);
     } catch {
-      showToast('Échec de la mise à jour. La carte a été remise en place.', true);
+      showToast(t('dashboard.orders.dropFailed'), true);
     }
   }
 
@@ -207,7 +206,7 @@ export default function DashboardOrders() {
 
   // --- Render ---
   if (loading) {
-    return <div className="kanban__loading">Chargement des commandes…</div>;
+    return <div className="kanban__loading">{t('dashboard.orders.loading')}</div>;
   }
 
   if (error && orders.length === 0) {
@@ -221,19 +220,19 @@ export default function DashboardOrders() {
     );
   }
 
-  const dayLabel = formatFrenchDay(new Date(selectedDate + 'T00:00:00'));
+  const dayLabel = formatDayName(new Date(selectedDate + 'T00:00:00'), 'fr-FR');
 
   return (
     <div className="kanban">
       {/* Header */}
       <div className="kanban__header">
-        <h1 className="kanban__title">Commandes — {dayLabel}</h1>
+        <h1 className="kanban__title">{t('dashboard.orders.title')} — {dayLabel}</h1>
         <input
           type="date"
           className="kanban__date-picker"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
-          aria-label="Sélectionner une date"
+          aria-label={t('dashboard.orders.selectDate')}
         />
       </div>
 
@@ -245,7 +244,7 @@ export default function DashboardOrders() {
       />
 
       {/* Kanban board */}
-      <div className="kanban__board" role="region" aria-label="Tableau kanban des commandes">
+      <div className="kanban__board" role="region" aria-label={t('dashboard.orders.title')}>
         {COLUMN_ORDER.map((status) => {
           const columnOrders = columns.get(status) ?? [];
           const isDragOver = dragOverColumn === status;
@@ -259,7 +258,7 @@ export default function DashboardOrders() {
               onDragLeave={() => handleDragLeave(status)}
               onDrop={(e) => handleDrop(e, status)}
               role="group"
-              aria-label={`Colonne ${COLUMN_LABELS[status]}`}
+              aria-label={COLUMN_LABELS[status]}
             >
               {/* Column header */}
               <div className="kanban__column-header">
@@ -294,7 +293,7 @@ export default function DashboardOrders() {
                   ))}
                 </div>
               ) : (
-                <div className="kanban__empty">glisser une carte ici</div>
+                <div className="kanban__empty">{t('dashboard.orders.emptyColumn')}</div>
               )}
             </div>
           );

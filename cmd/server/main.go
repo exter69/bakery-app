@@ -105,6 +105,8 @@ func main() {
 		}
 		uploadStorage = localStorage
 		log.Println("Upload storage: local (./uploads)")
+	case "s3":
+		log.Fatalf("FATAL: %v", upload.ErrS3NotImplemented)
 	default:
 		log.Fatalf("FATAL: unknown UPLOAD_STORAGE value %q. Supported: \"local\" (or leave unset).", os.Getenv("UPLOAD_STORAGE"))
 	}
@@ -425,6 +427,8 @@ func main() {
 		ReviewRepo:         reviewRepo,
 		SocialLoginRepo:    socialLoginRepo,
 		B2BRepo:            b2bRepo,
+		PushStore:          pushStore,
+		StripeCustomerSvc:  stripeCustomerSvc,
 	})
 	userHandler := api.NewUserHandler(userSvc)
 
@@ -497,7 +501,7 @@ func main() {
 
 	// B2B Comptoir portal routes (handles its own auth internally)
 	if b2bHandler != nil {
-		b2bHandler.RegisterRoutes(r, jwtSecret)
+		b2bHandler.RegisterRoutes(r, jwtSecret, userRepo)
 	}
 
 	// Review listing is public (no auth required)
@@ -515,7 +519,7 @@ func main() {
 	// --- Protected API routes (require JWT auth) ---
 	// Order, reservation, and payment endpoints require authentication.
 	r.Group(func(r chi.Router) {
-		r.Use(appmw.JWTAuth(jwtSecret))
+		r.Use(appmw.JWTAuth(jwtSecret, userRepo))
 
 		// Admin endpoints (role check done in handler)
 		r.Post("/api/admin/tokens", authHandler.CreateToken)

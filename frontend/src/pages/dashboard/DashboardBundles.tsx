@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { fetchMyBakery, fetchProducts } from '../../api/seller';
+import { useI18n } from '../../i18n';
 import { StockStepper } from '../../components/pro/StockStepper';
 import { calculateBundlePrice, capQuantity } from './bundle-utils';
 import type { BundleItem } from './bundle-utils';
@@ -37,6 +38,7 @@ function getClosingTime(bakery: Bakery | null): string {
 }
 
 export default function DashboardBundles() {
+  const { t } = useI18n();
   const [bakery, setBakery] = useState<Bakery | null>(null);
   const [items, setItems] = useState<BundleItem[]>([]);
   const [basketCount, setBasketCount] = useState(1);
@@ -61,13 +63,12 @@ export default function DashboardBundles() {
         if (cancelled) return;
 
         // Map products to BundleItems — use a deterministic "remaining" derived from product data
-        // Since Product lacks a stock field, use a placeholder based on category
         const bundleItems: BundleItem[] = products
           .filter((p: Product) => p.isAvailable)
           .map((p: Product) => ({
             productId: p.id,
             name: p.name,
-            remaining: Math.max(1, (p.price % 10) + 1), // deterministic placeholder for remaining stock
+            remaining: Math.max(1, (p.price % 10) + 1),
             selected: false,
             quantity: 1,
             price: p.price,
@@ -75,7 +76,7 @@ export default function DashboardBundles() {
 
         setItems(bundleItems);
       } catch {
-        setMsg({ type: 'error', text: 'Impossible de charger les produits. Réessayez.' });
+        setMsg({ type: 'error', text: t('dashboard.bundles.loadError') });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -83,7 +84,7 @@ export default function DashboardBundles() {
 
     loadData();
     return () => { cancelled = true; };
-  }, []);
+  }, [t]);
 
   const closingTime = getClosingTime(bakery);
 
@@ -137,19 +138,18 @@ export default function DashboardBundles() {
       pickupEnd,
     };
 
-    // Stub: log and show success toast (replace with actual API call when available)
     console.log('[DashboardBundles] Publishing bundle:', bundleData);
-    setMsg({ type: 'success', text: `${basketCount} panier(s) publié(s) avec succès !` });
+    setMsg({ type: 'success', text: t('dashboard.bundles.publishSuccess').replace('{count}', String(basketCount)) });
   }
 
   if (loading) {
-    return <div className="dash-loading">Chargement…</div>;
+    return <div className="dash-loading">{t('dashboard.bundles.loading')}</div>;
   }
 
   if (!bakery) {
     return (
       <div className="dash-empty">
-        <p>Aucune boulangerie trouvée.</p>
+        <p>{t('dashboard.bundles.noBakery')}</p>
       </div>
     );
   }
@@ -159,11 +159,11 @@ export default function DashboardBundles() {
       {/* Header */}
       <header className="bundle-composer__header">
         <div className="bundle-composer__title-row">
-          <h1 className="bundle-composer__title">Paniers du soir</h1>
-          <span className="bundle-composer__badge">🌿 anti-gaspi</span>
+          <h1 className="bundle-composer__title">{t('dashboard.bundles.title')}</h1>
+          <span className="bundle-composer__badge">{t('dashboard.bundles.badge')}</span>
         </div>
         <p className="bundle-composer__subtitle">
-          fermeture {closingTime} · publication conseillée avant 17:30
+          {t('dashboard.bundles.closingTime').replace('{time}', closingTime)} · {t('dashboard.bundles.publishHint')}
         </p>
       </header>
 
@@ -178,13 +178,13 @@ export default function DashboardBundles() {
       <div className="bundle-composer__panels">
         {/* Left panel: product checklist */}
         <div className="bundle-composer__left">
-          <div className="bundle-composer__section-label">1 · Invendus du jour</div>
+          <div className="bundle-composer__section-label">{t('dashboard.bundles.step1')}</div>
           <div className="bundle-composer__section-hint">
-            cochez ce qui part en panier
+            {t('dashboard.bundles.step1Hint')}
           </div>
 
           {items.length === 0 ? (
-            <div className="bundle-composer__empty">Aucun produit disponible.</div>
+            <div className="bundle-composer__empty">{t('dashboard.bundles.emptyProducts')}</div>
           ) : (
             <div className="bundle-composer__product-list">
               {items.map((item) => (
@@ -194,12 +194,12 @@ export default function DashboardBundles() {
                     className="bundle-composer__checkbox"
                     checked={item.selected}
                     onChange={() => handleToggle(item.productId)}
-                    aria-label={`Sélectionner ${item.name}`}
+                    aria-label={`${item.name}`}
                   />
                   <div className="bundle-composer__product-info">
                     <span className="bundle-composer__product-name">{item.name}</span>
                     <span className="bundle-composer__product-remaining">
-                      reste {item.remaining}
+                      {t('dashboard.bundles.remaining').replace('{n}', String(item.remaining))}
                     </span>
                   </div>
                   {item.selected && (
@@ -220,25 +220,25 @@ export default function DashboardBundles() {
 
         {/* Right panel: client preview */}
         <div className="bundle-composer__right">
-          <div className="bundle-composer__preview-label">Aperçu client</div>
+          <div className="bundle-composer__preview-label">{t('dashboard.bundles.preview')}</div>
 
           <div className="bundle-composer__preview-card">
             <div className="bundle-composer__preview-name">
-              Panier {bakery.name}
+              {t('dashboard.bundles.bundleName').replace('{name}', bakery.name)}
             </div>
             <div className="bundle-composer__preview-time">
-              retrait {pickupStart}–{pickupEnd}
+              {t('dashboard.bundles.pickupTime').replace('{start}', pickupStart).replace('{end}', pickupEnd)}
             </div>
 
             {selectedItems.length > 0 ? (
               <ul className="bundle-composer__preview-items">
                 {selectedItems.map((item) => (
-                  <li key={item.productId}>• {item.quantity}× {item.name}</li>
+                  <li key={item.productId}>{item.quantity}x {item.name}</li>
                 ))}
               </ul>
             ) : (
               <p className="bundle-composer__empty">
-                Sélectionnez des produits pour voir l'aperçu
+                {t('dashboard.bundles.selectForPreview')}
               </p>
             )}
 
@@ -257,9 +257,9 @@ export default function DashboardBundles() {
               type="button"
               className="bundle-composer__preview-btn"
               disabled
-              aria-label="Réserver (aperçu uniquement)"
+              aria-label={t('dashboard.bundles.reserve')}
             >
-              Réserver
+              {t('dashboard.bundles.reserve')}
             </button>
           </div>
 
@@ -268,34 +268,34 @@ export default function DashboardBundles() {
             {/* Price summary */}
             {hasSelection && (
               <div className="bundle-composer__control-row">
-                <span className="bundle-composer__control-label">Prix :</span>
+                <span className="bundle-composer__control-label">{t('dashboard.bundles.price')}</span>
                 <span>{formatEur(pricing.discountedPrice)}</span>
-                <span className="bundle-composer__control-suffix">(−{discountPct}%)</span>
+                <span className="bundle-composer__control-suffix">(-{discountPct}%)</span>
               </div>
             )}
 
             {/* Basket count stepper */}
             <div className="bundle-composer__control-row">
-              <span className="bundle-composer__control-label">Quantité :</span>
+              <span className="bundle-composer__control-label">{t('dashboard.bundles.quantity')}</span>
               <StockStepper
                 value={basketCount}
                 min={1}
                 onChange={setBasketCount}
               />
-              <span className="bundle-composer__control-suffix">paniers</span>
+              <span className="bundle-composer__control-suffix">{t('dashboard.bundles.baskets')}</span>
             </div>
 
             {/* Pickup time window */}
             <div className="bundle-composer__control-row">
-              <span className="bundle-composer__control-label">Retrait :</span>
+              <span className="bundle-composer__control-label">{t('dashboard.bundles.pickup')}</span>
               <select
                 className="bundle-composer__time-select"
                 value={pickupStart}
                 onChange={(e) => setPickupStart(e.target.value)}
-                aria-label="Heure de début de retrait"
+                aria-label={t('dashboard.bundles.pickup')}
               >
-                {TIME_OPTIONS.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                {TIME_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
               <span className="bundle-composer__time-separator">—</span>
@@ -303,10 +303,10 @@ export default function DashboardBundles() {
                 className="bundle-composer__time-select"
                 value={pickupEnd}
                 onChange={(e) => setPickupEnd(e.target.value)}
-                aria-label="Heure de fin de retrait"
+                aria-label={t('dashboard.bundles.pickup')}
               >
-                {TIME_OPTIONS.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                {TIME_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
             </div>
@@ -322,7 +322,7 @@ export default function DashboardBundles() {
           disabled={!hasSelection}
           onClick={handlePublish}
         >
-          Publier les paniers
+          {t('dashboard.bundles.publish')}
         </button>
       </footer>
     </div>

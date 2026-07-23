@@ -320,4 +320,8 @@ type B2BRepository interface {
 	GetInvoiceByOrder(ctx context.Context, orderID string) (*B2BInvoice, error)
 	ListInvoicesByUser(ctx context.Context, profileID string, params PaginationParams) ([]B2BInvoice, int, error)
 	NextInvoiceNumber(ctx context.Context, bakeryID string) (int, error)
+
+	// GDPR deletion
+	DeleteProfile(ctx context.Context, userID string) error
+	DeleteSavedListsByUser(ctx context.Context, userID string) error
 }

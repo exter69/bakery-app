@@ -43,6 +43,7 @@ describe('Error handling - stale data retention', () => {
 
   // Inline lazy import to avoid interfering with other test modules
   let DashboardOverview: typeof import('../../pages/dashboard/DashboardOverview').default;
+  let I18nProviderDynamic: typeof import('../../i18n/I18nContext').I18nProvider;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -57,6 +58,8 @@ describe('Error handling - stale data retention', () => {
 
     const mod = await import('../../pages/dashboard/DashboardOverview');
     DashboardOverview = mod.default;
+    const i18nMod = await import('../../i18n/I18nContext');
+    I18nProviderDynamic = i18nMod.I18nProvider;
   });
 
   it('retains previously loaded data when API fails on subsequent call', async () => {
@@ -107,14 +110,16 @@ describe('Error handling - stale data retention', () => {
     (fetchProducts as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
     const { unmount } = render(
-      <MemoryRouter>
-        <DashboardOverview />
-      </MemoryRouter>,
+      <I18nProviderDynamic>
+        <MemoryRouter>
+          <DashboardOverview />
+        </MemoryRouter>
+      </I18nProviderDynamic>,
     );
 
     // Verify initial data loaded
     await waitFor(() => {
-      expect(screen.getByText(/Bonjour/)).toBeInTheDocument();
+      expect(screen.getByText(/Hello/)).toBeInTheDocument();
       expect(screen.getByText(/2× Croissant/)).toBeInTheDocument();
     });
 
@@ -129,15 +134,17 @@ describe('Error handling - stale data retention', () => {
     (fetchProducts as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
 
     render(
-      <MemoryRouter>
-        <DashboardOverview />
-      </MemoryRouter>,
+      <I18nProviderDynamic>
+        <MemoryRouter>
+          <DashboardOverview />
+        </MemoryRouter>
+      </I18nProviderDynamic>,
     );
 
     // The component shows error banner but bakery data (name in greeting) is retained
     // because fetchMyBakery succeeds and the error is caught at the data level
     await waitFor(() => {
-      expect(screen.getByText(/Bonjour/)).toBeInTheDocument();
+      expect(screen.getByText(/Hello/)).toBeInTheDocument();
       expect(screen.getByRole('alert')).toBeInTheDocument();
     });
   });

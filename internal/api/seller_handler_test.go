@@ -39,7 +39,7 @@ func setupSellerTestRouter(t *testing.T) (*memory.BakeryRepo, chi.Router) {
 	handler := api.NewSellerHandler(sellerSvc)
 
 	r := chi.NewRouter()
-	r.Use(middleware.JWTAuth(sellerTestSecret))
+	r.Use(middleware.JWTAuth(sellerTestSecret, nil))
 	handler.RegisterRoutes(r)
 
 	return bakeryRepo, r
