@@ -3,9 +3,10 @@ package service
 import (
 	"context"
 	"fmt"
-	"math/rand"
+	"log"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lucatorrekens/bakery-app/internal/domain"
 	"github.com/lucatorrekens/bakery-app/internal/notification"
 	"github.com/lucatorrekens/bakery-app/internal/payment"
@@ -27,6 +28,10 @@ type SellerService struct {
 	reservationRepo domain.ReservationRepository
 	paymentGateway  payment.PaymentGateway
 	notifications   notification.Dispatcher
+
+	// OnOrderDelivered is an optional callback invoked when an order is marked delivered.
+	// Used to trigger marketplace payouts via Stripe Connect.
+	OnOrderDelivered func(ctx context.Context, orderID string) error
 }
 
 // NewSellerService creates a new SellerService.
@@ -124,7 +129,7 @@ func (s *SellerService) CreateProduct(ctx context.Context, bakeryID, ownerID str
 	}
 
 	product.BakeryID = bakeryID
-	product.ID = fmt.Sprintf("prod_%d_%d", time.Now().UnixNano(), rand.Intn(10000))
+	product.ID = uuid.New().String()
 	product.IsAvailable = true
 
 	if err := s.bakeryRepo.CreateProduct(ctx, &product); err != nil {
@@ -268,13 +273,6 @@ func (s *SellerService) ListBakeryReservations(ctx context.Context, bakeryID, ow
 	}, nil
 }
 
-// validOrderTransitions defines allowed order status transitions for sellers.
-var validOrderTransitions = map[domain.OrderStatus]domain.OrderStatus{
-	domain.OrderStatusConfirmed: domain.OrderStatusPreparing,
-	domain.OrderStatusPreparing: domain.OrderStatusReady,
-	domain.OrderStatusReady:     domain.OrderStatusDelivered,
-}
-
 // UpdateOrderStatus updates an order's status after verifying ownership and valid transition.
 func (s *SellerService) UpdateOrderStatus(ctx context.Context, orderID, ownerID string, newStatus domain.OrderStatus) (*domain.Order, error) {
 	order, err := s.orderRepo.GetByID(ctx, orderID)
@@ -290,24 +288,50 @@ func (s *SellerService) UpdateOrderStatus(ctx context.Context, orderID, ownerID 
 		return nil, err
 	}
 
-	// Validate transition
-	allowed, ok := validOrderTransitions[order.Status]
-	if !ok || allowed != newStatus {
-		return nil, ErrInvalidStatusTransition
-	}
+	// Atomic capture flow: when delivering an order with an authorized payment,
+	// persist the intermediate "capturing" state before calling the gateway.
+	needsCapture := newStatus == domain.OrderStatusDelivered && order.PaymentIntentID != "" && s.paymentGateway != nil
+	if needsCapture {
+		// 1. Transition to "capturing" and persist
+		if err := domain.TransitionOrder(order, domain.OrderStatusCapturing); err != nil {
+			return nil, fmt.Errorf("transition to capturing: %w", err)
+		}
+		order.UpdatedAt = time.Now()
+		if err := s.orderRepo.Save(ctx, order); err != nil {
+			return nil, fmt.Errorf("saving capturing state: %w", err)
+		}
 
-	// Capture the authorized payment before marking as delivered
-	if newStatus == domain.OrderStatusDelivered && order.PaymentIntentID != "" && s.paymentGateway != nil {
+		// 2. Capture payment
 		if err := s.paymentGateway.CapturePayment(ctx, order.PaymentIntentID); err != nil {
 			return nil, fmt.Errorf("capturing payment: %w", err)
 		}
-	}
 
-	order.Status = newStatus
-	order.UpdatedAt = time.Now()
+		// 3. Transition to delivered with retry
+		if err := domain.TransitionOrder(order, domain.OrderStatusDelivered); err != nil {
+			return nil, fmt.Errorf("transition to delivered: %w", err)
+		}
+		order.UpdatedAt = time.Now()
 
-	if err := s.orderRepo.Save(ctx, order); err != nil {
-		return nil, fmt.Errorf("saving order: %w", err)
+		var saveErr error
+		for attempt := 0; attempt < 3; attempt++ {
+			if saveErr = s.orderRepo.Save(ctx, order); saveErr == nil {
+				break
+			}
+		}
+		if saveErr != nil {
+			log.Printf("[ALERT] capture succeeded but save failed: orderID=%s paymentIntentID=%s err=%v",
+				order.ID, order.PaymentIntentID, saveErr)
+			return nil, fmt.Errorf("saving delivered state after capture: %w", saveErr)
+		}
+	} else {
+		// Standard transition (no capture needed)
+		if err := domain.TransitionOrder(order, newStatus); err != nil {
+			return nil, ErrInvalidStatusTransition
+		}
+		order.UpdatedAt = time.Now()
+		if err := s.orderRepo.Save(ctx, order); err != nil {
+			return nil, fmt.Errorf("saving order: %w", err)
+		}
 	}
 
 	// Fire-and-forget notification (never blocks the main flow)
@@ -315,13 +339,16 @@ func (s *SellerService) UpdateOrderStatus(ctx context.Context, orderID, ownerID 
 		go s.notifications.OnOrderStatusChanged(context.Background(), orderID, newStatus)
 	}
 
-	return order, nil
-}
+	// Trigger marketplace payout on delivery (fire-and-forget)
+	if newStatus == domain.OrderStatusDelivered && s.OnOrderDelivered != nil {
+		go func() {
+			if err := s.OnOrderDelivered(context.Background(), orderID); err != nil {
+				log.Printf("[PAYOUT] OnOrderDelivered failed for order %s: %v", orderID, err)
+			}
+		}()
+	}
 
-// validReservationTransitions defines allowed reservation status transitions for sellers.
-var validReservationTransitions = map[domain.ReservationStatus]domain.ReservationStatus{
-	domain.ReservationStatusConfirmed: domain.ReservationStatusReady,
-	domain.ReservationStatusReady:     domain.ReservationStatusPickedUp,
+	return order, nil
 }
 
 // UpdateReservationStatus updates a reservation's status after verifying ownership and valid transition.
@@ -339,13 +366,10 @@ func (s *SellerService) UpdateReservationStatus(ctx context.Context, reservation
 		return nil, err
 	}
 
-	// Validate transition
-	allowed, ok := validReservationTransitions[reservation.Status]
-	if !ok || allowed != newStatus {
+	// Validate transition via domain state machine
+	if err := domain.TransitionReservation(reservation, newStatus); err != nil {
 		return nil, ErrInvalidStatusTransition
 	}
-
-	reservation.Status = newStatus
 
 	if err := s.reservationRepo.Save(ctx, *reservation); err != nil {
 		return nil, fmt.Errorf("saving reservation: %w", err)

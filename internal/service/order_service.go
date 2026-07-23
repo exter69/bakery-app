@@ -135,10 +135,12 @@ func (s *orderService) CreateOrder(ctx context.Context, userID string, order dom
 		productMap[p.ID] = p
 	}
 	for i := range order.Items {
-		if p, ok := productMap[order.Items[i].ProductID]; ok {
-			order.Items[i].ProductName = p.Name
-			order.Items[i].UnitPrice = p.Price
+		p, ok := productMap[order.Items[i].ProductID]
+		if !ok {
+			return nil, nil, fmt.Errorf("unknown product ID %q in order items", order.Items[i].ProductID)
 		}
+		order.Items[i].ProductName = p.Name
+		order.Items[i].UnitPrice = p.Price
 	}
 
 	// Step 5: Validate enriched items (unit price > 0) — skip for bakery_choice with no items
@@ -300,7 +302,9 @@ func (s *orderService) DeleteOrder(ctx context.Context, orderID string, userID s
 		previousStatus == domain.OrderStatusPreparing ||
 		previousStatus == domain.OrderStatusReady
 
-	order.Status = domain.OrderStatusCancelled
+	if err := domain.TransitionOrder(order, domain.OrderStatusCancelled); err != nil {
+		return fmt.Errorf("cancelling order: %w", err)
+	}
 	order.UpdatedAt = s.now()
 	if err := s.orderRepo.Save(ctx, order); err != nil {
 		return fmt.Errorf("saving order: %w", err)

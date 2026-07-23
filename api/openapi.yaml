@@ -1,0 +1,2608 @@
+openapi: 3.0.3
+info:
+  title: Mie & Beurre Bakery API
+  description: Backend API for the Mie & Beurre bakery marketplace application.
+  version: 1.0.0
+  contact:
+    name: Mie & Beurre Team
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+  - url: https://api.mieetbeurre.com
+    description: Production
+
+tags:
+  - name: Auth
+    description: Authentication and registration
+  - name: Bakeries
+    description: Bakery browsing and product search
+  - name: Orders
+    description: Order management (delivery with online payment)
+  - name: Reservations
+    description: Reservation management (on-spot payment)
+  - name: Bundles
+    description: Surplus/anti-gaspi bundle management
+  - name: Reviews
+    description: Customer reviews and ratings
+  - name: B2B Comptoir
+    description: B2B business client portal
+  - name: B2B Dashboard
+    description: Baker-facing B2B management
+  - name: Uploads
+    description: Image upload
+  - name: User
+    description: User profile and preferences
+  - name: WebSocket
+    description: Real-time notifications
+  - name: Health
+    description: Health check
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ─── Auth ───────────────────────────────────────────────────────────────────
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: User login
+      description: Authenticate with username and password. Returns a JWT token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      description: Create a customer or seller account. Seller registration requires an invitation code.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '409':
+          description: Username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/request-access:
+    post:
+      tags: [Auth]
+      summary: Request seller access
+      description: Submit a request for baker/seller access. An invitation token will be emailed.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestAccessRequest'
+      responses:
+        '200':
+          description: Request received
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access request received. Check your email."
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ─── Bakeries ───────────────────────────────────────────────────────────────
+  /api/bakeries:
+    get:
+      tags: [Bakeries]
+      summary: List bakeries
+      description: Returns a paginated list of bakeries with today's schedule. Supports geo-sorting.
+      security: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: lat
+          in: query
+          description: User latitude for distance sorting
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+        - name: lng
+          in: query
+          description: User longitude for distance sorting
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+        - name: radius
+          in: query
+          description: Maximum radius in km
+          schema:
+            type: number
+            format: double
+      responses:
+        '200':
+          description: Paginated list of bakery cards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BakeryCardListResponse'
+
+  /api/bakeries/{id}:
+    get:
+      tags: [Bakeries]
+      summary: Get bakery details
+      description: Returns full details for a single bakery.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/BakeryId'
+      responses:
+        '200':
+          description: Bakery details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bakery'
+        '404':
+          description: Bakery not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bakeries/{id}/menu:
+    get:
+      tags: [Bakeries]
+      summary: Get bakery menu
+      description: Returns products grouped by category for the given bakery.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/BakeryId'
+      responses:
+        '200':
+          description: Menu grouped by category
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Product'
+        '404':
+          description: Bakery not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/products/search:
+    get:
+      tags: [Bakeries]
+      summary: Search products
+      description: Search products by name across all bakeries with optional filters.
+      security: []
+      parameters:
+        - name: q
+          in: query
+          description: Search query (product name)
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: Filter by category
+          schema:
+            type: string
+        - name: excludeAllergens
+          in: query
+          description: Comma-separated list of allergens to exclude
+          schema:
+            type: string
+        - name: minHealthScore
+          in: query
+          description: Minimum health score (1-5)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Paginated search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductSearchListResponse'
+
+  # ─── Orders ─────────────────────────────────────────────────────────────────
+  /api/orders:
+    post:
+      tags: [Orders]
+      summary: Create order
+      description: Create a delivery order with online payment. Returns a payment link.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '404':
+          description: Bakery not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+    get:
+      tags: [Orders]
+      summary: List orders
+      description: Returns a paginated list of orders for the authenticated user.
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: status
+          in: query
+          description: Filter by order status
+          schema:
+            type: string
+            enum: [pending_payment, confirmed, preparing, ready, capturing, delivered, cancelled]
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+        - name: sortDir
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        '200':
+          description: Paginated list of orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListResponse'
+
+  /api/orders/{id}:
+    delete:
+      tags: [Orders]
+      summary: Cancel order
+      description: Cancel an order. Only the owner can cancel, and only in a cancellable state.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '403':
+          description: Forbidden - not the order owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Order not cancellable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ─── Reservations ───────────────────────────────────────────────────────────
+  /api/reservations:
+    post:
+      tags: [Reservations]
+      summary: Create reservation
+      description: Create a reservation for on-spot payment/pickup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReservationRequest'
+      responses:
+        '201':
+          description: Reservation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResponse'
+        '404':
+          description: Bakery not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+  /api/reservations/{id}:
+    delete:
+      tags: [Reservations]
+      summary: Cancel reservation
+      description: Cancel a reservation. Only the owner can cancel, and only in a cancellable state.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reservation cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Reservation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Reservation not cancellable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ─── Bundles ────────────────────────────────────────────────────────────────
+  /api/bundles:
+    get:
+      tags: [Bundles]
+      summary: List bundles
+      description: Returns a paginated list of published surplus bundles.
+      security: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: type
+          in: query
+          description: Filter by bundle type
+          schema:
+            type: string
+            enum: [compose, surprise]
+        - name: pickupBefore
+          in: query
+          description: Filter bundles with pickup ending before this time (HH:MM)
+          schema:
+            type: string
+            pattern: '^\d{2}:\d{2}$'
+      responses:
+        '200':
+          description: Paginated list of bundles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BundleListResponse'
+
+    post:
+      tags: [Bundles]
+      summary: Create bundle
+      description: Create a new surplus bundle (seller only). Created in draft status.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBundleRequest'
+      responses:
+        '201':
+          description: Bundle created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BundleResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bundles/{id}:
+    get:
+      tags: [Bundles]
+      summary: Get bundle details
+      description: Returns full details for a single bundle.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Bundle details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BundleResponse'
+        '404':
+          description: Bundle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bundles/{id}/publish:
+    post:
+      tags: [Bundles]
+      summary: Publish bundle
+      description: Publish a draft bundle to make it visible to customers (seller only).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Bundle published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BundleResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Bundle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Bundle not in draft status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bundles/{id}/reserve:
+    post:
+      tags: [Bundles]
+      summary: Reserve a bundle
+      description: Reserve a bundle for pickup. Creates a pending reservation.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Reservation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BundleReservationResponse'
+        '404':
+          description: Bundle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Bundle sold out or reservation already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bundles/{id}/reserve/confirm:
+    post:
+      tags: [Bundles]
+      summary: Confirm bundle reservation
+      description: Confirm pickup of a reserved bundle.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reservation confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BundleReservationResponse'
+        '404':
+          description: No active reservation found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bundle-reservations/{id}:
+    delete:
+      tags: [Bundles]
+      summary: Cancel bundle reservation
+      description: Cancel a pending bundle reservation.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reservation cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Reservation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Reservation not cancellable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bundles/impact:
+    get:
+      tags: [Bundles]
+      summary: Get anti-waste impact metrics
+      description: Returns aggregate impact metrics (items saved, weight avoided).
+      security: []
+      responses:
+        '200':
+          description: Impact metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BundleImpactResponse'
+
+  # ─── Reviews ────────────────────────────────────────────────────────────────
+  /api/bakeries/{id}/reviews:
+    get:
+      tags: [Reviews]
+      summary: List bakery reviews
+      description: Returns a paginated list of reviews for a bakery (public).
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/BakeryId'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paginated list of reviews
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewListResponse'
+
+    post:
+      tags: [Reviews]
+      summary: Create a review
+      description: Submit a review for a bakery. Requires a delivered order at this bakery.
+      parameters:
+        - $ref: '#/components/parameters/BakeryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewRequest'
+      responses:
+        '201':
+          description: Review created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResponse'
+        '400':
+          description: Invalid rating or text too long
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Not a verified purchaser
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Review already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/reviews/{id}/report:
+    post:
+      tags: [Reviews]
+      summary: Report a review
+      description: Flag a review for moderation.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportReviewRequest'
+      responses:
+        '204':
+          description: Review reported
+        '404':
+          description: Review not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/seller/reviews/{id}/hide:
+    put:
+      tags: [Reviews]
+      summary: Hide a review
+      description: Bakery owner hides a review from public display (seller only).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Review hidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '403':
+          description: Forbidden - not the bakery owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Review not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ─── B2B Comptoir ───────────────────────────────────────────────────────────
+  /api/comptoir/register:
+    post:
+      tags: [B2B Comptoir]
+      summary: Register business account
+      description: Create a new B2B business account. No authentication required.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterBusinessRequest'
+      responses:
+        '201':
+          description: Business registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterBusinessResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Company or username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptoir/profile:
+    get:
+      tags: [B2B Comptoir]
+      summary: Get business profile
+      description: Returns the authenticated business user's profile.
+      responses:
+        '200':
+          description: Business profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessProfileResponse'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [B2B Comptoir]
+      summary: Update business profile
+      description: Update company details.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessProfileResponse'
+
+  /api/comptoir/sites:
+    post:
+      tags: [B2B Comptoir]
+      summary: Create delivery site
+      description: Add a new delivery site to the business account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliverySiteRequest'
+      responses:
+        '201':
+          description: Site created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverySiteResponse'
+    get:
+      tags: [B2B Comptoir]
+      summary: List delivery sites
+      description: Returns all delivery sites for the business user.
+      responses:
+        '200':
+          description: List of delivery sites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliverySiteResponse'
+
+  /api/comptoir/sites/{siteId}:
+    put:
+      tags: [B2B Comptoir]
+      summary: Update delivery site
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliverySiteRequest'
+      responses:
+        '200':
+          description: Site updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverySiteResponse'
+        '404':
+          description: Site not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [B2B Comptoir]
+      summary: Delete delivery site
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Site deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '422':
+          description: Cannot delete last site
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptoir/access/request/{bakeryId}:
+    post:
+      tags: [B2B Comptoir]
+      summary: Request B2B access to a bakery
+      description: Submit an access request to order from a bakery via B2B.
+      parameters:
+        - name: bakeryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Access request created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/B2BAccessResponse'
+        '409':
+          description: Access request already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptoir/bakeries:
+    get:
+      tags: [B2B Comptoir]
+      summary: List approved bakeries
+      description: Returns bakeries the business user has approved access to.
+      responses:
+        '200':
+          description: List of approved bakeries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bakery'
+
+  /api/comptoir/bakeries/{bakeryId}/products:
+    get:
+      tags: [B2B Comptoir]
+      summary: Get bakery products (B2B)
+      description: Returns products grouped by category. Requires approved B2B access.
+      parameters:
+        - name: bakeryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Products by category
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Product'
+        '403':
+          description: B2B access not approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptoir/bakeries/{bakeryId}/config:
+    get:
+      tags: [B2B Comptoir]
+      summary: Get bakery B2B config
+      description: Returns B2B ordering configuration (cutoff, delivery window, minimums).
+      parameters:
+        - name: bakeryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: B2B config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/B2BConfigResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptoir/checkout:
+    post:
+      tags: [B2B Comptoir]
+      summary: B2B checkout
+      description: Place a B2B order for a single bakery with delivery site.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/B2BCheckoutRequest'
+      responses:
+        '201':
+          description: Order placed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Below minimum or cutoff passed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptoir/orders/{orderId}:
+    put:
+      tags: [B2B Comptoir]
+      summary: Edit B2B order
+      description: Modify items in a pending B2B order before cutoff.
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/B2BEditOrderRequest'
+      responses:
+        '200':
+          description: Order updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/comptoir/pricing:
+    post:
+      tags: [B2B Comptoir]
+      summary: Compute B2B pricing
+      description: Preview pricing breakdown (subtotal HT, discount, TVA, total TTC).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/B2BPricingRequest'
+      responses:
+        '200':
+          description: Pricing breakdown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/B2BOrderPricingResponse'
+
+  /api/comptoir/lists:
+    post:
+      tags: [B2B Comptoir]
+      summary: Create saved list
+      description: Save a list of products for quick reordering.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavedListRequest'
+      responses:
+        '201':
+          description: Saved list created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedListResponse'
+    get:
+      tags: [B2B Comptoir]
+      summary: List saved lists
+      description: Returns saved product lists, optionally filtered by bakery.
+      parameters:
+        - name: bakeryId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Saved lists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavedListResponse'
+
+  /api/comptoir/lists/{listId}:
+    delete:
+      tags: [B2B Comptoir]
+      summary: Delete saved list
+      parameters:
+        - name: listId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Saved list deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /api/comptoir/deliveries:
+    get:
+      tags: [B2B Comptoir]
+      summary: List deliveries
+      description: Paginated list of B2B deliveries with optional filters.
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: bakeryId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated deliveries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListResponse'
+
+  /api/comptoir/orders/{bakeryId}/last:
+    get:
+      tags: [B2B Comptoir]
+      summary: Get last order for a bakery
+      description: Returns the most recent B2B order for a specific bakery.
+      parameters:
+        - name: bakeryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Last order (or null if none)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+
+  /api/comptoir/invoices:
+    get:
+      tags: [B2B Comptoir]
+      summary: List invoices
+      description: Paginated list of B2B invoices.
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Paginated invoices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceListResponse'
+
+  /api/comptoir/invoices/{invoiceId}/pdf:
+    get:
+      tags: [B2B Comptoir]
+      summary: Download invoice PDF
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Invoice not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ─── B2B Dashboard (Baker-facing) ──────────────────────────────────────────
+  /api/dashboard/b2b/access:
+    get:
+      tags: [B2B Dashboard]
+      summary: List B2B access requests
+      description: Returns all B2B access requests for the seller's bakery.
+      responses:
+        '200':
+          description: List of access requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/B2BAccessResponse'
+
+  /api/dashboard/b2b/access/{accessId}/approve:
+    post:
+      tags: [B2B Dashboard]
+      summary: Approve B2B access
+      parameters:
+        - name: accessId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Access approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /api/dashboard/b2b/access/{accessId}/reject:
+    post:
+      tags: [B2B Dashboard]
+      summary: Reject B2B access
+      parameters:
+        - name: accessId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Access rejected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /api/dashboard/b2b/access/{accessId}/revoke:
+    post:
+      tags: [B2B Dashboard]
+      summary: Revoke B2B access
+      parameters:
+        - name: accessId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Access revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /api/dashboard/b2b/config:
+    get:
+      tags: [B2B Dashboard]
+      summary: Get seller B2B config
+      description: Returns the B2B configuration for the seller's bakery.
+      responses:
+        '200':
+          description: B2B config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/B2BConfigResponse'
+        '404':
+          description: No bakery found for this seller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [B2B Dashboard]
+      summary: Update seller B2B config
+      description: Create or update B2B ordering configuration for the seller's bakery.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/B2BConfigRequest'
+      responses:
+        '200':
+          description: Config saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/B2BConfigResponse'
+        '400':
+          description: Invalid time format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ─── Uploads ────────────────────────────────────────────────────────────────
+  /api/uploads:
+    post:
+      tags: [Uploads]
+      summary: Upload an image
+      description: Upload an image file (JPEG, PNG, WebP). Max 5 MB. Seller or admin only.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, type]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Image file (JPEG, PNG, or WebP)
+                type:
+                  type: string
+                  enum: [products, bakeries]
+                  description: Upload category
+      responses:
+        '201':
+          description: Upload successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    description: Public URL of the uploaded image
+        '400':
+          description: Invalid file type, size, or missing field
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Seller or admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ─── User ───────────────────────────────────────────────────────────────────
+  /api/user/profile:
+    get:
+      tags: [User]
+      summary: Get user profile
+      description: Returns the authenticated user's profile including holiday settings and favorites.
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/user/holiday:
+    put:
+      tags: [User]
+      summary: Update holiday mode
+      description: Enable or disable holiday mode with optional date range.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateHolidayRequest'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/user/favorites:
+    get:
+      tags: [User]
+      summary: Get favorite products
+      description: Returns the user's list of favorite product IDs.
+      responses:
+        '200':
+          description: Favorites list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoritesResponse'
+    put:
+      tags: [User]
+      summary: Update favorite products
+      description: Replace the user's favorite products list.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFavoritesRequest'
+      responses:
+        '200':
+          description: Updated favorites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoritesResponse'
+
+  # ─── WebSocket ──────────────────────────────────────────────────────────────
+  /api/ws:
+    get:
+      tags: [WebSocket]
+      summary: WebSocket connection
+      description: |
+        Upgrade to WebSocket for real-time notifications (order updates, bundle events).
+        Authentication via `token` query parameter containing a valid JWT.
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: JWT bearer token for authentication
+          schema:
+            type: string
+      responses:
+        '101':
+          description: Switching Protocols (WebSocket upgrade)
+        '401':
+          description: Invalid or missing token
+
+  # ─── Health ─────────────────────────────────────────────────────────────────
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Returns service health status. Used by load balancers and monitoring.
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    BakeryId:
+      name: id
+      in: path
+      required: true
+      description: Bakery ID
+      schema:
+        type: string
+
+  schemas:
+    # ─── Common ─────────────────────────────────────────────────────────────
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+          example: "invalid request body"
+
+    ValidationErrorResponse:
+      type: object
+      required: [code, message, errors]
+      properties:
+        code:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+    TimeSlot:
+      type: object
+      required: [startTime, endTime]
+      properties:
+        startTime:
+          type: string
+          description: "HH:MM format"
+          example: "08:00"
+        endTime:
+          type: string
+          description: "HH:MM format"
+          example: "09:00"
+
+    OrderItemRequest:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+
+    OrderItemResponse:
+      type: object
+      properties:
+        productId:
+          type: string
+        productName:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: integer
+          format: int64
+          description: Price in cents
+        subtotal:
+          type: integer
+          format: int64
+          description: Subtotal in cents
+
+    # ─── Auth ───────────────────────────────────────────────────────────────
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT access token
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+            username:
+              type: string
+            role:
+              type: integer
+              description: "0=admin, 1=seller, 2=customer, 3=business"
+
+    RegisterRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          minLength: 6
+        role:
+          type: integer
+          description: "1=seller, 2=customer (default)"
+        code:
+          type: string
+          description: Invitation code (required for seller registration)
+
+    RegisterResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        role:
+          type: integer
+
+    RequestAccessRequest:
+      type: object
+      required: [email]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        bakeryName:
+          type: string
+        bakeryAddress:
+          type: string
+
+    # ─── Bakeries ───────────────────────────────────────────────────────────
+    Bakery:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        photoUrl:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        ratingAvg:
+          type: number
+          format: double
+          nullable: true
+        ratingCount:
+          type: integer
+        schedule:
+          type: array
+          items:
+            $ref: '#/components/schemas/DaySchedule'
+
+    DaySchedule:
+      type: object
+      properties:
+        day:
+          type: string
+          enum: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+        isOpen:
+          type: boolean
+        openTime:
+          type: string
+          example: "07:00"
+        closeTime:
+          type: string
+          example: "19:00"
+
+    BakeryCard:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        photoUrl:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        ratingAvg:
+          type: number
+          format: double
+          nullable: true
+        ratingCount:
+          type: integer
+        todaySchedule:
+          $ref: '#/components/schemas/TodaySchedule'
+        distance:
+          type: number
+          format: double
+          nullable: true
+          description: Distance in km (only when geo params provided)
+
+    TodaySchedule:
+      type: object
+      properties:
+        openTime:
+          type: string
+          example: "07:00"
+        closeTime:
+          type: string
+          example: "19:00"
+        isOpen:
+          type: boolean
+
+    BakeryCardListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BakeryCard'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        bakeryId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        price:
+          type: integer
+          format: int64
+          description: Price in cents
+        photoUrl:
+          type: string
+        allergens:
+          type: array
+          items:
+            type: string
+        healthScore:
+          type: integer
+        available:
+          type: boolean
+
+    ProductSearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: integer
+          format: int64
+        photoUrl:
+          type: string
+        bakeryId:
+          type: string
+        bakeryName:
+          type: string
+        allergens:
+          type: array
+          items:
+            type: string
+        healthScore:
+          type: integer
+
+    ProductSearchListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductSearchResult'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+
+    # ─── Orders ─────────────────────────────────────────────────────────────
+    CreateOrderRequest:
+      type: object
+      required: [bakeryId, items, scheduledDay, scheduledTime]
+      properties:
+        bakeryId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemRequest'
+        scheduledDay:
+          type: string
+          enum: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+        scheduledTime:
+          $ref: '#/components/schemas/TimeSlot'
+        selectionMode:
+          type: string
+          enum: [fixed, bakery_choice, random_favorites]
+          default: fixed
+
+    OrderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        bakeryId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemResponse'
+        scheduledDay:
+          type: string
+        scheduledTime:
+          $ref: '#/components/schemas/TimeSlot'
+        status:
+          type: string
+          enum: [pending_payment, confirmed, preparing, ready, capturing, delivered, cancelled]
+        totalAmount:
+          type: integer
+          format: int64
+          description: Total in cents
+        paymentMethod:
+          type: string
+          enum: [online, on_spot]
+        selectionMode:
+          type: string
+        paymentLink:
+          type: string
+          description: Stripe checkout URL (only on creation)
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    OrderListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderResponse'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+
+    # ─── Reservations ───────────────────────────────────────────────────────
+    CreateReservationRequest:
+      type: object
+      required: [bakeryId, items, scheduledDay, scheduledTime]
+      properties:
+        bakeryId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemRequest'
+        scheduledDay:
+          type: string
+          enum: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+        scheduledTime:
+          $ref: '#/components/schemas/TimeSlot'
+
+    ReservationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        bakeryId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemResponse'
+        scheduledDay:
+          type: string
+        scheduledTime:
+          $ref: '#/components/schemas/TimeSlot'
+        status:
+          type: string
+          enum: [pending, confirmed, picked_up, cancelled]
+        totalAmount:
+          type: integer
+          format: int64
+        paymentMethod:
+          type: string
+          enum: [on_spot]
+        createdAt:
+          type: string
+          format: date-time
+
+    # ─── Bundles ────────────────────────────────────────────────────────────
+    CreateBundleRequest:
+      type: object
+      required: [name, type, originalPrice, discountedPrice, quantityTotal, pickupStartTime, pickupEndTime]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [compose, surprise]
+        photoUrl:
+          type: string
+        description:
+          type: string
+          description: Required for surprise bundles
+        estimatedValue:
+          type: integer
+          format: int64
+          description: Estimated value in cents (required for surprise)
+        originalPrice:
+          type: integer
+          format: int64
+          description: Original price in cents
+        discountedPrice:
+          type: integer
+          format: int64
+          description: Discounted price in cents
+        quantityTotal:
+          type: integer
+          minimum: 1
+        pickupStartTime:
+          type: string
+          description: "HH:MM format"
+          example: "17:00"
+        pickupEndTime:
+          type: string
+          description: "HH:MM format"
+          example: "19:00"
+        items:
+          type: array
+          description: Required for compose bundles
+          items:
+            $ref: '#/components/schemas/BundleItemRequest'
+
+    BundleItemRequest:
+      type: object
+      properties:
+        productId:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+
+    BundleResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        bakeryId:
+          type: string
+        bakeryName:
+          type: string
+        bakeryLatitude:
+          type: number
+          format: double
+        bakeryLongitude:
+          type: number
+          format: double
+        name:
+          type: string
+        type:
+          type: string
+          enum: [compose, surprise]
+        photoUrl:
+          type: string
+        description:
+          type: string
+        estimatedValue:
+          type: integer
+          format: int64
+        originalPrice:
+          type: integer
+          format: int64
+        discountedPrice:
+          type: integer
+          format: int64
+        quantityTotal:
+          type: integer
+        quantityRemaining:
+          type: integer
+        pickupStartTime:
+          type: string
+        pickupEndTime:
+          type: string
+        publishedDate:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [draft, published, sold_out, expired]
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BundleItemResponse'
+        createdAt:
+          type: string
+          format: date-time
+
+    BundleItemResponse:
+      type: object
+      properties:
+        productId:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: integer
+
+    BundleReservationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        bundleId:
+          type: string
+        bundleName:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, picked_up, cancelled]
+        createdAt:
+          type: string
+          format: date-time
+
+    BundleImpactResponse:
+      type: object
+      properties:
+        totalSaved:
+          type: integer
+          description: Total items saved from waste
+        weightAvoided:
+          type: number
+          format: double
+          description: Weight avoided in kg
+
+    BundleListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BundleResponse'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+
+    # ─── Reviews ────────────────────────────────────────────────────────────
+    CreateReviewRequest:
+      type: object
+      required: [rating]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        text:
+          type: string
+          maxLength: 1000
+
+    ReviewResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        rating:
+          type: integer
+        text:
+          type: string
+          nullable: true
+        authorName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ReportReviewRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+
+    ReviewListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewResponse'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+
+    # ─── B2B ────────────────────────────────────────────────────────────────
+    RegisterBusinessRequest:
+      type: object
+      required: [username, password, companyName, vatSiret, billingEmail, billingContactName]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          minLength: 6
+        companyName:
+          type: string
+        vatSiret:
+          type: string
+        iban:
+          type: string
+        billingEmail:
+          type: string
+          format: email
+        billingContactName:
+          type: string
+
+    RegisterBusinessResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT access token
+        profile:
+          $ref: '#/components/schemas/BusinessProfileResponse'
+
+    BusinessProfileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        companyName:
+          type: string
+        vatSiret:
+          type: string
+        iban:
+          type: string
+        billingEmail:
+          type: string
+        billingContactName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        companyName:
+          type: string
+        iban:
+          type: string
+        billingEmail:
+          type: string
+          format: email
+        billingContactName:
+          type: string
+
+    DeliverySiteRequest:
+      type: object
+      required: [name, streetAddress, city, postalCode, country]
+      properties:
+        name:
+          type: string
+        streetAddress:
+          type: string
+        city:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        deliveryInstructions:
+          type: string
+
+    DeliverySiteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        name:
+          type: string
+        streetAddress:
+          type: string
+        city:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        deliveryInstructions:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    B2BAccessResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        bakeryId:
+          type: string
+        businessUserId:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected, revoked]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    B2BConfigRequest:
+      type: object
+      required: [cutoffTime, deliveryWindowStart, deliveryWindowEnd, orderMinimum, proDiscount]
+      properties:
+        cutoffTime:
+          type: string
+          description: "HH:MM format"
+          example: "18:00"
+        deliveryWindowStart:
+          type: string
+          description: "HH:MM format"
+          example: "06:00"
+        deliveryWindowEnd:
+          type: string
+          description: "HH:MM format"
+          example: "10:00"
+        orderMinimum:
+          type: integer
+          format: int64
+          description: Minimum order amount in cents (HT)
+        proDiscount:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Professional discount percentage
+
+    B2BConfigResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        bakeryId:
+          type: string
+        cutoffTime:
+          type: string
+        deliveryWindowStart:
+          type: string
+        deliveryWindowEnd:
+          type: string
+        orderMinimum:
+          type: integer
+          format: int64
+        proDiscount:
+          type: integer
+
+    B2BCheckoutRequest:
+      type: object
+      required: [bakeryId, deliverySiteId, items]
+      properties:
+        bakeryId:
+          type: string
+        deliverySiteId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemRequest'
+
+    B2BEditOrderRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemRequest'
+
+    B2BPricingRequest:
+      type: object
+      required: [bakeryId, items]
+      properties:
+        bakeryId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemRequest'
+
+    B2BOrderPricingResponse:
+      type: object
+      properties:
+        subtotalHt:
+          type: integer
+          format: int64
+          description: Subtotal before discount and tax (cents)
+        discountRate:
+          type: integer
+          description: Discount percentage applied
+        discountAmount:
+          type: integer
+          format: int64
+          description: Discount amount in cents
+        tvaRate:
+          type: integer
+          description: TVA rate percentage
+        tvaAmount:
+          type: integer
+          format: int64
+          description: TVA amount in cents
+        totalTtc:
+          type: integer
+          format: int64
+          description: Final total including tax (cents)
+
+    SavedListRequest:
+      type: object
+      required: [bakeryId, name, items]
+      properties:
+        bakeryId:
+          type: string
+        name:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            required: [productId, quantity]
+            properties:
+              productId:
+                type: string
+              quantity:
+                type: integer
+                minimum: 1
+
+    SavedListResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        bakeryId:
+          type: string
+        name:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              productId:
+                type: string
+              quantity:
+                type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    InvoiceListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/B2BInvoiceResponse'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+
+    B2BInvoiceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        orderId:
+          type: string
+        bakeryId:
+          type: string
+        businessProfileId:
+          type: string
+        invoiceNumber:
+          type: integer
+        subtotalHt:
+          type: integer
+          format: int64
+        discountAmount:
+          type: integer
+          format: int64
+        tvaAmount:
+          type: integer
+          format: int64
+        totalTtc:
+          type: integer
+          format: int64
+        paymentStatus:
+          type: string
+          enum: [pending, paid, overdue]
+        issuedAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    # ─── User ───────────────────────────────────────────────────────────────
+    UserProfileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        role:
+          type: integer
+        holidayMode:
+          type: boolean
+        holidayFrom:
+          type: string
+          format: date-time
+          nullable: true
+        holidayTo:
+          type: string
+          format: date-time
+          nullable: true
+        favoriteProducts:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    UpdateHolidayRequest:
+      type: object
+      required: [holidayMode]
+      properties:
+        holidayMode:
+          type: boolean
+        holidayFrom:
+          type: string
+          format: date-time
+        holidayTo:
+          type: string
+          format: date-time
+
+    UpdateFavoritesRequest:
+      type: object
+      required: [productIds]
+      properties:
+        productIds:
+          type: array
+          items:
+            type: string
+
+    FavoritesResponse:
+      type: object
+      properties:
+        productIds:
+          type: array
+          items:
+            type: string

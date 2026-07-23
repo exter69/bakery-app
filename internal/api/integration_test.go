@@ -63,7 +63,7 @@ func setupTestServer(t *testing.T) *testServer {
 	bakeryHandler := api.NewBakeryHandler(bakerySvc)
 	orderHandler := api.NewOrderHandler(orderSvc)
 	reservationHandler := api.NewReservationHandler(reservationSvc)
-	paymentHandler := api.NewPaymentHandler(paymentSvc, orderRepo)
+	paymentHandler := api.NewPaymentHandler(paymentSvc, orderRepo, "stub")
 
 	// Router — bakery endpoints are public, everything else requires auth
 	r := chi.NewRouter()

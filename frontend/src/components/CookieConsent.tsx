@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useI18n } from '../i18n';
+import { initSentry } from '../main';
 import './CookieConsent.css';
 
 const CONSENT_KEY = 'cookie_consent';
@@ -25,7 +26,9 @@ export default function CookieConsent() {
   function handleAccept(value: ConsentValue) {
     localStorage.setItem(CONSENT_KEY, value);
     setVisible(false);
-    // Placeholder: if value === 'all', load analytics here
+    if (value === 'all') {
+      initSentry();
+    }
   }
 
   if (!visible) return null;

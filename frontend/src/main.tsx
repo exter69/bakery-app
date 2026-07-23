@@ -3,11 +3,24 @@ import { createRoot } from 'react-dom/client'
 import * as Sentry from '@sentry/react'
 import { I18nProvider } from './i18n'
 import { ThemeProvider } from './theme/ThemeContext'
+import { getConsentValue } from './components/CookieConsent'
 import './index.css'
 import App from './App.tsx'
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
-if (sentryDsn) {
+
+/**
+ * Initialize Sentry only when the user has given "all" cookie consent.
+ * Called on load (if consent was previously granted) and again after the user
+ * interacts with the consent banner.
+ */
+export function initSentry() {
+  if (!sentryDsn) return;
+  if (Sentry.getClient()) return; // already initialized
+
+  const consent = getConsentValue();
+  if (consent !== 'all') return;
+
   Sentry.init({
     dsn: sentryDsn,
     environment: import.meta.env.VITE_APP_ENV || 'development',
@@ -28,6 +41,9 @@ if (sentryDsn) {
   });
 }
 
+// Initialize Sentry on page load if consent was previously given
+initSentry();
+
 const AppWithProviders = () => (
   <StrictMode>
     <ThemeProvider>
@@ -38,8 +54,10 @@ const AppWithProviders = () => (
   </StrictMode>
 );
 
+const isSentryActive = !!Sentry.getClient();
+
 createRoot(document.getElementById('root')!).render(
-  sentryDsn
+  isSentryActive
     ? <Sentry.ErrorBoundary fallback={<p>An error occurred. Please refresh.</p>}><AppWithProviders /></Sentry.ErrorBoundary>
     : <AppWithProviders />
 );

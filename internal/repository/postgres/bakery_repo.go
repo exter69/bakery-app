@@ -33,7 +33,7 @@ func (r *BakeryRepo) ListBakeries(ctx context.Context, params domain.PaginationP
 
 	// Fetch bakeries page
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, rating_avg, rating_count, created_at
+		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, rating_avg, rating_count, created_at, charges_enabled, payouts_enabled, stripe_connect_id
 		FROM bakeries
 		ORDER BY name ASC
 		LIMIT $1 OFFSET $2`, limit, offset)
@@ -68,7 +68,7 @@ func (r *BakeryRepo) ListBakeries(ctx context.Context, params domain.PaginationP
 
 func (r *BakeryRepo) GetBakery(ctx context.Context, id string) (*domain.Bakery, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, rating_avg, rating_count, created_at
+		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, rating_avg, rating_count, created_at, charges_enabled, payouts_enabled, stripe_connect_id
 		FROM bakeries WHERE id = $1`, id)
 
 	b, err := scanBakeryQueryRow(row)
@@ -90,7 +90,7 @@ func (r *BakeryRepo) GetBakery(ctx context.Context, id string) (*domain.Bakery, 
 
 func (r *BakeryRepo) GetBakeryByOwner(ctx context.Context, ownerID string) (*domain.Bakery, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, rating_avg, rating_count, created_at
+		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, rating_avg, rating_count, created_at, charges_enabled, payouts_enabled, stripe_connect_id
 		FROM bakeries WHERE owner_id = $1`, ownerID)
 
 	b, err := scanBakeryQueryRow(row)
@@ -112,7 +112,7 @@ func (r *BakeryRepo) GetBakeryByOwner(ctx context.Context, ownerID string) (*dom
 
 func (r *BakeryRepo) GetByStripeConnectID(ctx context.Context, stripeConnectID string) (*domain.Bakery, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, rating_avg, rating_count, created_at
+		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, rating_avg, rating_count, created_at, charges_enabled, payouts_enabled, stripe_connect_id
 		FROM bakeries WHERE stripe_connect_id = $1`, stripeConnectID)
 
 	b, err := scanBakeryQueryRow(row)
@@ -142,10 +142,12 @@ func (r *BakeryRepo) UpdateBakery(ctx context.Context, bakery *domain.Bakery) er
 	_, err = tx.Exec(ctx, `
 		UPDATE bakeries SET
 			owner_id = $2, name = $3, photo_url = $4, description = $5,
-			address = $6, latitude = $7, longitude = $8
+			address = $6, latitude = $7, longitude = $8,
+			stripe_connect_id = $9, charges_enabled = $10, payouts_enabled = $11
 		WHERE id = $1`,
 		bakery.ID, bakery.OwnerID, bakery.Name, bakery.PhotoURL, bakery.Description,
-		bakery.Address, bakery.Latitude, bakery.Longitude)
+		bakery.Address, bakery.Latitude, bakery.Longitude,
+		bakery.StripeConnectID, bakery.ChargesEnabled, bakery.PayoutsEnabled)
 	if err != nil {
 		return err
 	}
@@ -207,12 +209,11 @@ func (r *BakeryRepo) GetProductByID(ctx context.Context, id string) (*domain.Pro
 		FROM products WHERE id = $1`, id)
 
 	var p domain.Product
-	var priceDecimal float64
 	var allergens []string
 	var healthScore *int
 
 	err := row.Scan(
-		&p.ID, &p.BakeryID, &p.Name, &p.Description, &priceDecimal,
+		&p.ID, &p.BakeryID, &p.Name, &p.Description, &p.Price,
 		&p.PhotoURL, &p.Category, &p.IsAvailable, &allergens, &healthScore)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
@@ -221,7 +222,6 @@ func (r *BakeryRepo) GetProductByID(ctx context.Context, id string) (*domain.Pro
 		return nil, err
 	}
 
-	p.Price = decimalToCents(priceDecimal)
 	p.HealthScore = healthScore
 	if allergens != nil {
 		p.Allergens = allergens
@@ -237,7 +237,7 @@ func (r *BakeryRepo) CreateProduct(ctx context.Context, product *domain.Product)
 		INSERT INTO products (id, bakery_id, name, description, price, photo_url, category, is_available, allergens, health_score)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
 		product.ID, product.BakeryID, product.Name, product.Description,
-		centsToDecimal(product.Price), product.PhotoURL, product.Category,
+		product.Price, product.PhotoURL, product.Category,
 		product.IsAvailable, product.Allergens, product.HealthScore)
 	return err
 }
@@ -249,7 +249,7 @@ func (r *BakeryRepo) UpdateProduct(ctx context.Context, product *domain.Product)
 			category = $6, is_available = $7, allergens = $8, health_score = $9
 		WHERE id = $1`,
 		product.ID, product.Name, product.Description,
-		centsToDecimal(product.Price), product.PhotoURL, product.Category,
+		product.Price, product.PhotoURL, product.Category,
 		product.IsAvailable, product.Allergens, product.HealthScore)
 	return err
 }
@@ -324,20 +324,18 @@ func (r *BakeryRepo) SearchProducts(ctx context.Context, params domain.ProductSe
 	var results []domain.ProductSearchResult
 	for rows.Next() {
 		var p domain.Product
-		var priceDecimal float64
 		var allergens []string
 		var healthScore *int
 		var bakeryID, bakeryName string
 
 		err := rows.Scan(
-			&p.ID, &p.BakeryID, &p.Name, &p.Description, &priceDecimal,
+			&p.ID, &p.BakeryID, &p.Name, &p.Description, &p.Price,
 			&p.PhotoURL, &p.Category, &p.IsAvailable, &allergens, &healthScore,
 			&bakeryID, &bakeryName)
 		if err != nil {
 			return nil, 0, err
 		}
 
-		p.Price = decimalToCents(priceDecimal)
 		p.HealthScore = healthScore
 		if allergens != nil {
 			p.Allergens = allergens
@@ -404,16 +402,21 @@ func (r *BakeryRepo) loadSchedules(ctx context.Context, bakeryID string) ([]doma
 func scanBakeryRow(rows pgx.Rows) (domain.Bakery, error) {
 	var b domain.Bakery
 	var ownerID *string
+	var stripeConnectID *string
 
 	err := rows.Scan(
 		&b.ID, &ownerID, &b.Name, &b.PhotoURL, &b.Description,
-		&b.Address, &b.Latitude, &b.Longitude, &b.RatingAvg, &b.RatingCount, &b.CreatedAt)
+		&b.Address, &b.Latitude, &b.Longitude, &b.RatingAvg, &b.RatingCount, &b.CreatedAt,
+		&b.ChargesEnabled, &b.PayoutsEnabled, &stripeConnectID)
 	if err != nil {
 		return b, err
 	}
 
 	if ownerID != nil {
 		b.OwnerID = *ownerID
+	}
+	if stripeConnectID != nil {
+		b.StripeConnectID = *stripeConnectID
 	}
 
 	return b, nil
@@ -423,16 +426,21 @@ func scanBakeryRow(rows pgx.Rows) (domain.Bakery, error) {
 func scanBakeryQueryRow(row pgx.Row) (*domain.Bakery, error) {
 	var b domain.Bakery
 	var ownerID *string
+	var stripeConnectID *string
 
 	err := row.Scan(
 		&b.ID, &ownerID, &b.Name, &b.PhotoURL, &b.Description,
-		&b.Address, &b.Latitude, &b.Longitude, &b.RatingAvg, &b.RatingCount, &b.CreatedAt)
+		&b.Address, &b.Latitude, &b.Longitude, &b.RatingAvg, &b.RatingCount, &b.CreatedAt,
+		&b.ChargesEnabled, &b.PayoutsEnabled, &stripeConnectID)
 	if err != nil {
 		return nil, err
 	}
 
 	if ownerID != nil {
 		b.OwnerID = *ownerID
+	}
+	if stripeConnectID != nil {
+		b.StripeConnectID = *stripeConnectID
 	}
 
 	return &b, nil
@@ -441,18 +449,16 @@ func scanBakeryQueryRow(row pgx.Row) (*domain.Bakery, error) {
 // scanProductRow scans a product from a pgx.Rows iterator.
 func scanProductRow(rows pgx.Rows) (domain.Product, error) {
 	var p domain.Product
-	var priceDecimal float64
 	var allergens []string
 	var healthScore *int
 
 	err := rows.Scan(
-		&p.ID, &p.BakeryID, &p.Name, &p.Description, &priceDecimal,
+		&p.ID, &p.BakeryID, &p.Name, &p.Description, &p.Price,
 		&p.PhotoURL, &p.Category, &p.IsAvailable, &allergens, &healthScore)
 	if err != nil {
 		return p, err
 	}
 
-	p.Price = decimalToCents(priceDecimal)
 	p.HealthScore = healthScore
 	if allergens != nil {
 		p.Allergens = allergens

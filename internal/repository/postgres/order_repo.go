@@ -47,7 +47,7 @@ func (r *OrderRepo) Save(ctx context.Context, order *domain.Order) error {
 			updated_at = EXCLUDED.updated_at`,
 		order.ID, order.BakeryID, order.UserID,
 		dayInt, startTime, endTime,
-		string(order.Status), centsToDecimal(order.TotalAmount),
+		string(order.Status), order.TotalAmount,
 		string(order.PaymentMethod), nilIfEmpty(order.PaymentIntentID),
 		order.RefundStatus,
 		order.CreatedAt, order.UpdatedAt)
@@ -66,7 +66,7 @@ func (r *OrderRepo) Save(ctx context.Context, order *domain.Order) error {
 			INSERT INTO order_items (order_id, product_id, product_name, quantity, unit_price, subtotal)
 			VALUES ($1, $2, $3, $4, $5, $6)`,
 			order.ID, item.ProductID, item.ProductName, item.Quantity,
-			centsToDecimal(item.UnitPrice), centsToDecimal(item.Subtotal))
+			item.UnitPrice, item.Subtotal)
 		if err != nil {
 			return err
 		}
@@ -199,12 +199,9 @@ func (r *OrderRepo) loadOrderItems(ctx context.Context, orderID string) ([]domai
 	var items []domain.OrderItem
 	for rows.Next() {
 		var item domain.OrderItem
-		var unitPriceDec, subtotalDec float64
-		if err := rows.Scan(&item.ProductID, &item.ProductName, &item.Quantity, &unitPriceDec, &subtotalDec); err != nil {
+		if err := rows.Scan(&item.ProductID, &item.ProductName, &item.Quantity, &item.UnitPrice, &item.Subtotal); err != nil {
 			return nil, err
 		}
-		item.UnitPrice = decimalToCents(unitPriceDec)
-		item.Subtotal = decimalToCents(subtotalDec)
 		items = append(items, item)
 	}
 	return items, rows.Err()
@@ -215,14 +212,13 @@ func scanOrderRow(row pgx.Row) (*domain.Order, error) {
 	var o domain.Order
 	var dayInt int
 	var startTime, endTime time.Time
-	var totalDec float64
 	var status, paymentMethod string
 	var paymentIntentID *string
 	var refundStatus string
 
 	err := row.Scan(
 		&o.ID, &o.BakeryID, &o.UserID, &dayInt, &startTime, &endTime,
-		&status, &totalDec, &paymentMethod, &paymentIntentID, &refundStatus, &o.CreatedAt, &o.UpdatedAt)
+		&status, &o.TotalAmount, &paymentMethod, &paymentIntentID, &refundStatus, &o.CreatedAt, &o.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +229,6 @@ func scanOrderRow(row pgx.Row) (*domain.Order, error) {
 		EndTime:   timeToTimeOfDay(endTime),
 	}
 	o.Status = domain.OrderStatus(status)
-	o.TotalAmount = decimalToCents(totalDec)
 	o.PaymentMethod = domain.PaymentMethod(paymentMethod)
 	if paymentIntentID != nil {
 		o.PaymentIntentID = *paymentIntentID
@@ -248,14 +243,13 @@ func scanOrderRows(rows pgx.Rows) (*domain.Order, error) {
 	var o domain.Order
 	var dayInt int
 	var startTime, endTime time.Time
-	var totalDec float64
 	var status, paymentMethod string
 	var paymentIntentID *string
 	var refundStatus string
 
 	err := rows.Scan(
 		&o.ID, &o.BakeryID, &o.UserID, &dayInt, &startTime, &endTime,
-		&status, &totalDec, &paymentMethod, &paymentIntentID, &refundStatus, &o.CreatedAt, &o.UpdatedAt)
+		&status, &o.TotalAmount, &paymentMethod, &paymentIntentID, &refundStatus, &o.CreatedAt, &o.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +260,6 @@ func scanOrderRows(rows pgx.Rows) (*domain.Order, error) {
 		EndTime:   timeToTimeOfDay(endTime),
 	}
 	o.Status = domain.OrderStatus(status)
-	o.TotalAmount = decimalToCents(totalDec)
 	o.PaymentMethod = domain.PaymentMethod(paymentMethod)
 	if paymentIntentID != nil {
 		o.PaymentIntentID = *paymentIntentID

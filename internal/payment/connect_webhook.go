@@ -76,9 +76,15 @@ func (h *ConnectWebhookHandler) handleAccountUpdated(ctx context.Context, acct *
 		return
 	}
 
-	// Persist the Stripe Connect ID confirmation (idempotent — already stored during onboard)
-	// The real value here is that we confirm the account is linked and log the status.
-	// Future: could store charges_enabled / payouts_enabled flags if needed.
+	// Idempotency: skip the DB write if values already match
+	if bakery.ChargesEnabled == acct.ChargesEnabled && bakery.PayoutsEnabled == acct.PayoutsEnabled {
+		log.Printf("[CONNECT-WEBHOOK] bakery %s already up to date, skipping write", bakery.ID)
+		return
+	}
+
+	bakery.ChargesEnabled = acct.ChargesEnabled
+	bakery.PayoutsEnabled = acct.PayoutsEnabled
+
 	if err := h.bakeryRepo.UpdateBakery(ctx, bakery); err != nil {
 		log.Printf("[CONNECT-WEBHOOK] failed to update bakery %s: %v", bakery.ID, err)
 	}

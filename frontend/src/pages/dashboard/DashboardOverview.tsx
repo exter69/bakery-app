@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchMyBakery, fetchBakeryOrders, fetchBakeryReservations, fetchProducts } from '../../api/seller';
+import { fetchConnectStatus } from '../../api/payouts';
+import type { ConnectStatus } from '../../api/payouts';
+import { useI18n } from '../../i18n';
 import { StatCard } from '../../components/pro/StatCard';
 import { OrderCard } from '../../components/pro/OrderCard';
 import { ErrorBanner } from '../../components/pro/ErrorBanner';
@@ -13,11 +16,13 @@ import './DashboardOverview.css';
 const LOW_STOCK_THRESHOLD = 10;
 
 export default function DashboardOverview() {
+  const { t } = useI18n();
   const [bakery, setBakery] = useState<Bakery | null>(null);
   const [todayOrders, setTodayOrders] = useState<Order[]>([]);
   const [todayReservations, setTodayReservations] = useState<Reservation[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [totalOrderCount, setTotalOrderCount] = useState(0);
+  const [connectStatus, setConnectStatus] = useState<ConnectStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shopOpen, setShopOpen] = useState(false);
@@ -46,6 +51,14 @@ export default function DashboardOverview() {
       setTotalOrderCount(ordersRes.total);
       setTodayReservations(reservationsRes.items);
       setProducts(prods);
+
+      // Check Stripe Connect status (non-blocking — catch silently)
+      try {
+        const status = await fetchConnectStatus();
+        setConnectStatus(status);
+      } catch {
+        // Seller may not have a connect account yet — that's fine
+      }
     } catch {
       // Retain stale data — only set error message (Requirement 7.2)
       setError('Impossible de charger les données. Vérifiez votre connexion.');
@@ -185,6 +198,19 @@ export default function DashboardOverview() {
     <div className="pro-overview">
       {/* Inline error with retry — stale data retained below (Requirement 7.2) */}
       {error && <ErrorBanner message={error} onRetry={loadData} />}
+
+      {/* Stripe Connect onboarding banner — shown when payouts are not fully set up */}
+      {connectStatus && (!connectStatus.connected || !connectStatus.chargesEnabled || !connectStatus.payoutsEnabled) && (
+        <div className="pro-connect-banner" role="alert">
+          <div className="pro-connect-banner__content">
+            <h3 className="pro-connect-banner__title">{t('dashboard.connectBanner.title')}</h3>
+            <p className="pro-connect-banner__text">{t('dashboard.connectBanner.text')}</p>
+          </div>
+          <Link to="/dashboard/payouts" className="pro-connect-banner__action">
+            {t('dashboard.connectBanner.action')} →
+          </Link>
+        </div>
+      )}
 
       {/* Header */}
       <div className="pro-overview__header">

@@ -78,7 +78,7 @@ export default function HomePage() {
 
         {/* Floating pill navbar */}
         <nav className="pill-nav pill-nav--hero">
-          <Link to="/" className="pill-nav__brand">Mie &amp; Beurre</Link>
+          <Link to="/" className="pill-nav__brand">Ma Boulangerie</Link>
           <div className="pill-nav__spacer" />
           <div className="pill-nav__links" ref={heroLinksRef} onMouseLeave={handleLinksLeave}>
             {hoverIndicator && (

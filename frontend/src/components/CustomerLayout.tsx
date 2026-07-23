@@ -48,7 +48,7 @@ export default function CustomerLayout() {
       {/* Floating pill navbar */}
       <nav className="pill-nav">
         <Link to="/" className="pill-nav__brand">
-          Mie &amp; Beurre
+          Ma Boulangerie
         </Link>
 
         <div className="pill-nav__spacer" />

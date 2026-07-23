@@ -9,6 +9,8 @@ type BakeryCardResponse struct {
 	PhotoURL      string                `json:"photoUrl"`
 	Latitude      float64               `json:"latitude"`
 	Longitude     float64               `json:"longitude"`
+	RatingAvg     *float64              `json:"ratingAvg"`
+	RatingCount   int                   `json:"ratingCount"`
 	TodaySchedule TodayScheduleResponse `json:"todaySchedule"`
 	Distance      *float64              `json:"distance,omitempty"`
 }

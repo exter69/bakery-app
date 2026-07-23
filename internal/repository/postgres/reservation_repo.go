@@ -44,7 +44,7 @@ func (r *ReservationRepo) Save(ctx context.Context, reservation domain.Reservati
 			total_amount = EXCLUDED.total_amount`,
 		reservation.ID, reservation.BakeryID, reservation.UserID,
 		dayInt, startTime, endTime,
-		string(reservation.Status), centsToDecimal(reservation.TotalAmount),
+		string(reservation.Status), reservation.TotalAmount,
 		string(reservation.PaymentMethod), reservation.CreatedAt)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (r *ReservationRepo) Save(ctx context.Context, reservation domain.Reservati
 			INSERT INTO order_items (reservation_id, product_id, product_name, quantity, unit_price, subtotal)
 			VALUES ($1, $2, $3, $4, $5, $6)`,
 			reservation.ID, item.ProductID, item.ProductName, item.Quantity,
-			centsToDecimal(item.UnitPrice), centsToDecimal(item.Subtotal))
+			item.UnitPrice, item.Subtotal)
 		if err != nil {
 			return err
 		}
@@ -171,12 +171,9 @@ func (r *ReservationRepo) loadReservationItems(ctx context.Context, reservationI
 	var items []domain.OrderItem
 	for rows.Next() {
 		var item domain.OrderItem
-		var unitPriceDec, subtotalDec float64
-		if err := rows.Scan(&item.ProductID, &item.ProductName, &item.Quantity, &unitPriceDec, &subtotalDec); err != nil {
+		if err := rows.Scan(&item.ProductID, &item.ProductName, &item.Quantity, &item.UnitPrice, &item.Subtotal); err != nil {
 			return nil, err
 		}
-		item.UnitPrice = decimalToCents(unitPriceDec)
-		item.Subtotal = decimalToCents(subtotalDec)
 		items = append(items, item)
 	}
 	return items, rows.Err()
@@ -187,12 +184,11 @@ func scanReservationRow(row pgx.Row) (*domain.Reservation, error) {
 	var res domain.Reservation
 	var dayInt int
 	var startTime, endTime time.Time
-	var totalDec float64
 	var status, paymentMethod string
 
 	err := row.Scan(
 		&res.ID, &res.BakeryID, &res.UserID, &dayInt, &startTime, &endTime,
-		&status, &totalDec, &paymentMethod, &res.CreatedAt)
+		&status, &res.TotalAmount, &paymentMethod, &res.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +199,6 @@ func scanReservationRow(row pgx.Row) (*domain.Reservation, error) {
 		EndTime:   timeToTimeOfDay(endTime),
 	}
 	res.Status = domain.ReservationStatus(status)
-	res.TotalAmount = decimalToCents(totalDec)
 	res.PaymentMethod = domain.PaymentMethod(paymentMethod)
 
 	return &res, nil
@@ -214,12 +209,11 @@ func scanReservationRows(rows pgx.Rows) (*domain.Reservation, error) {
 	var res domain.Reservation
 	var dayInt int
 	var startTime, endTime time.Time
-	var totalDec float64
 	var status, paymentMethod string
 
 	err := rows.Scan(
 		&res.ID, &res.BakeryID, &res.UserID, &dayInt, &startTime, &endTime,
-		&status, &totalDec, &paymentMethod, &res.CreatedAt)
+		&status, &res.TotalAmount, &paymentMethod, &res.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +224,6 @@ func scanReservationRows(rows pgx.Rows) (*domain.Reservation, error) {
 		EndTime:   timeToTimeOfDay(endTime),
 	}
 	res.Status = domain.ReservationStatus(status)
-	res.TotalAmount = decimalToCents(totalDec)
 	res.PaymentMethod = domain.PaymentMethod(paymentMethod)
 
 	return &res, nil

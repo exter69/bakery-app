@@ -238,9 +238,10 @@ func TestUpdateOrderStatus_CaptureFailureReturnsError(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "capturing payment")
 
-	// Order should NOT be saved as Delivered when capture fails
+	// Order remains in "capturing" state (persisted before gateway call)
+	// so the system can detect and recover from a failed capture.
 	saved, _ := orderRepo.GetByID(context.Background(), "order-1")
-	assert.Equal(t, domain.OrderStatusReady, saved.Status)
+	assert.Equal(t, domain.OrderStatusCapturing, saved.Status)
 }
 
 func TestUpdateOrderStatus_NormalTransitionWithoutCapture(t *testing.T) {

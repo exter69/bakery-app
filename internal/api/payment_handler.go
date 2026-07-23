@@ -17,19 +17,21 @@ const maxPaymentRetries = 3
 
 // PaymentHandler handles HTTP requests related to payment callbacks.
 type PaymentHandler struct {
-	paymentSvc domain.PaymentService
-	orderRepo  domain.OrderRepository
+	paymentSvc  domain.PaymentService
+	orderRepo   domain.OrderRepository
+	paymentMode string // "stub" or "stripe"
 
 	mu      sync.Mutex
 	retries map[string]int // orderID -> retry count
 }
 
 // NewPaymentHandler creates a new PaymentHandler.
-func NewPaymentHandler(paymentSvc domain.PaymentService, orderRepo domain.OrderRepository) *PaymentHandler {
+func NewPaymentHandler(paymentSvc domain.PaymentService, orderRepo domain.OrderRepository, paymentMode string) *PaymentHandler {
 	return &PaymentHandler{
-		paymentSvc: paymentSvc,
-		orderRepo:  orderRepo,
-		retries:    make(map[string]int),
+		paymentSvc:  paymentSvc,
+		orderRepo:   orderRepo,
+		paymentMode: paymentMode,
+		retries:     make(map[string]int),
 	}
 }
 
@@ -39,8 +41,19 @@ func (h *PaymentHandler) RegisterRoutes(r chi.Router) {
 }
 
 // HandleCallback handles POST /api/payments/callback.
-// It processes payment gateway webhook notifications for order payments.
+// In production (stripe mode), this endpoint is disabled — payment confirmation
+// comes exclusively via the verified Stripe webhook. In stub/dev mode, the endpoint
+// remains available for integration testing.
 func (h *PaymentHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
+	// Gate: reject in production (stripe) mode — use /api/stripe/webhook instead
+	if h.paymentMode == "stripe" {
+		writeJSON(w, http.StatusForbidden, dto.ErrorResponse{
+			Code:    "ENDPOINT_DISABLED",
+			Message: "endpoint disabled in production; use the Stripe webhook",
+		})
+		return
+	}
+
 	var req dto.PaymentCallbackRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
@@ -70,6 +83,33 @@ func (h *PaymentHandler) HandleCallback(w http.ResponseWriter, r *http.Request) 
 		writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{
 			Code:    "INVALID_REQUEST",
 			Message: "status must be 'success' or 'failed'",
+		})
+		return
+	}
+
+	// Ownership check: verify the caller owns the order
+	callerUserID := extractUserID(r)
+	order, err := h.orderRepo.GetByID(r.Context(), req.OrderID)
+	if err != nil || order == nil {
+		writeJSON(w, http.StatusNotFound, dto.ErrorResponse{
+			Code:    "ORDER_NOT_FOUND",
+			Message: "order not found",
+		})
+		return
+	}
+	if order.UserID != callerUserID {
+		writeJSON(w, http.StatusForbidden, dto.ErrorResponse{
+			Code:    "FORBIDDEN",
+			Message: "you do not own this order",
+		})
+		return
+	}
+
+	// State check: only allow transition from PendingPayment
+	if order.Status != domain.OrderStatusPendingPayment {
+		writeJSON(w, http.StatusConflict, dto.ErrorResponse{
+			Code:    "INVALID_ORDER_STATUS",
+			Message: "order is not in a state that can accept payment",
 		})
 		return
 	}
@@ -136,6 +176,7 @@ func (h *PaymentHandler) handleSuccess(w http.ResponseWriter, r *http.Request, r
 }
 
 // handleFailure processes a failed payment callback.
+// Ownership is already verified in HandleCallback.
 func (h *PaymentHandler) handleFailure(w http.ResponseWriter, r *http.Request, req dto.PaymentCallbackRequest) {
 	h.mu.Lock()
 	h.retries[req.OrderID]++
@@ -167,13 +208,15 @@ func (h *PaymentHandler) handleFailure(w http.ResponseWriter, r *http.Request, r
 	})
 }
 
-// cancelOrder sets the order status to Cancelled.
+// cancelOrder transitions the order to Cancelled via the domain state machine.
 func (h *PaymentHandler) cancelOrder(r *http.Request, orderID string) {
 	order, err := h.orderRepo.GetByID(r.Context(), orderID)
 	if err != nil || order == nil {
 		return
 	}
 
-	order.Status = domain.OrderStatusCancelled
+	if err := domain.TransitionOrder(order, domain.OrderStatusCancelled); err != nil {
+		return
+	}
 	_ = h.orderRepo.Save(r.Context(), order)
 }

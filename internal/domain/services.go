@@ -99,6 +99,28 @@ type PaymentService interface {
 	InitiateRefund(ctx context.Context, orderID string, amount int64) error
 }
 
+// CreateReviewRequest holds parameters for creating a review.
+type CreateReviewRequest struct {
+	BakeryID string
+	Rating   int
+	Text     string
+}
+
+// ReviewService handles review creation, listing, and moderation.
+type ReviewService interface {
+	// CreateReview validates purchaser status and creates a review.
+	CreateReview(ctx context.Context, userID string, req CreateReviewRequest) (*Review, error)
+
+	// ListReviews returns paginated reviews for a bakery.
+	ListReviews(ctx context.Context, bakeryID string, params PaginationParams) (*ListResult[Review], error)
+
+	// HideReview toggles the hidden flag; only the bakery owner can do this.
+	HideReview(ctx context.Context, sellerID string, reviewID string) error
+
+	// ReportReview files a report against a review.
+	ReportReview(ctx context.Context, reporterID string, reviewID string, reason string) error
+}
+
 // BundleFilters holds filtering options for bundle list queries.
 type BundleFilters struct {
 	Type         *BundleType `json:"type,omitempty"`

@@ -91,8 +91,8 @@ export default function DashboardLayout() {
       <aside className={`dashboard-sidebar ${collapsed ? 'dashboard-sidebar--collapsed' : ''}`}>
         <div className="dashboard-sidebar__header">
           <h2 className="dashboard-sidebar__brand">
-            {collapsed ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6.6a5.11 5.11 0 0 1 8.57-1.81A3.13 3.13 0 0 1 20 8.1a2.5 2.5 0 0 1 0 5"/><path d="M4 19.5h16"/><path d="M4 22h16"/></svg> : (
-              <><span className="dashboard-sidebar__brand-name">Mie & Beurre</span> <span className="dashboard-sidebar__brand-pro">Pro</span></>
+            {collapsed ? <span className="dashboard-sidebar__brand-abbr">VB</span> : (
+              <span className="dashboard-sidebar__brand-name">Votre Boulangerie</span>
             )}
           </h2>
           <button

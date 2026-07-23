@@ -12,7 +12,13 @@ vi.mock('../../api/seller', () => ({
   fetchProducts: vi.fn(),
 }));
 
+// Mock payouts API
+vi.mock('../../api/payouts', () => ({
+  fetchConnectStatus: vi.fn(),
+}));
+
 import { fetchMyBakery, fetchBakeryOrders, fetchBakeryReservations, fetchProducts } from '../../api/seller';
+import { fetchConnectStatus } from '../../api/payouts';
 
 const mockBakery = {
   id: 'bakery-1',
@@ -92,6 +98,12 @@ describe('DashboardOverview', () => {
     (fetchBakeryOrders as ReturnType<typeof vi.fn>).mockResolvedValue(mockOrders);
     (fetchBakeryReservations as ReturnType<typeof vi.fn>).mockResolvedValue(mockReservations);
     (fetchProducts as ReturnType<typeof vi.fn>).mockResolvedValue(mockProducts);
+    // Default: fully connected — no banner
+    (fetchConnectStatus as ReturnType<typeof vi.fn>).mockResolvedValue({
+      connected: true,
+      chargesEnabled: true,
+      payoutsEnabled: true,
+    });
   });
 
   it('shows loading state initially', () => {
@@ -157,5 +169,54 @@ describe('DashboardOverview', () => {
       expect(link).toBeInTheDocument();
       expect(link.closest('a')).toHaveAttribute('href', '/dashboard/orders');
     });
+  });
+
+  it('shows connect banner when bakery is not connected to Stripe', async () => {
+    (fetchConnectStatus as ReturnType<typeof vi.fn>).mockResolvedValue({
+      connected: false,
+      chargesEnabled: false,
+      payoutsEnabled: false,
+    });
+    renderOverview();
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByText('Payment setup required')).toBeInTheDocument();
+    });
+    const action = screen.getByText(/Set up payments/);
+    expect(action.closest('a')).toHaveAttribute('href', '/dashboard/payouts');
+  });
+
+  it('shows connect banner when payouts are not enabled', async () => {
+    (fetchConnectStatus as ReturnType<typeof vi.fn>).mockResolvedValue({
+      connected: true,
+      chargesEnabled: true,
+      payoutsEnabled: false,
+    });
+    renderOverview();
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+    });
+  });
+
+  it('hides connect banner when fully connected', async () => {
+    (fetchConnectStatus as ReturnType<typeof vi.fn>).mockResolvedValue({
+      connected: true,
+      chargesEnabled: true,
+      payoutsEnabled: true,
+    });
+    renderOverview();
+    await waitFor(() => {
+      expect(screen.getByText(/Bonjour Le/)).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('hides connect banner when fetchConnectStatus fails', async () => {
+    (fetchConnectStatus as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Not found'));
+    renderOverview();
+    await waitFor(() => {
+      expect(screen.getByText(/Bonjour Le/)).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

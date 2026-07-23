@@ -174,6 +174,8 @@ func toBakeryCardResponse(bakery domain.Bakery, today domain.DayOfWeek) dto.Bake
 		PhotoURL:      bakery.PhotoURL,
 		Latitude:      bakery.Latitude,
 		Longitude:     bakery.Longitude,
+		RatingAvg:     bakery.RatingAvg,
+		RatingCount:   bakery.RatingCount,
 		TodaySchedule: schedule,
 	}
 }

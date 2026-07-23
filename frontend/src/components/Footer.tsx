@@ -9,7 +9,7 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="site-footer__inner">
         <div className="site-footer__brand">
-          <Link to="/" className="site-footer__logo">Mie &amp; Beurre</Link>
+          <Link to="/" className="site-footer__logo">Ma Boulangerie</Link>
           <p className="site-footer__tagline">{t('footer.tagline')}</p>
         </div>
 
@@ -27,13 +27,13 @@ export default function Footer() {
           </div>
           <div className="site-footer__col">
             <h4 className="site-footer__col-title">{t('footer.contact')}</h4>
-            <a href="mailto:contact@mieetbeurre.com" className="site-footer__link">contact@mieetbeurre.com</a>
+            <a href="mailto:contact@maboulangerie.com" className="site-footer__link">contact@maboulangerie.com</a>
             <span className="site-footer__link">Paris, France</span>
           </div>
         </div>
 
         <div className="site-footer__bottom">
-          <p>© {new Date().getFullYear()} Mie &amp; Beurre. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Ma Boulangerie. All rights reserved.</p>
           <div className="site-footer__legal">
             <Link to="/privacy" className="site-footer__legal-link">{t('nav.privacy')}</Link>
             <Link to="/terms" className="site-footer__legal-link">{t('nav.terms')}</Link>

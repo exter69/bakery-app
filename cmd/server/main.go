@@ -14,6 +14,8 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/lucatorrekens/bakery-app/internal/api"
 	"github.com/lucatorrekens/bakery-app/internal/auth"
@@ -29,6 +31,7 @@ import (
 	"github.com/lucatorrekens/bakery-app/internal/service"
 	"github.com/lucatorrekens/bakery-app/internal/upload"
 	"github.com/lucatorrekens/bakery-app/internal/ws"
+	"github.com/pressly/goose/v3"
 )
 
 func main() {
@@ -91,24 +94,19 @@ func main() {
 	r.Use(appmw.SecurityHeaders)
 	r.Use(appmw.CORS(appmw.CORSConfig{AllowedOrigin: frontendOrigin}))
 	r.Use(appmw.BodyLimit(appmw.DefaultBodyLimit))
-	r.Use(appmw.InputSanitizer)
 
 	// --- Image upload storage ---
 	var uploadStorage upload.Storage
-	if os.Getenv("UPLOAD_STORAGE") == "s3" {
-		uploadStorage = &upload.S3Storage{
-			Bucket:  os.Getenv("S3_BUCKET"),
-			Region:  os.Getenv("S3_REGION"),
-			CDNBase: os.Getenv("S3_CDN_BASE"),
-		}
-		log.Println("Upload storage: S3")
-	} else {
+	switch os.Getenv("UPLOAD_STORAGE") {
+	case "", "local":
 		localStorage, err := upload.NewLocalStorage("./uploads", "/uploads")
 		if err != nil {
 			log.Fatalf("Failed to initialize upload storage: %v", err)
 		}
 		uploadStorage = localStorage
 		log.Println("Upload storage: local (./uploads)")
+	default:
+		log.Fatalf("FATAL: unknown UPLOAD_STORAGE value %q. Supported: \"local\" (or leave unset).", os.Getenv("UPLOAD_STORAGE"))
 	}
 
 	// Serve uploaded files as static assets
@@ -145,6 +143,11 @@ func main() {
 		}
 		defer pool.Close()
 		log.Println("Database: PostgreSQL (connected)")
+
+		if err := runMigrations(pool); err != nil {
+			log.Fatalf("Migration failed: %v", err)
+		}
+		log.Println("Database migrations applied")
 
 		bakeryRepo = postgres.NewBakeryRepo(pool)
 		orderRepo = postgres.NewOrderRepo(pool)
@@ -452,7 +455,7 @@ func main() {
 	// --- Rate limiter for order/reservation submission ---
 	rateLimiter := appmw.NewRateLimiter(appmw.RateLimitConfig{
 		MaxRequests: 10,
-		Window:      60_000_000_000, // 60 seconds in nanoseconds (time.Minute)
+		Window:      time.Minute,
 		UserIDExtractor: func(r *http.Request) string {
 			return appmw.GetUserIDFromContext(r.Context())
 		},
@@ -461,7 +464,7 @@ func main() {
 	// --- IP-based rate limiter for auth endpoints (brute-force protection) ---
 	authRateLimiter := appmw.NewRateLimiter(appmw.RateLimitConfig{
 		MaxRequests: 5,
-		Window:      60_000_000_000, // 60 seconds in nanoseconds (time.Minute)
+		Window:      time.Minute,
 		UserIDExtractor: func(r *http.Request) string {
 			// Use RemoteAddr as the primary key (set by trusted reverse proxy or
 			// Go's net/http from the TCP connection). Only fall back to
@@ -612,8 +615,34 @@ func main() {
 		go service.StartExpirationWorker(ctx, bundleSvc, wsHub)
 	}
 
-	log.Printf("Starting bakery-app server on :%s", port)
-	if err := http.ListenAndServe(":"+port, r); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: r,
 	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("HTTP server error: %v", err)
+		}
+	}()
+
+	log.Printf("Starting bakery-app server on :%s", port)
+
+	<-ctx.Done()
+	log.Println("Shutting down gracefully...")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer shutdownCancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Forced shutdown: %v", err)
+	}
+	log.Println("Server stopped")
+}
+
+// runMigrations applies pending database migrations using goose.
+func runMigrations(pool *pgxpool.Pool) error {
+	db := stdlib.OpenDBFromPool(pool)
+	goose.SetDialect("postgres")
+	return goose.Up(db, "db/migrations")
 }

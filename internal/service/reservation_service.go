@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lucatorrekens/bakery-app/internal/domain"
 	"github.com/lucatorrekens/bakery-app/internal/notification"
 	"github.com/lucatorrekens/bakery-app/internal/validation"
@@ -47,11 +48,8 @@ func NewReservationService(cfg ReservationServiceConfig) domain.ReservationServi
 	}
 }
 
-var reservationIDCounter int
-
 func defaultReservationIDGen() string {
-	reservationIDCounter++
-	return fmt.Sprintf("reservation-%d", reservationIDCounter)
+	return uuid.New().String()
 }
 
 // CreateReservation validates and creates a new reservation with on-spot payment.
@@ -93,10 +91,12 @@ func (s *reservationService) CreateReservation(ctx context.Context, userID strin
 		productMap[p.ID] = p
 	}
 	for i := range reservation.Items {
-		if p, ok := productMap[reservation.Items[i].ProductID]; ok {
-			reservation.Items[i].ProductName = p.Name
-			reservation.Items[i].UnitPrice = p.Price
+		p, ok := productMap[reservation.Items[i].ProductID]
+		if !ok {
+			return nil, fmt.Errorf("unknown product ID %q in order items", reservation.Items[i].ProductID)
 		}
+		reservation.Items[i].ProductName = p.Name
+		reservation.Items[i].UnitPrice = p.Price
 	}
 
 	// Step 5: Validate enriched items (unit price > 0) and calculate total

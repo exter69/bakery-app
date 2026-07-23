@@ -44,18 +44,24 @@ type RegistrationToken struct {
 
 // Bakery represents a bakery with its schedule.
 type Bakery struct {
-	ID          string        `json:"id"`
-	OwnerID     string        `json:"ownerId"`
-	Name        string        `json:"name"`
-	PhotoURL    string        `json:"photoUrl"`
-	Description string        `json:"description"`
-	Address     string        `json:"address"`
-	Latitude      float64       `json:"latitude"`
-	Longitude     float64       `json:"longitude"`
-	GooglePlaceID string        `json:"googlePlaceId,omitempty"`
-	MinDelivery   int64         `json:"minDeliveryAmount"` // minimum delivery amount in cents, default 1000 (€10)
-	Schedule      []DaySchedule `json:"schedule"`
-	CreatedAt     time.Time     `json:"createdAt"`
+	ID              string        `json:"id"`
+	OwnerID         string        `json:"ownerId"`
+	Name            string        `json:"name"`
+	PhotoURL        string        `json:"photoUrl"`
+	Description     string        `json:"description"`
+	Address         string        `json:"address"`
+	Latitude        float64       `json:"latitude"`
+	Longitude       float64       `json:"longitude"`
+	GooglePlaceID   string        `json:"googlePlaceId,omitempty"`
+	MinDelivery     int64         `json:"minDeliveryAmount"`          // minimum delivery amount in cents, default 1000 (€10)
+	RatingAvg       *float64      `json:"ratingAvg"`                  // nil when no reviews
+	RatingCount     int           `json:"ratingCount"`
+	StripeConnectID string        `json:"stripeConnectId,omitempty"`  // Stripe Connect Express account ID
+	ChargesEnabled  bool          `json:"chargesEnabled"`             // synced from Stripe account.updated
+	PayoutsEnabled  bool          `json:"payoutsEnabled"`             // synced from Stripe account.updated
+	CommissionRate  int           `json:"commissionRate"`             // platform commission percentage (0-100)
+	Schedule        []DaySchedule `json:"schedule"`
+	CreatedAt       time.Time     `json:"createdAt"`
 }
 
 // DaySchedule represents the operating hours for a single day.
@@ -210,6 +216,27 @@ const (
 	SelectionBakeryChoice    SelectionMode = "bakery_choice"
 	SelectionRandomFavorites SelectionMode = "random_favorites"
 )
+
+// Review represents a customer review of a bakery.
+type Review struct {
+	ID        string    `json:"id"`
+	BakeryID  string    `json:"bakeryId"`
+	UserID    string    `json:"userId"`
+	OrderID   string    `json:"orderId"`
+	Rating    int       `json:"rating"`
+	Text      string    `json:"text"`
+	Hidden    bool      `json:"hidden"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+// ReviewReport represents a report filed against a review.
+type ReviewReport struct {
+	ID         string    `json:"id"`
+	ReviewID   string    `json:"reviewId"`
+	ReporterID string    `json:"reporterId"`
+	Reason     string    `json:"reason"`
+	CreatedAt  time.Time `json:"createdAt"`
+}
 
 // RecurringOrder represents a scheduled repeating order.
 type RecurringOrder struct {

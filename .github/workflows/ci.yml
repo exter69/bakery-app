@@ -96,6 +96,17 @@ jobs:
       - name: Unit tests
         run: npx vitest run
 
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build .
+
   e2e:
     name: E2E
     runs-on: ubuntu-latest

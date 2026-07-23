@@ -73,7 +73,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     'bakeries.closedToday': 'Closed today',
     // About
     'about.title': 'About',
-    'about.text1': 'Mie & Beurre connects you with local bakeries for scheduled delivery and easy pickup.',
+    'about.text1': 'Ma Boulangerie connects you with local bakeries for scheduled delivery and easy pickup.',
     'about.text2': 'Our mission is to support local bakeries by making it effortless for customers to discover, order, and enjoy fresh-baked goods every day.',
     // Common
     'common.open': 'Open',
@@ -125,7 +125,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Guide page
     'nav.guide': 'Guide',
     'guide.title': 'How it works',
-    'guide.subtitle': 'Everything you need to know about ordering and baking with Mie & Beurre',
+    'guide.subtitle': 'Everything you need to know about ordering and baking with Ma Boulangerie',
     'guide.customerTab': 'Customer Guide',
     'guide.bakerTab': 'Baker Guide',
     // Customer guide
@@ -204,6 +204,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     'guide.baker.analyticsStep1': 'Open dashboard',
     'guide.baker.analyticsStep2': 'View charts',
     'guide.baker.analyticsStep3': 'Export data',
+    // Dashboard connect banner
+    'dashboard.connectBanner.title': 'Payment setup required',
+    'dashboard.connectBanner.text': 'Complete your Stripe setup to receive automatic payouts.',
+    'dashboard.connectBanner.action': 'Set up payments',
     // Pro dashboard nav
     'pro.nav.dashboard': 'Dashboard',
     'pro.nav.orders': 'Orders',
@@ -460,7 +464,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     'bakeries.nearby': 'Proches',
     'bakeries.closedToday': "Fermé aujourd'hui",
     'about.title': 'À propos',
-    'about.text1': 'Mie & Beurre vous connecte aux boulangeries locales pour la livraison et le retrait.',
+    'about.text1': 'Ma Boulangerie vous connecte aux boulangeries locales pour la livraison et le retrait.',
     'about.text2': 'Notre mission est de soutenir les boulangeries locales.',
     'common.open': 'Ouvert',
     'common.closed': 'Fermé',
@@ -511,7 +515,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Guide page
     'nav.guide': 'Guide',
     'guide.title': 'Comment ça marche',
-    'guide.subtitle': 'Tout ce qu\'il faut savoir pour commander et vendre avec Mie & Beurre',
+    'guide.subtitle': 'Tout ce qu\'il faut savoir pour commander et vendre avec Ma Boulangerie',
     'guide.customerTab': 'Guide client',
     'guide.bakerTab': 'Guide boulanger',
     // Customer guide
@@ -590,6 +594,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     'guide.baker.analyticsStep1': 'Ouvrir tableau de bord',
     'guide.baker.analyticsStep2': 'Voir graphiques',
     'guide.baker.analyticsStep3': 'Exporter données',
+    // Dashboard connect banner
+    'dashboard.connectBanner.title': 'Configuration de paiement requise',
+    'dashboard.connectBanner.text': 'Completez votre configuration Stripe pour recevoir vos versements automatiquement.',
+    'dashboard.connectBanner.action': 'Configurer les paiements',
     // Pro dashboard nav
     'pro.nav.dashboard': 'Tableau de bord',
     'pro.nav.orders': 'Commandes',
@@ -846,7 +854,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     'bakeries.nearby': 'Dichtbij',
     'bakeries.closedToday': 'Vandaag gesloten',
     'about.title': 'Over ons',
-    'about.text1': 'Mie & Beurre verbindt je met lokale bakkerijen voor levering en afhaling.',
+    'about.text1': 'Ma Boulangerie verbindt je met lokale bakkerijen voor levering en afhaling.',
     'about.text2': 'Onze missie is lokale bakkerijen te ondersteunen.',
     'common.open': 'Open',
     'common.closed': 'Gesloten',
@@ -897,7 +905,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Guide page
     'nav.guide': 'Gids',
     'guide.title': 'Hoe het werkt',
-    'guide.subtitle': 'Alles wat je moet weten over bestellen en bakken met Mie & Beurre',
+    'guide.subtitle': 'Alles wat je moet weten over bestellen en bakken met Ma Boulangerie',
     'guide.customerTab': 'Klantengids',
     'guide.bakerTab': 'Bakkersgids',
     // Customer guide
@@ -976,6 +984,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     'guide.baker.analyticsStep1': 'Dashboard openen',
     'guide.baker.analyticsStep2': 'Grafieken bekijken',
     'guide.baker.analyticsStep3': 'Data exporteren',
+    // Dashboard connect banner
+    'dashboard.connectBanner.title': 'Betalingsconfiguratie vereist',
+    'dashboard.connectBanner.text': 'Voltooi uw Stripe-configuratie om automatische uitbetalingen te ontvangen.',
+    'dashboard.connectBanner.action': 'Betalingen instellen',
     // Pro dashboard nav
     'pro.nav.dashboard': 'Dashboard',
     'pro.nav.orders': 'Bestellingen',

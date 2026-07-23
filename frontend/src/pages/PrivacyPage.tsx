@@ -72,7 +72,7 @@ export default function PrivacyPage() {
           <h2>6. Contact</h2>
           <p>
             For any privacy-related requests, contact us at:{' '}
-            <a href="mailto:privacy@mieetbeurre.com">privacy@mieetbeurre.com</a>
+            <a href="mailto:privacy@maboulangerie.com">privacy@maboulangerie.com</a>
           </p>
         </section>
       </div>

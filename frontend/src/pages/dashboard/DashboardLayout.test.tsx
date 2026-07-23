@@ -54,11 +54,10 @@ describe('DashboardLayout', () => {
     (fetchBakeryOrders as ReturnType<typeof vi.fn>).mockResolvedValue({ items: [], page: 1, pageSize: 20, total: 3 });
   });
 
-  it('renders the "Mie & Beurre Pro" brand in sidebar', async () => {
+  it('renders the "Votre Boulangerie" brand in sidebar', async () => {
     renderLayout();
     await waitFor(() => {
-      expect(screen.getByText('Pro')).toBeInTheDocument();
-      expect(screen.getByText(/Mie & Beurre/)).toBeInTheDocument();
+      expect(screen.getByText('Votre Boulangerie')).toBeInTheDocument();
     });
   });
 
@@ -96,10 +95,11 @@ describe('DashboardLayout', () => {
     expect(localStorage.getItem('dashboard_sidebar_collapsed')).toBe('true');
   });
 
-  it('shows icon when collapsed', async () => {
+  it('shows abbreviation when collapsed', async () => {
     localStorage.setItem('dashboard_sidebar_collapsed', 'true');
     renderLayout();
-    // Collapsed state shows an SVG bread icon instead of the full brand name
+    // Collapsed state shows "VB" abbreviation instead of the full brand name
+    expect(screen.getByText('VB')).toBeInTheDocument();
     expect(screen.getByLabelText('Expand sidebar')).toBeInTheDocument();
   });
 

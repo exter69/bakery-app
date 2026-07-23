@@ -11,4 +11,7 @@ var (
 	_ domain.RecurringOrderRepository    = (*RecurringOrderRepo)(nil)
 	_ domain.RegistrationTokenRepository = (*TokenRepo)(nil)
 	_ domain.BundleRepository            = (*BundleRepo)(nil)
+	_ domain.ReviewRepository            = (*ReviewRepo)(nil)
+	_ domain.B2BRepository               = (*B2BRepo)(nil)
+	_ domain.SocialLoginRepository       = (*SocialLoginRepo)(nil)
 )

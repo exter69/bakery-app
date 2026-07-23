@@ -13,6 +13,7 @@ var allOrderStatuses = []OrderStatus{
 	OrderStatusConfirmed,
 	OrderStatusPreparing,
 	OrderStatusReady,
+	OrderStatusCapturing,
 	OrderStatusDelivered,
 	OrderStatusCancelled,
 }

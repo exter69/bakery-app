@@ -34,8 +34,7 @@ export function ComptoirNav() {
     <header className="comptoir-nav">
       <div className="comptoir-nav__inner">
         <div className="comptoir-nav__brand">
-          <span className="comptoir-nav__brand-name">Mie & Beurre</span>
-          <span className="comptoir-nav__brand-badge">Comptoir</span>
+          <span className="comptoir-nav__brand-name">Notre Boulangerie</span>
         </div>
 
         <nav className="comptoir-nav__tabs">

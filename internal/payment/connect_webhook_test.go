@@ -209,6 +209,13 @@ func TestConnectWebhookHandler_AccountUpdated_SyncsBakeryStatus(t *testing.T) {
 	if bakeryRepo.updated[0].ID != "bakery-1" {
 		t.Errorf("expected bakery-1 to be updated, got %s", bakeryRepo.updated[0].ID)
 	}
+	// Task 5.3: Assert ChargesEnabled and PayoutsEnabled are set on the updated bakery
+	if !bakeryRepo.updated[0].ChargesEnabled {
+		t.Errorf("expected ChargesEnabled=true on updated bakery, got false")
+	}
+	if !bakeryRepo.updated[0].PayoutsEnabled {
+		t.Errorf("expected PayoutsEnabled=true on updated bakery, got false")
+	}
 }
 
 func TestConnectWebhookHandler_AccountUpdated_NoopWhenBakeryNotFound(t *testing.T) {
@@ -252,5 +259,117 @@ func TestConnectWebhookHandler_AccountUpdated_NoopWhenBakeryNotFound(t *testing.
 	// Verify UpdateBakery was NOT called
 	if len(bakeryRepo.updated) != 0 {
 		t.Errorf("expected 0 UpdateBakery calls, got %d", len(bakeryRepo.updated))
+	}
+}
+
+// Task 5.1: Verify charges_enabled=true from Stripe sets the bakery's ChargesEnabled field.
+func TestConnectWebhookHandler_AccountUpdated_SetsOnboardingFlags(t *testing.T) {
+	secret := "whsec_onboard_flags"
+	bakeryRepo := newFakeBakeryRepo()
+	bakeryRepo.bakeries["bakery-flags"] = &domain.Bakery{
+		ID:              "bakery-flags",
+		OwnerID:         "seller-1",
+		Name:            "Flag Bakery",
+		StripeConnectID: "acct_flags_456",
+		ChargesEnabled:  false,
+		PayoutsEnabled:  false,
+	}
+
+	handler := NewConnectWebhookHandler(secret, bakeryRepo)
+
+	payload := `{
+		"id": "evt_flags_test",
+		"type": "account.updated",
+		"api_version": "2025-08-27.basil",
+		"data": {
+			"object": {
+				"id": "acct_flags_456",
+				"charges_enabled": true,
+				"payouts_enabled": false,
+				"requirements": {}
+			}
+		}
+	}`
+
+	signedPayload := webhook.GenerateTestSignedPayload(&webhook.UnsignedPayload{
+		Payload:   []byte(payload),
+		Secret:    secret,
+		Timestamp: time.Now(),
+		Scheme:    "v1",
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/stripe/connect-webhook", bytes.NewReader(signedPayload.Payload))
+	req.Header.Set("Stripe-Signature", signedPayload.Header)
+	rec := httptest.NewRecorder()
+
+	handler.HandleWebhook(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+
+	if len(bakeryRepo.updated) != 1 {
+		t.Fatalf("expected 1 UpdateBakery call, got %d", len(bakeryRepo.updated))
+	}
+
+	updated := bakeryRepo.updated[0]
+	if !updated.ChargesEnabled {
+		t.Errorf("expected ChargesEnabled=true, got false")
+	}
+	if updated.PayoutsEnabled {
+		t.Errorf("expected PayoutsEnabled=false, got true")
+	}
+}
+
+// Task 5.2: Verify no DB write when stored values already match incoming webhook values.
+func TestConnectWebhookHandler_AccountUpdated_IdempotentSkipsUpdate(t *testing.T) {
+	secret := "whsec_idempotent"
+	bakeryRepo := newFakeBakeryRepo()
+	// Bakery already has the same values as what the webhook will send
+	bakeryRepo.bakeries["bakery-idem"] = &domain.Bakery{
+		ID:              "bakery-idem",
+		OwnerID:         "seller-1",
+		Name:            "Idempotent Bakery",
+		StripeConnectID: "acct_idem_789",
+		ChargesEnabled:  true,
+		PayoutsEnabled:  true,
+	}
+
+	handler := NewConnectWebhookHandler(secret, bakeryRepo)
+
+	payload := `{
+		"id": "evt_idem_test",
+		"type": "account.updated",
+		"api_version": "2025-08-27.basil",
+		"data": {
+			"object": {
+				"id": "acct_idem_789",
+				"charges_enabled": true,
+				"payouts_enabled": true,
+				"requirements": {}
+			}
+		}
+	}`
+
+	signedPayload := webhook.GenerateTestSignedPayload(&webhook.UnsignedPayload{
+		Payload:   []byte(payload),
+		Secret:    secret,
+		Timestamp: time.Now(),
+		Scheme:    "v1",
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/stripe/connect-webhook", bytes.NewReader(signedPayload.Payload))
+	req.Header.Set("Stripe-Signature", signedPayload.Header)
+	rec := httptest.NewRecorder()
+
+	handler.HandleWebhook(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+
+	// No DB write should have happened since values already match
+	if len(bakeryRepo.updated) != 0 {
+		t.Errorf("expected 0 UpdateBakery calls (idempotent skip), got %d", len(bakeryRepo.updated))
 	}
 }

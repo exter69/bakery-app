@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lucatorrekens/bakery-app/internal/domain"
 )
 
@@ -42,11 +43,8 @@ func NewRecurringOrderService(cfg RecurringOrderServiceConfig) *RecurringOrderSe
 	}
 }
 
-var recurringIDCounter int
-
 func defaultRecurringIDGen() string {
-	recurringIDCounter++
-	return fmt.Sprintf("recurring-%d", recurringIDCounter)
+	return uuid.New().String()
 }
 
 // CreateRecurringOrder validates and creates a new recurring order.

@@ -26,6 +26,14 @@ All rows are `pre-1.0`: the app is not deployed yet — the first production dep
 | 2026-07-28 | MA-63 | pre-1.0 | Payment callback endpoint hardened: gated by mode, ownership + state checks, IDOR fix |
 | 2026-07-28 | MA-65 | pre-1.0 | charge.refunded webhook now persists refund state idempotently via PI lookup |
 
+## Money integrity
+
+| Date | Ticket | Version | Change |
+|------|--------|---------|--------|
+| 2025-07-28 | MA-70 | pre-1.0 | Migration 025: money columns DECIMAL(10,2) to BIGINT (cents), eliminates float64 round-trip |
+| 2025-07-28 | MA-70 | pre-1.0 | Reject orders/reservations with unknown product IDs instead of silent skip |
+| 2025-07-28 | MA-70 | pre-1.0 | Atomic capture flow: persist capturing state before gateway call, retry save 3x, alert on exhaustion |
+
 ## Marketplace payouts (Stripe Connect)
 
 | Date | Ticket | Version | Change |
@@ -98,3 +106,4 @@ All rows are `pre-1.0`: the app is not deployed yet — the first production dep
 | 2026-07-28 | MA-62 | pre-1.0 | Postgres fix: UUID IDs, role CHECK widened to 0..3, data-race elimination |
 | 2026-07-28 | MA-66 | pre-1.0 | Rate limiter hardened: keyed on RemoteAddr, stale entry eviction, register endpoint rate-limited |
 | 2026-07-28 | MA-67 | pre-1.0 | CI/test integrity: fixed red frontend suite, coherent E2E strategy (in-memory + seed), health check URL, test theater cleanup, Comptoir + Baker portal E2E specs |
+| 2026-07-28 | — | pre-1.0 | Removed global InputSanitizer middleware from chi router (sanitize.go retained for per-field use) |

@@ -196,6 +196,59 @@
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
 }
 
+/* --- Connect onboarding banner --- */
+.pro-connect-banner {
+  background: var(--pro-attention-bg);
+  border: 1px solid rgba(232, 176, 75, 0.25);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pro-connect-banner__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.pro-connect-banner__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--pro-attention);
+  margin: 0 0 0.25rem;
+}
+
+.pro-connect-banner__text {
+  font-size: 0.85rem;
+  color: #d4a843;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.pro-connect-banner__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.55rem 1.1rem;
+  background: var(--pro-attention);
+  color: #1a1510;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+.pro-connect-banner__action:hover {
+  background: #d4a843;
+}
+
 .pro-antigaspi-card__title {
   font-size: 1rem;
   font-weight: 700;

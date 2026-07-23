@@ -1,0 +1,26 @@
+# Local development database.
+# Start with:  docker compose up -d db
+# Then run:    ./scripts/db-setup.sh   (migrations + dummy data)
+#
+# This is for LOCAL DEV ONLY. Production uses Railway's managed Postgres.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: bakery_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bakery
+      POSTGRES_PASSWORD: bakery
+      POSTGRES_DB: bakery_app
+    ports:
+      - "5432:5432"
+    volumes:
+      - bakery_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bakery -d bakery_app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  bakery_pgdata:

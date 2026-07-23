@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/lucatorrekens/bakery-app/internal/domain"
@@ -28,16 +27,6 @@ var dayWeekToInt = map[domain.DayOfWeek]int{
 	domain.Thursday:  4,
 	domain.Friday:    5,
 	domain.Saturday:  6,
-}
-
-// centsToDecimal converts an int64 cents amount to a float64 for DB storage.
-func centsToDecimal(cents int64) float64 {
-	return float64(cents) / 100.0
-}
-
-// decimalToCents converts a float64 decimal from the DB to int64 cents.
-func decimalToCents(d float64) int64 {
-	return int64(math.Round(d * 100))
 }
 
 // timeOfDayToTime converts a domain.TimeOfDay to a time.Time (date part is zero).

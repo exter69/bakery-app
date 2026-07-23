@@ -25,7 +25,7 @@ export default function TermsPage() {
         <section className="terms-page__section">
           <h2>2. Description of Services</h2>
           <p>
-            Mie &amp; Beurre is a platform connecting customers with local bakeries for ordering
+            Ma Boulangerie is a platform connecting customers with local bakeries for ordering
             delivery and making pickup reservations. We facilitate the transaction but are not the
             seller of the baked goods.
           </p>
@@ -55,7 +55,7 @@ export default function TermsPage() {
         <section className="terms-page__section">
           <h2>5. Limitation of Liability</h2>
           <p>
-            Mie &amp; Beurre acts as an intermediary platform. We are not liable for the quality,
+            Ma Boulangerie acts as an intermediary platform. We are not liable for the quality,
             safety, or allergen accuracy of products sold by bakeries. Each bakery is independently
             responsible for their products and food safety compliance.
           </p>
@@ -89,7 +89,7 @@ export default function TermsPage() {
           <h2>9. Contact</h2>
           <p>
             For questions about these terms, contact us at:{' '}
-            <a href="mailto:legal@mieetbeurre.com">legal@mieetbeurre.com</a>
+            <a href="mailto:legal@maboulangerie.com">legal@maboulangerie.com</a>
           </p>
         </section>
       </div>

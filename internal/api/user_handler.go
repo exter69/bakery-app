@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/lucatorrekens/bakery-app/internal/api/dto"
 	"github.com/lucatorrekens/bakery-app/internal/domain"
@@ -17,6 +18,8 @@ type UserService interface {
 	UpdateHoliday(ctx context.Context, userID string, req dto.UpdateHolidayRequest) (*domain.User, error)
 	GetFavorites(ctx context.Context, userID string) ([]string, error)
 	UpdateFavorites(ctx context.Context, userID string, productIDs []string) error
+	ExportData(ctx context.Context, userID string) (*dto.DataExportResponse, error)
+	DeleteAccount(ctx context.Context, userID string) error
 }
 
 // UserHandler handles HTTP requests related to user profile and holiday mode.
@@ -27,6 +30,60 @@ type UserHandler struct {
 // NewUserHandler creates a new UserHandler.
 func NewUserHandler(svc UserService) *UserHandler {
 	return &UserHandler{svc: svc}
+}
+
+// DataExport handles GET /api/user/data-export.
+// GDPR Article 15 / Article 20: right of access and data portability.
+func (h *UserHandler) DataExport(w http.ResponseWriter, r *http.Request) {
+	userID := extractUserID(r)
+
+	data, err := h.svc.ExportData(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotFound) {
+			writeJSON(w, http.StatusNotFound, dto.ErrorResponse{
+				Code:    "USER_NOT_FOUND",
+				Message: "user not found",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, dto.ErrorResponse{
+			Code:    "INTERNAL_ERROR",
+			Message: "failed to export user data",
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"data-export.json\"")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(data)
+}
+
+// DeleteAccount handles DELETE /api/user/account.
+// GDPR Article 17: right to erasure.
+func (h *UserHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
+	userID := extractUserID(r)
+
+	err := h.svc.DeleteAccount(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotFound) {
+			writeJSON(w, http.StatusNotFound, dto.ErrorResponse{
+				Code:    "USER_NOT_FOUND",
+				Message: "user not found",
+			})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, dto.ErrorResponse{
+			Code:    "INTERNAL_ERROR",
+			Message: "failed to delete account",
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"message":   "Account deleted successfully. All personal data has been anonymized.",
+		"deletedAt": time.Now().UTC().Format(time.RFC3339),
+	})
 }
 
 // GetProfile handles GET /api/user/profile.

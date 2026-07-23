@@ -21,6 +21,8 @@ func TestTransitionOrder_ValidTransitions(t *testing.T) {
 		{"Preparing to Ready", OrderStatusPreparing, OrderStatusReady},
 		{"Preparing to Cancelled", OrderStatusPreparing, OrderStatusCancelled},
 		{"Ready to Delivered", OrderStatusReady, OrderStatusDelivered},
+		{"Ready to Capturing", OrderStatusReady, OrderStatusCapturing},
+		{"Capturing to Delivered", OrderStatusCapturing, OrderStatusDelivered},
 	}
 
 	for _, tt := range tests {
@@ -72,6 +74,7 @@ func TestTransitionOrder_TerminalStatesRejectAll(t *testing.T) {
 		OrderStatusConfirmed,
 		OrderStatusPreparing,
 		OrderStatusReady,
+		OrderStatusCapturing,
 		OrderStatusDelivered,
 		OrderStatusCancelled,
 	}
@@ -180,6 +183,7 @@ func TestIsTerminalOrderStatus(t *testing.T) {
 	assert.False(t, IsTerminalOrderStatus(OrderStatusConfirmed))
 	assert.False(t, IsTerminalOrderStatus(OrderStatusPreparing))
 	assert.False(t, IsTerminalOrderStatus(OrderStatusReady))
+	assert.False(t, IsTerminalOrderStatus(OrderStatusCapturing))
 }
 
 func TestIsTerminalReservationStatus(t *testing.T) {

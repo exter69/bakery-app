@@ -1,5 +1,77 @@
 # Changelog
 
+## [2025-07-23] Add tests for Connect webhook onboarding sync and payout refund reversal
+
+- **Module/App**: Backend (payment, service)
+- **Purpose**: Add unit tests covering Connect webhook onboarding flag sync (idempotency, field setting) and payout reversal for non-transferred payouts/missing payouts.
+- **Features/Areas**: Stripe Connect onboarding, payout reversal
+- **Summary**: Added `TestConnectWebhookHandler_AccountUpdated_SetsOnboardingFlags`, `TestConnectWebhookHandler_AccountUpdated_IdempotentSkipsUpdate`, extended `SyncsBakeryStatus` to assert field values, added `TestPayoutService_OnOrderRefunded_NonTransferredPayout` (pending + failed subtests), and `TestPayoutService_OnOrderRefunded_NoPayout`.
+- **Tests**: All tests pass in `./internal/payment/...` and `./internal/service/...`.
+
+## [2025-07-28] Connect webhook onboarding sync and GetConnectStatus simplification
+
+- **Module/App**: Backend (payment, service)
+- **Purpose**: Persist `charges_enabled`/`payouts_enabled` from Stripe `account.updated` webhooks on the bakery model, and simplify `GetConnectStatus` to read persisted values instead of making a live Stripe API call.
+- **Features/Areas**: Stripe Connect onboarding, payout service
+- **Summary**: Updated `handleAccountUpdated` in `internal/payment/connect_webhook.go` to set `bakery.ChargesEnabled` and `bakery.PayoutsEnabled` from the webhook account data with an idempotency check (skips DB write if values already match). Simplified `PayoutService.GetConnectStatus` in `internal/service/payout_service.go` to read from persisted bakery fields, removing the live `ConnectService.GetAccountStatus` call. Verified existing wiring: `payoutSvc` is injected as `PayoutReverser` on the webhook handler, `onOrderRefunded` callback is set on the order service, and `updateRefundStatus` triggers `payoutReverser.OnOrderRefunded` for full refunds.
+- **Tests**: All tests pass (`go build ./...`, `go test ./...`).
+
+## [2025-07-28] Refactor UpdateOrderStatus for atomic capture flow (MA-70)
+
+- **Module/App**: Backend (service layer)
+- **Purpose**: Make the payment capture flow atomic by persisting the intermediate `capturing` state before calling the gateway, with retry logic and alerting on save failure.
+- **Features/Areas**: Money integrity, payment capture, order state machine
+- **Summary**: Refactored `UpdateOrderStatus` in `internal/service/seller_service.go` to: (1) transition to `capturing` and persist, (2) capture payment via gateway, (3) transition to `delivered` and persist with 3 retry attempts. On retry exhaustion, logs `[ALERT]` with order ID and payment intent ID. The capture flow only triggers when the order has a PaymentIntentID and a payment gateway is configured. Updated existing test `TestUpdateOrderStatus_CaptureFailureReturnsError` to reflect the new correct behavior (order remains in `capturing` on capture failure).
+- **Tests**: All tests pass (`go test ./...`, `go vet ./...`).
+
+## [2025-07-28] Reject orders with unknown product IDs (MA-70)
+
+- **Module/App**: Backend (service layer)
+- **Purpose**: Fix silent-skip enrichment bug where orders/reservations with unknown product IDs would proceed with UnitPrice = 0, causing either CHECK constraint violations or silent undercharging.
+- **Features/Areas**: Money integrity, order enrichment, reservation enrichment
+- **Summary**: Updated `internal/service/order_service.go` and `internal/service/reservation_service.go` enrichment loops to return an explicit error (`"unknown product ID %q in order items"`) when a product lookup fails, instead of silently skipping the item. The error is returned before any persistence call.
+- **Tests**: All existing tests pass (`go test ./...`).
+
+## [2025-07-28] Add OrderStatusCapturing to the domain state machine (MA-70)
+
+- **Module/App**: Backend (domain, migrations, API spec)
+- **Purpose**: Introduce a `capturing` transitional state between `ready` and `delivered` to support atomic capture-then-save in the payment flow.
+- **Features/Areas**: Money integrity, order state machine, payment capture
+- **Summary**: Added `OrderStatusCapturing` constant in `internal/domain/enums.go`, updated transition map in `statemachine.go` to allow `ready -> capturing` and `capturing -> delivered`, created migration `026_add_order_status_capturing.sql` to update the orders.status CHECK constraint, and updated `api/openapi.yaml` status enums. Existing unit and property tests updated to include the new state.
+- **Tests**: All domain state machine unit tests and property tests pass (100 iterations each).
+
+## [2025-07-28] Migration: money columns DECIMAL(10,2) to BIGINT (MA-70)
+
+- **Module/App**: Backend (database migrations)
+- **Purpose**: Eliminate float64 round-trip errors by storing all monetary values as integer cents (BIGINT) directly in the database, matching the domain model's int64 representation.
+- **Features/Areas**: Money integrity, database schema
+- **Summary**: Added `db/migrations/025_money_columns_to_bigint.sql` — converts `products.price`, `orders.total_amount`, `order_items.unit_price`, `order_items.subtotal`, and `reservations.total_amount` from DECIMAL(10,2) to BIGINT using `(column * 100)::BIGINT`. Down migration reverses with `/100.0`. Existing CHECK constraints are preserved.
+- **Tests**: N/A (migration-only change; repository layer changes follow in subsequent tasks)
+
+## [2025-07-28] Remove global InputSanitizer middleware
+
+- **Module/App**: Backend (cmd/server)
+- **Purpose**: The global JSON sanitizer was stripping angle brackets from all request bodies, corrupting passwords and other legitimate input. Removed from the middleware chain while keeping the function available for explicit per-field use.
+- **Features/Areas**: Middleware, input handling
+- **Summary**: Removed `r.Use(appmw.InputSanitizer)` from `cmd/server/main.go`. The `sanitize.go` file and `SanitizeString` function remain intact for targeted use (e.g., review text).
+- **Tests**: Build and vet pass cleanly.
+
+## [2025-07-28] Add Docker build step to CI pipeline
+
+- **Module/App**: CI (GitHub Actions)
+- **Purpose**: Catch Dockerfile build failures early by running `docker build .` as a separate CI job.
+- **Features/Areas**: CI pipeline, Docker
+- **Summary**: Added a `docker` job to `.github/workflows/ci.yml` that checks out the repo and runs `docker build .`. Runs in parallel with backend/frontend jobs (no dependencies), 10-minute timeout.
+- **Tests**: N/A (CI infrastructure change)
+
+## [2025-07-28] Pin Dockerfile Go version to match go.mod
+
+- **Module/App**: Backend (Docker)
+- **Purpose**: Align the builder image Go version with the version declared in `go.mod` to prevent build failures from version skew.
+- **Features/Areas**: Docker, CI/deployment
+- **Summary**: Updated `Dockerfile` FROM line from `golang:1.22-alpine` to `golang:1.26-alpine`, matching `go 1.26.5` in `go.mod`.
+- **Tests**: N/A (image build verification deferred to task 1.2 CI step)
+
 ## [2025-07-28] CI/test integrity: red suite blocks E2E, broken CI wiring, test theater cleanup (MA-67)
 
 - **Module/App**: Frontend (Vitest), E2E (Playwright), Backend (Go), CI (GitHub Actions)

@@ -11,7 +11,8 @@ var validOrderTransitions = map[OrderStatus][]OrderStatus{
 	OrderStatusPendingPayment: {OrderStatusConfirmed, OrderStatusCancelled},
 	OrderStatusConfirmed:      {OrderStatusPreparing, OrderStatusCancelled},
 	OrderStatusPreparing:      {OrderStatusReady, OrderStatusCancelled},
-	OrderStatusReady:          {OrderStatusDelivered},
+	OrderStatusReady:          {OrderStatusCapturing, OrderStatusDelivered},
+	OrderStatusCapturing:      {OrderStatusDelivered},
 	OrderStatusDelivered:      {},
 	OrderStatusCancelled:      {},
 }
