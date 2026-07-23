@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { getToken } from '../api/client';
-import type { B2BCart, B2BCartItem, B2BCartGroup } from '../types/b2b';
+import type { B2BCart, B2BCartItem } from '../types/b2b';
 
 const CART_STORAGE_PREFIX = 'b2b_cart_';
 

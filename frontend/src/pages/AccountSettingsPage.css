@@ -1,0 +1,116 @@
+.account-settings {
+  padding: 2rem 1.5rem 4rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.account-settings__title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 2rem;
+}
+
+.account-settings__error {
+  background: #fee;
+  border: 1px solid #f88;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  color: #c33;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.account-settings__section {
+  margin-bottom: 2.5rem;
+  padding: 1.5rem;
+  border: 1px solid var(--color-border, #e5e5e5);
+  border-radius: 8px;
+}
+
+.account-settings__section--danger {
+  border-color: #f88;
+}
+
+.account-settings__section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.account-settings__description {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #666);
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+.account-settings__btn {
+  padding: 0.6rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.account-settings__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.account-settings__btn--export {
+  background: var(--color-primary, #c8833b);
+  color: #fff;
+}
+
+.account-settings__btn--export:hover:not(:disabled) {
+  background: var(--color-primary-hover, #b5742f);
+}
+
+.account-settings__btn--delete {
+  background: #dc3545;
+  color: #fff;
+}
+
+.account-settings__btn--delete:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.account-settings__btn--cancel {
+  background: var(--color-surface-hover, #f0f0f0);
+  color: var(--color-text, #333);
+  border: 1px solid var(--color-border, #ccc);
+}
+
+.account-settings__btn--delete-confirm {
+  background: #dc3545;
+  color: #fff;
+}
+
+.account-settings__btn--delete-confirm:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.account-settings__confirm {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fff5f5;
+  border-radius: 6px;
+}
+
+[data-theme='dark'] .account-settings__confirm {
+  background: #2d1b1b;
+}
+
+.account-settings__confirm-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #c33;
+  margin: 0 0 1rem;
+}
+
+.account-settings__confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+}

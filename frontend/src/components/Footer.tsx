@@ -34,6 +34,10 @@ export default function Footer() {
 
         <div className="site-footer__bottom">
           <p>© {new Date().getFullYear()} Mie &amp; Beurre. All rights reserved.</p>
+          <div className="site-footer__legal">
+            <Link to="/privacy" className="site-footer__legal-link">{t('nav.privacy')}</Link>
+            <Link to="/terms" className="site-footer__legal-link">{t('nav.terms')}</Link>
+          </div>
         </div>
       </div>
     </footer>

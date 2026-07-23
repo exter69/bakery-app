@@ -8,7 +8,7 @@ import {
   getBakerConfig,
   saveBakerConfig,
 } from '../../api/b2b-client';
-import type { B2BAccess, B2BConfig } from '../../types/b2b';
+import type { B2BAccess } from '../../types/b2b';
 
 export default function DashboardB2BPage() {
   const { t } = useI18n();

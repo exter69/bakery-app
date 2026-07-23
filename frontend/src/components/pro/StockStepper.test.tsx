@@ -20,7 +20,6 @@ describe('StockStepper – Property: bounds invariant', () => {
         fc.integer({ min: 0, max: 100 }),  // initial value offset above min
         fc.integer({ min: 1, max: 50 }),   // number of decrements
         (min, offset, decrementCount) => {
-          const max = min + offset + 50;
           let currentValue = min + offset;
           const onChange = (newValue: number) => { currentValue = newValue; };
 

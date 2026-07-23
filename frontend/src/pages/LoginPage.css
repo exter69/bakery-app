@@ -396,3 +396,60 @@
 .baker-modal__cancel:hover {
   background: var(--bg-panel);
 }
+
+
+/* Social login buttons */
+.login-card__social {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.login-card__social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-pill);
+  border: var(--border);
+  font-family: var(--font-hand-body);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.login-card__social-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-offset);
+}
+
+.login-card__social-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-card__social-btn--google {
+  background: #fff;
+  color: #3c4043;
+}
+
+.login-card__social-btn--google:hover:not(:disabled) {
+  background: #f8f9fa;
+}
+
+.login-card__social-btn--apple {
+  background: #000;
+  color: #fff;
+}
+
+.login-card__social-btn--apple:hover:not(:disabled) {
+  background: #1a1a1a;
+}
+
+.login-card__social-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}

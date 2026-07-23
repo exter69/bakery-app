@@ -20,6 +20,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<number>(isBakeryMode ? 1 : 2);
   const [token, setBakeryToken] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -47,6 +48,11 @@ export default function RegisterPage() {
     }
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
+      return;
+    }
+
+    if (!acceptTerms) {
+      setError(t('register.acceptTermsRequired'));
       return;
     }
 
@@ -182,6 +188,27 @@ export default function RegisterPage() {
                 />
               </div>
             )}
+
+            <div className="register-card__field register-card__terms">
+              <label className="register-card__checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  className="register-card__checkbox"
+                />
+                <span>
+                  {t('register.acceptTerms')}{' '}
+                  <Link to="/terms" className="register-card__link" target="_blank">
+                    {t('register.termsLink')}
+                  </Link>
+                  {' & '}
+                  <Link to="/privacy" className="register-card__link" target="_blank">
+                    {t('register.privacyLink')}
+                  </Link>
+                </span>
+              </label>
+            </div>
 
             {error && (
               <div className="register-card__error" role="alert">

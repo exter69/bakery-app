@@ -1,0 +1,130 @@
+.connect-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.connect-status__badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.connect-status__badge--connected {
+  background-color: var(--color-success-bg, #dcfce7);
+  color: var(--color-success-text, #166534);
+}
+
+.connect-status__badge--disconnected {
+  background-color: var(--color-warning-bg, #fef3c7);
+  color: var(--color-warning-text, #92400e);
+}
+
+.connect-status__detail {
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.payout-status {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.payout-status--transferred {
+  background-color: var(--color-success-bg, #dcfce7);
+  color: var(--color-success-text, #166534);
+}
+
+.payout-status--pending {
+  background-color: var(--color-info-bg, #dbeafe);
+  color: var(--color-info-text, #1e40af);
+}
+
+.payout-status--failed {
+  background-color: var(--color-error-bg, #fee2e2);
+  color: var(--color-error-text, #991b1b);
+}
+
+.payout-status--refunded {
+  background-color: var(--color-neutral-bg, #f3f4f6);
+  color: var(--color-neutral-text, #374151);
+}
+
+.payout-order-id {
+  font-family: monospace;
+  font-size: 0.8125rem;
+}
+
+.dashboard-alert {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.dashboard-alert--error {
+  background-color: var(--color-error-bg, #fee2e2);
+  color: var(--color-error-text, #991b1b);
+  border: 1px solid var(--color-error-border, #fecaca);
+}
+
+.dashboard-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.dashboard-pagination__info {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+}
+
+.dashboard-empty {
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.dashboard-table-wrapper {
+  overflow-x: auto;
+}
+
+.dashboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.dashboard-table th,
+.dashboard-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.dashboard-table th {
+  font-weight: 600;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dashboard-table tbody tr:hover {
+  background-color: var(--hover-bg, #f9fafb);
+}

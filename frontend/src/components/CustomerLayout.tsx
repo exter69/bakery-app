@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-do
 import { isAuthenticated, clearToken } from '../api/client';
 import { useI18n } from '../i18n';
 import Footer from './Footer';
+import CookieConsent from './CookieConsent';
 import LanguageSwitcher from './LanguageSwitcher';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import './CustomerLayout.css';
@@ -139,6 +140,7 @@ export default function CustomerLayout() {
       </main>
 
       <Footer />
+      <CookieConsent />
     </div>
   );
 }

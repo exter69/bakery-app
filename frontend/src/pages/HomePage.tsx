@@ -1,16 +1,18 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { lazy, Suspense, useEffect, useState, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchBakeries } from '../api/bakeries';
 import { isAuthenticated, clearToken } from '../api/client';
 import { useI18n } from '../i18n';
 import { useBundles } from '../hooks/useBundles';
 import Footer from '../components/Footer';
-import BakeryMap from '../components/BakeryMap';
 import { HomeBundleCard } from '../components/HomeBundleCard';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { ThemeSwitcher } from '../components/ThemeSwitcher';
 import type { BakeryCard } from '../types/bakery';
 import './HomePage.css';
+
+// Lazy-load the map component to defer the heavy leaflet bundle
+const BakeryMap = lazy(() => import('../components/BakeryMap'));
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -173,10 +175,12 @@ export default function HomePage() {
               </Link>
             </section>
 
-            {/* Map preview */}
+            {/* Map preview — lazy-loaded to defer leaflet bundle */}
             <section className="open-now-card" style={{ marginTop: '1.5rem' }}>
               <h2 className="open-now-card__heading">Bakeries near you</h2>
-              <BakeryMap bakeries={bakeries} />
+              <Suspense fallback={<div style={{ height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" aria-label="Loading map" role="status" /></div>}>
+                <BakeryMap bakeries={bakeries} />
+              </Suspense>
             </section>
 
             {/* Surplus bundles — HomeBundleCard */}

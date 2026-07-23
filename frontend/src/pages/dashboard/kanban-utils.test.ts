@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import { groupOrdersByStatus, COLUMN_ORDER, type KanbanStatus } from './kanban-utils';
+import { groupOrdersByStatus, COLUMN_ORDER } from './kanban-utils';
 import type { Order } from '../../api/seller';
 
 /** Generate a valid Order with a random kanban status */

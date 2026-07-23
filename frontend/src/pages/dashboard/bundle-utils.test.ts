@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import { calculateBundlePrice, capQuantity, type BundleItem } from './bundle-utils';
+import { calculateBundlePrice, capQuantity } from './bundle-utils';
 
 /**
  * Property 5: Bundle price discount invariant

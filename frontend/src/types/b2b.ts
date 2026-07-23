@@ -42,6 +42,7 @@ export interface B2BConfig {
   deliveryWindowEnd: string;
   orderMinimum: number;
   proDiscount: number;
+  vatRate: number;
 }
 
 export interface SavedList {
@@ -101,4 +102,24 @@ export interface B2BOrderPricing {
   tvaRate: number;
   tvaAmount: number;
   totalTtc: number;
+}
+
+export interface VolumeTier {
+  minMonthlySpend: number;
+  discountPercent: number;
+}
+
+export interface B2BPricingResult {
+  subtotalHt: number;
+  proDiscountRate: number;
+  proDiscountAmt: number;
+  volDiscountRate: number;
+  volDiscountAmt: number;
+  tvaRate: number;
+  tvaAmount: number;
+  totalTtc: number;
+  currentTier?: VolumeTier;
+  nextTier?: VolumeTier;
+  monthlySpend: number;
+  spendToNextTier: number;
 }

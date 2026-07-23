@@ -61,6 +61,7 @@ export default function BakerCard() {
             src="https://images.unsplash.com/photo-1517433670267-08bbd4be890f?w=400"
             alt="Bakery storefront"
             className="baker-card__illustration-img"
+            loading="lazy"
           />
         </div>
 

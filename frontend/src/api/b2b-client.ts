@@ -6,7 +6,7 @@ import type {
   B2BConfig,
   SavedList,
   B2BInvoice,
-  B2BOrderPricing,
+  B2BPricingResult,
 } from '../types/b2b';
 import type { Bakery, Product } from '../types/bakery';
 
@@ -125,7 +125,7 @@ export function editOrder(
 export function computePricing(data: {
   bakeryId: string;
   items: { productId: string; quantity: number }[];
-}): Promise<B2BOrderPricing> {
+}): Promise<B2BPricingResult> {
   return apiFetch('/comptoir/pricing', {
     method: 'POST',
     body: JSON.stringify(data),
