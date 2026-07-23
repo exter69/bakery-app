@@ -41,6 +41,15 @@ func (r *fakeOrderRepo) ListByBakery(_ context.Context, _ string, _ domain.Order
 	return nil, 0, nil
 }
 
+func (r *fakeOrderRepo) GetByPaymentIntentID(_ context.Context, paymentIntentID string) (*domain.Order, error) {
+	for _, o := range r.orders {
+		if o.PaymentIntentID == paymentIntentID {
+			return o, nil
+		}
+	}
+	return nil, nil
+}
+
 // --- Tests ---
 
 func TestInitiatePayment_ReturnsLinkWith30MinExpiry(t *testing.T) {

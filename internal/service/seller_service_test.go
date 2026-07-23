@@ -96,6 +96,14 @@ func (r *fakeBakeryRepo) DeleteProduct(_ context.Context, _ string) error       
 func (r *fakeBakeryRepo) SearchProducts(_ context.Context, _ domain.ProductSearchParams) ([]domain.ProductSearchResult, int, error) {
 	return nil, 0, nil
 }
+func (r *fakeBakeryRepo) GetByStripeConnectID(_ context.Context, stripeConnectID string) (*domain.Bakery, error) {
+	for _, b := range r.bakeries {
+		if b.StripeConnectID == stripeConnectID {
+			return b, nil
+		}
+	}
+	return nil, nil
+}
 
 type fakeOrderRepo struct {
 	orders map[string]*domain.Order
@@ -124,6 +132,15 @@ func (r *fakeOrderRepo) ListByUser(_ context.Context, _ string, _ domain.OrderFi
 
 func (r *fakeOrderRepo) ListByBakery(_ context.Context, _ string, _ domain.OrderFilters, _ domain.PaginationParams) ([]domain.Order, int, error) {
 	return nil, 0, nil
+}
+
+func (r *fakeOrderRepo) GetByPaymentIntentID(_ context.Context, paymentIntentID string) (*domain.Order, error) {
+	for _, o := range r.orders {
+		if o.PaymentIntentID == paymentIntentID {
+			return o, nil
+		}
+	}
+	return nil, nil
 }
 
 // --- Tests ---

@@ -13,6 +13,9 @@ type BakeryRepository interface {
 	// GetBakeryByOwner returns the bakery owned by the given user, or nil if not found.
 	GetBakeryByOwner(ctx context.Context, ownerID string) (*Bakery, error)
 
+	// GetByStripeConnectID returns the bakery with the given Stripe Connect account ID, or nil if not found.
+	GetByStripeConnectID(ctx context.Context, stripeConnectID string) (*Bakery, error)
+
 	// UpdateBakery persists changes to a bakery.
 	UpdateBakery(ctx context.Context, bakery *Bakery) error
 
@@ -57,6 +60,9 @@ type OrderRepository interface {
 
 	// GetByID returns an order by ID, or nil if not found.
 	GetByID(ctx context.Context, id string) (*Order, error)
+
+	// GetByPaymentIntentID returns an order by its Stripe PaymentIntent ID, or nil if not found.
+	GetByPaymentIntentID(ctx context.Context, paymentIntentID string) (*Order, error)
 
 	// ListByUser returns orders for a user with optional filters and pagination.
 	ListByUser(ctx context.Context, userID string, filters OrderFilters, params PaginationParams) ([]Order, int, error)
@@ -105,6 +111,27 @@ type RegistrationTokenRepository interface {
 
 	// MarkUsed marks a registration token as used.
 	MarkUsed(ctx context.Context, tokenStr string) error
+}
+
+// ReviewRepository provides data access for reviews.
+type ReviewRepository interface {
+	// Create persists a new review and updates bakery rating aggregates.
+	Create(ctx context.Context, review *Review) error
+
+	// GetByID returns a review by ID, or nil if not found.
+	GetByID(ctx context.Context, id string) (*Review, error)
+
+	// GetByUserAndBakery returns the user's review for a bakery, or nil.
+	GetByUserAndBakery(ctx context.Context, userID, bakeryID string) (*Review, error)
+
+	// ListByBakery returns non-hidden reviews for a bakery, paginated, newest first.
+	ListByBakery(ctx context.Context, bakeryID string, params PaginationParams) ([]Review, int, error)
+
+	// SetHidden toggles the hidden flag and recalculates bakery rating aggregates.
+	SetHidden(ctx context.Context, reviewID string, hidden bool) error
+
+	// CreateReport persists a review report.
+	CreateReport(ctx context.Context, report *ReviewReport) error
 }
 
 // BundleRepository provides data access for surplus bundles and reservations.

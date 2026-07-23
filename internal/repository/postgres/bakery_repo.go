@@ -33,7 +33,7 @@ func (r *BakeryRepo) ListBakeries(ctx context.Context, params domain.PaginationP
 
 	// Fetch bakeries page
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, created_at
+		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, rating_avg, rating_count, created_at
 		FROM bakeries
 		ORDER BY name ASC
 		LIMIT $1 OFFSET $2`, limit, offset)
@@ -68,7 +68,7 @@ func (r *BakeryRepo) ListBakeries(ctx context.Context, params domain.PaginationP
 
 func (r *BakeryRepo) GetBakery(ctx context.Context, id string) (*domain.Bakery, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, created_at
+		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, rating_avg, rating_count, created_at
 		FROM bakeries WHERE id = $1`, id)
 
 	b, err := scanBakeryQueryRow(row)
@@ -90,8 +90,30 @@ func (r *BakeryRepo) GetBakery(ctx context.Context, id string) (*domain.Bakery, 
 
 func (r *BakeryRepo) GetBakeryByOwner(ctx context.Context, ownerID string) (*domain.Bakery, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, created_at
+		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, rating_avg, rating_count, created_at
 		FROM bakeries WHERE owner_id = $1`, ownerID)
+
+	b, err := scanBakeryQueryRow(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	schedules, err := r.loadSchedules(ctx, b.ID)
+	if err != nil {
+		return nil, err
+	}
+	b.Schedule = schedules
+
+	return b, nil
+}
+
+func (r *BakeryRepo) GetByStripeConnectID(ctx context.Context, stripeConnectID string) (*domain.Bakery, error) {
+	row := r.pool.QueryRow(ctx, `
+		SELECT id, owner_id, name, photo_url, description, address, latitude, longitude, rating_avg, rating_count, created_at
+		FROM bakeries WHERE stripe_connect_id = $1`, stripeConnectID)
 
 	b, err := scanBakeryQueryRow(row)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -385,7 +407,7 @@ func scanBakeryRow(rows pgx.Rows) (domain.Bakery, error) {
 
 	err := rows.Scan(
 		&b.ID, &ownerID, &b.Name, &b.PhotoURL, &b.Description,
-		&b.Address, &b.Latitude, &b.Longitude, &b.CreatedAt)
+		&b.Address, &b.Latitude, &b.Longitude, &b.RatingAvg, &b.RatingCount, &b.CreatedAt)
 	if err != nil {
 		return b, err
 	}
@@ -404,7 +426,7 @@ func scanBakeryQueryRow(row pgx.Row) (*domain.Bakery, error) {
 
 	err := row.Scan(
 		&b.ID, &ownerID, &b.Name, &b.PhotoURL, &b.Description,
-		&b.Address, &b.Latitude, &b.Longitude, &b.CreatedAt)
+		&b.Address, &b.Latitude, &b.Longitude, &b.RatingAvg, &b.RatingCount, &b.CreatedAt)
 	if err != nil {
 		return nil, err
 	}

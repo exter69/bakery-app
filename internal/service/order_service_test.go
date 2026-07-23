@@ -259,3 +259,75 @@ func TestDeleteOrder_CallbackReportsRefundedWhenVoidFails(t *testing.T) {
 
 	assert.True(t, callbackRefunded) // refund was issued
 }
+
+func TestDeleteOrder_CallsOnOrderRefundedWhenRefundIssued(t *testing.T) {
+	orderRepo := newFakeOrderRepo()
+	gateway := &mockPaymentGateway{voidErr: errors.New("already captured")}
+	paymentSvc := &fakePaymentSvc{}
+
+	var refundedOrderID string
+
+	order := &domain.Order{
+		ID:              "order-refund-callback",
+		BakeryID:        "bakery-1",
+		UserID:          "user-1",
+		Status:          domain.OrderStatusConfirmed,
+		PaymentIntentID: "pi_refund_callback",
+		TotalAmount:     5000,
+		UpdatedAt:       time.Now(),
+	}
+	_ = orderRepo.Save(context.Background(), order)
+
+	svc := NewOrderService(OrderServiceConfig{
+		OrderRepo:      orderRepo,
+		PaymentSvc:     paymentSvc,
+		PaymentGateway: gateway,
+		OnOrderRefunded: func(_ context.Context, orderID string) error {
+			refundedOrderID = orderID
+			return nil
+		},
+		Now: func() time.Time { return time.Now() },
+	})
+
+	err := svc.DeleteOrder(context.Background(), "order-refund-callback", "user-1")
+	require.NoError(t, err)
+
+	// OnOrderRefunded should have been called with the correct order ID
+	assert.Equal(t, "order-refund-callback", refundedOrderID)
+}
+
+func TestDeleteOrder_SkipsOnOrderRefundedWhenVoidSucceeds(t *testing.T) {
+	orderRepo := newFakeOrderRepo()
+	gateway := &mockPaymentGateway{} // void succeeds
+	paymentSvc := &fakePaymentSvc{}
+
+	refundCalled := false
+
+	order := &domain.Order{
+		ID:              "order-void-ok",
+		BakeryID:        "bakery-1",
+		UserID:          "user-1",
+		Status:          domain.OrderStatusConfirmed,
+		PaymentIntentID: "pi_void_success",
+		TotalAmount:     5000,
+		UpdatedAt:       time.Now(),
+	}
+	_ = orderRepo.Save(context.Background(), order)
+
+	svc := NewOrderService(OrderServiceConfig{
+		OrderRepo:      orderRepo,
+		PaymentSvc:     paymentSvc,
+		PaymentGateway: gateway,
+		OnOrderRefunded: func(_ context.Context, _ string) error {
+			refundCalled = true
+			return nil
+		},
+		Now: func() time.Time { return time.Now() },
+	})
+
+	err := svc.DeleteOrder(context.Background(), "order-void-ok", "user-1")
+	require.NoError(t, err)
+
+	// Void succeeded — no refund was issued, so no payout reversal
+	assert.False(t, refundCalled)
+}

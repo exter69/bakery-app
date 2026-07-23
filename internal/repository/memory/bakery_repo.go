@@ -88,6 +88,18 @@ func (r *BakeryRepo) GetBakeryByOwner(_ context.Context, ownerID string) (*domai
 	return nil, nil
 }
 
+// GetByStripeConnectID returns the bakery with the given Stripe Connect account ID, or nil if not found.
+func (r *BakeryRepo) GetByStripeConnectID(_ context.Context, stripeConnectID string) (*domain.Bakery, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, b := range r.bakeries {
+		if b.StripeConnectID == stripeConnectID {
+			return &b, nil
+		}
+	}
+	return nil, nil
+}
+
 // UpdateBakery persists changes to a bakery.
 func (r *BakeryRepo) UpdateBakery(_ context.Context, bakery *domain.Bakery) error {
 	r.mu.Lock()

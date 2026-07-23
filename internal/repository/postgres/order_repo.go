@@ -98,6 +98,29 @@ func (r *OrderRepo) GetByID(ctx context.Context, id string) (*domain.Order, erro
 	return o, nil
 }
 
+func (r *OrderRepo) GetByPaymentIntentID(ctx context.Context, paymentIntentID string) (*domain.Order, error) {
+	row := r.pool.QueryRow(ctx, `
+		SELECT id, bakery_id, user_id, scheduled_day, scheduled_start_time, scheduled_end_time,
+		       status, total_amount, payment_method, payment_intent_id, refund_status, created_at, updated_at
+		FROM orders WHERE payment_intent_id = $1`, paymentIntentID)
+
+	o, err := scanOrderRow(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	items, err := r.loadOrderItems(ctx, o.ID)
+	if err != nil {
+		return nil, err
+	}
+	o.Items = items
+
+	return o, nil
+}
+
 func (r *OrderRepo) ListByUser(ctx context.Context, userID string, filters domain.OrderFilters, params domain.PaginationParams) ([]domain.Order, int, error) {
 	return r.listOrders(ctx, "user_id", userID, filters, params)
 }

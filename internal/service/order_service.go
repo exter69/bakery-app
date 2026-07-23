@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lucatorrekens/bakery-app/internal/domain"
 	"github.com/lucatorrekens/bakery-app/internal/payment"
 	"github.com/lucatorrekens/bakery-app/internal/validation"
@@ -23,6 +24,7 @@ type orderService struct {
 	paymentSvc       domain.PaymentService
 	paymentGateway   PaymentGateway
 	onOrderCancelled func(ctx context.Context, orderID string, refunded bool) error
+	onOrderRefunded  func(ctx context.Context, orderID string) error
 	onNewOrder       func(ctx context.Context, orderID string) error
 	idGen            func() string
 	now              func() time.Time
@@ -37,6 +39,7 @@ type OrderServiceConfig struct {
 	PaymentSvc       domain.PaymentService
 	PaymentGateway   PaymentGateway
 	OnOrderCancelled func(ctx context.Context, orderID string, refunded bool) error
+	OnOrderRefunded  func(ctx context.Context, orderID string) error
 	OnNewOrder       func(ctx context.Context, orderID string) error
 	IDGen            func() string
 	Now              func() time.Time
@@ -59,6 +62,7 @@ func NewOrderService(cfg OrderServiceConfig) domain.OrderService {
 		paymentSvc:       cfg.PaymentSvc,
 		paymentGateway:   cfg.PaymentGateway,
 		onOrderCancelled: cfg.OnOrderCancelled,
+		onOrderRefunded:  cfg.OnOrderRefunded,
 		onNewOrder:       cfg.OnNewOrder,
 		idGen:            idGen,
 		now:              now,
@@ -66,12 +70,8 @@ func NewOrderService(cfg OrderServiceConfig) domain.OrderService {
 	}
 }
 
-// defaultIDGen generates a simple ID. In production this would use UUID.
-var idCounter int
-
 func defaultIDGen() string {
-	idCounter++
-	return fmt.Sprintf("order-%d", idCounter)
+	return uuid.New().String()
 }
 
 // CreateOrder validates and creates a new delivery order.
@@ -318,6 +318,12 @@ func (s *orderService) DeleteOrder(ctx context.Context, orderID string, userID s
 				refunded = true
 				order.RefundStatus = "refunded"
 				_ = s.orderRepo.Save(ctx, order) // best-effort status update
+				// Reverse the bakery payout
+				if s.onOrderRefunded != nil {
+					if err := s.onOrderRefunded(ctx, order.ID); err != nil {
+						log.Printf("[PAYOUT] reversal failed for order %s: %v", order.ID, err)
+					}
+				}
 			}
 		}
 		// Send cancellation notification (non-blocking)

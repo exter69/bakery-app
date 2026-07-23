@@ -16,6 +16,7 @@ import (
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 	"github.com/lucatorrekens/bakery-app/internal/api"
+	"github.com/lucatorrekens/bakery-app/internal/auth"
 	"github.com/lucatorrekens/bakery-app/internal/domain"
 	"github.com/lucatorrekens/bakery-app/internal/email"
 	"github.com/lucatorrekens/bakery-app/internal/invoice"
@@ -75,7 +76,7 @@ func main() {
 
 	contactEmail := os.Getenv("CONTACT_EMAIL")
 	if contactEmail == "" {
-		contactEmail = "admin@mieetbeurre.com"
+		contactEmail = "admin@maboulangerie.com"
 	}
 
 	r := chi.NewRouter()
@@ -129,6 +130,10 @@ func main() {
 		recurringOrderRepo domain.RecurringOrderRepository
 		tokenRepo          domain.RegistrationTokenRepository
 		bundleRepo         domain.BundleRepository
+		reviewRepo         domain.ReviewRepository
+		b2bRepo            domain.B2BRepository
+		socialLoginRepo    domain.SocialLoginRepository
+		payoutRepo         domain.PayoutRepository
 	)
 
 	if databaseURL != "" {
@@ -146,6 +151,10 @@ func main() {
 		recurringOrderRepo = postgres.NewRecurringOrderRepo(pool)
 		tokenRepo = postgres.NewTokenRepo(pool)
 		bundleRepo = postgres.NewBundleRepo(pool)
+		reviewRepo = postgres.NewReviewRepo(pool)
+		b2bRepo = postgres.NewB2BRepo(pool)
+		socialLoginRepo = postgres.NewSocialLoginRepo(pool)
+		payoutRepo = postgres.NewPayoutRepo(pool)
 	} else {
 		log.Println("Database: In-memory (set DATABASE_URL for PostgreSQL)")
 
@@ -155,6 +164,7 @@ func main() {
 		memUserRepo := memory.NewUserRepo()
 		memRecurringOrderRepo := memory.NewRecurringOrderRepo()
 		memTokenRepo := memory.NewTokenRepo()
+		memSocialLoginRepo := memory.NewSocialLoginRepo()
 
 		bakeryRepo = memBakeryRepo
 		orderRepo = memOrderRepo
@@ -162,6 +172,8 @@ func main() {
 		userRepo = memUserRepo
 		recurringOrderRepo = memRecurringOrderRepo
 		tokenRepo = memTokenRepo
+		socialLoginRepo = memSocialLoginRepo
+		payoutRepo = memory.NewPayoutRepo()
 
 		// Seed demo data only for in-memory mode
 		seedDemoData(memBakeryRepo, memUserRepo, memOrderRepo, memReservationRepo, memRecurringOrderRepo, memTokenRepo)
@@ -176,6 +188,48 @@ func main() {
 		JWTSecret:    jwtSecret,
 		ContactEmail: contactEmail,
 	})
+
+	// --- OAuth providers (only active when env vars are configured) ---
+	oauthProviders := make(map[string]auth.OAuthProvider)
+	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
+	googleClientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
+	if googleClientID != "" && googleClientSecret != "" {
+		oauthProviders["google"] = &auth.GoogleProvider{
+			ClientID:     googleClientID,
+			ClientSecret: googleClientSecret,
+		}
+		log.Println("OAuth: Google provider enabled")
+	}
+
+	appleClientID := os.Getenv("APPLE_CLIENT_ID")
+	appleTeamID := os.Getenv("APPLE_TEAM_ID")
+	appleKeyID := os.Getenv("APPLE_KEY_ID")
+	applePrivateKey := os.Getenv("APPLE_PRIVATE_KEY")
+	if appleClientID != "" && appleTeamID != "" && appleKeyID != "" && applePrivateKey != "" {
+		oauthProviders["apple"] = &auth.AppleProvider{
+			ClientID:   appleClientID,
+			TeamID:     appleTeamID,
+			KeyID:      appleKeyID,
+			PrivateKey: applePrivateKey,
+		}
+		log.Println("OAuth: Apple provider enabled")
+	}
+
+	oauthRedirectBase := os.Getenv("OAUTH_REDIRECT_BASE")
+	if oauthRedirectBase == "" {
+		oauthRedirectBase = frontendOrigin
+	}
+
+	var oauthSvc *service.OAuthService
+	if len(oauthProviders) > 0 {
+		oauthSvc = service.NewOAuthService(service.OAuthServiceConfig{
+			Providers:       oauthProviders,
+			SocialLoginRepo: socialLoginRepo,
+			UserRepo:        userRepo,
+			JWTSecret:       jwtSecret,
+			RedirectBase:    oauthRedirectBase,
+		})
+	}
 
 	var paymentGateway payment.PaymentGateway
 	var stripeCustomerSvc *payment.StripeCustomerService
@@ -256,6 +310,32 @@ func main() {
 		OnOrderConfirmed: notificationSvc.OnPaymentConfirmed,
 	})
 
+	// --- Stripe Connect payout service (only when Stripe is active) ---
+	// Created before orderSvc so OnOrderRefunded can be wired into the order cancellation flow.
+	var payoutHandler *api.PayoutHandler
+	var payoutSvc *service.PayoutService
+	if paymentMode == "stripe" {
+		stripeKey := os.Getenv("STRIPE_SECRET_KEY")
+		platformID := os.Getenv("STRIPE_CONNECT_PLATFORM_ID")
+		connectSvc := payment.NewConnectService(payment.ConnectConfig{
+			StripeKey:      stripeKey,
+			PlatformAcctID: platformID,
+		})
+		payoutSvc = service.NewPayoutService(service.PayoutServiceConfig{
+			ConnectSvc: connectSvc,
+			PayoutRepo: payoutRepo,
+			BakeryRepo: bakeryRepo,
+			OrderRepo:  orderRepo,
+		})
+		payoutHandler = api.NewPayoutHandler(payoutSvc, bakeryRepo)
+	}
+
+	// Wire OnOrderRefunded: when the order service refunds a captured payment, reverse the payout
+	var onOrderRefunded func(ctx context.Context, orderID string) error
+	if payoutSvc != nil {
+		onOrderRefunded = payoutSvc.OnOrderRefunded
+	}
+
 	orderSvc := service.NewOrderService(service.OrderServiceConfig{
 		OrderRepo:        orderRepo,
 		BakeryRepo:       bakeryRepo,
@@ -263,6 +343,7 @@ func main() {
 		PaymentSvc:       paymentSvc,
 		PaymentGateway:   paymentGateway,
 		OnOrderCancelled: notificationSvc.OnOrderCancelled,
+		OnOrderRefunded:  onOrderRefunded,
 		OnNewOrder:       notificationSvc.OnNewOrder,
 	})
 
@@ -276,9 +357,14 @@ func main() {
 	bakeryHandler := api.NewBakeryHandler(bakerySvc)
 	orderHandler := api.NewOrderHandler(orderSvc)
 	reservationHandler := api.NewReservationHandler(reservationSvc)
-	paymentHandler := api.NewPaymentHandler(paymentSvc, orderRepo)
+	paymentHandler := api.NewPaymentHandler(paymentSvc, orderRepo, paymentMode)
 	authHandler := api.NewAuthHandler(authSvc)
 	invoiceHandler := api.NewInvoiceHandler(invoiceStore, orderRepo)
+
+	var oauthHandler *api.OAuthHandler
+	if oauthSvc != nil {
+		oauthHandler = api.NewOAuthHandler(oauthSvc)
+	}
 
 	uploadHandler := api.NewUploadHandler(uploadStorage)
 
@@ -291,13 +377,50 @@ func main() {
 	})
 	sellerHandler := api.NewSellerHandler(sellerSvc)
 
+	// Wire payout into order delivery lifecycle via the seller service
+	if payoutSvc != nil {
+		sellerSvc.OnOrderDelivered = payoutSvc.OnOrderDelivered
+	}
+
 	recurringOrderSvc := service.NewRecurringOrderService(service.RecurringOrderServiceConfig{
 		RecurringRepo: recurringOrderRepo,
 		BakeryRepo:    bakeryRepo,
 	})
 	recurringHandler := api.NewRecurringHandler(recurringOrderSvc)
 
-	userSvc := service.NewUserService(userRepo)
+	// --- B2B service and handler (requires PostgreSQL) ---
+	var b2bHandler *api.B2BHandler
+	if b2bRepo != nil {
+		b2bSvc := service.NewB2BService(service.B2BServiceConfig{
+			B2BRepo:    b2bRepo,
+			UserRepo:   userRepo,
+			BakeryRepo: bakeryRepo,
+			OrderRepo:  orderRepo,
+			JWTSecret:  jwtSecret,
+		})
+		b2bHandler = api.NewB2BHandler(b2bSvc, bakeryRepo)
+	}
+
+	// --- Review service and handler ---
+	var reviewHandler *api.ReviewHandler
+	if reviewRepo != nil {
+		reviewSvc := service.NewReviewService(service.ReviewServiceConfig{
+			ReviewRepo: reviewRepo,
+			OrderRepo:  orderRepo,
+			BakeryRepo: bakeryRepo,
+		})
+		reviewHandler = api.NewReviewHandler(reviewSvc, userRepo)
+	}
+
+	userSvc := service.NewUserServiceFull(service.UserServiceConfig{
+		UserRepo:           userRepo,
+		OrderRepo:          orderRepo,
+		ReservationRepo:    reservationRepo,
+		RecurringOrderRepo: recurringOrderRepo,
+		ReviewRepo:         reviewRepo,
+		SocialLoginRepo:    socialLoginRepo,
+		B2BRepo:            b2bRepo,
+	})
 	userHandler := api.NewUserHandler(userSvc)
 
 	// --- Payment method handler (only when Stripe is active) ---
@@ -352,6 +475,12 @@ func main() {
 	r.With(authRateLimiter.Middleware).Post("/api/auth/login", authHandler.Login)
 	r.Post("/api/auth/request-access", authHandler.RequestAccess)
 
+	// OAuth social login routes (public — initiate and callback)
+	if oauthHandler != nil {
+		r.Get("/api/auth/oauth/{provider}", oauthHandler.GetAuthURL)
+		r.Post("/api/auth/oauth/{provider}/callback", oauthHandler.HandleCallback)
+	}
+
 	// WebSocket endpoint — auth via token query param during upgrade
 	r.Get("/api/ws", wsHub.HandleUpgrade(jwtSecret))
 
@@ -362,6 +491,16 @@ func main() {
 
 	// Bakery browsing endpoints are public (no auth required)
 	bakeryHandler.RegisterRoutes(r)
+
+	// B2B Comptoir portal routes (handles its own auth internally)
+	if b2bHandler != nil {
+		b2bHandler.RegisterRoutes(r, jwtSecret)
+	}
+
+	// Review listing is public (no auth required)
+	if reviewHandler != nil {
+		reviewHandler.RegisterPublicRoutes(r)
+	}
 
 	// Bundle browsing endpoints (list, get, impact) are public
 	if bundleHandler != nil {
@@ -393,6 +532,17 @@ func main() {
 		// Seller portal routes (role check is done in handler)
 		sellerHandler.RegisterRoutes(r)
 
+		// Payout and Stripe Connect routes (role check is done in handler)
+		if payoutHandler != nil {
+			payoutHandler.RegisterRoutes(r)
+		}
+
+		// Review routes (create, report — auth required; hide — seller role checked in handler)
+		if reviewHandler != nil {
+			reviewHandler.RegisterRoutes(r)
+			reviewHandler.RegisterSellerRoutes(r)
+		}
+
 		// Image upload (role check is done in handler — seller or admin)
 		uploadHandler.RegisterRoutes(r)
 
@@ -407,6 +557,8 @@ func main() {
 		r.Put("/api/user/holiday", userHandler.UpdateHoliday)
 		r.Get("/api/user/favorites", userHandler.GetFavorites)
 		r.Put("/api/user/favorites", userHandler.UpdateFavorites)
+		r.Get("/api/user/data-export", userHandler.DataExport)
+		r.Delete("/api/user/account", userHandler.DeleteAccount)
 
 		// Saved payment methods (only when Stripe is active)
 		if paymentMethodHandler != nil {
@@ -433,7 +585,16 @@ func main() {
 	if paymentMode == "stripe" {
 		webhookSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
 		stripeWebhook := payment.NewStripeWebhookHandler(webhookSecret, paymentSvc, orderRepo)
+		if payoutSvc != nil {
+			stripeWebhook.SetPayoutReverser(payoutSvc)
+		}
 		r.Post("/api/stripe/webhook", stripeWebhook.HandleWebhook)
+	}
+
+	// --- Stripe Connect webhook (public — Stripe sends it without JWT) ---
+	if connectWebhookSecret := os.Getenv("STRIPE_CONNECT_WEBHOOK_SECRET"); connectWebhookSecret != "" {
+		connectWebhook := payment.NewConnectWebhookHandler(connectWebhookSecret, bakeryRepo)
+		r.Post("/api/stripe/connect-webhook", connectWebhook.HandleWebhook)
 	}
 
 	// --- Context for background workers (cancelled on SIGINT/SIGTERM) ---

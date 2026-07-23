@@ -1,5 +1,140 @@
 # Changelog
 
+## [2025-07-28] Wire refund to payout reversal and implement updateRefundStatus (MA-65)
+
+- **Module/App**: Backend (Go)
+- **Purpose**: Fix refunds not clawing back bakery payouts; the `charge.refunded` webhook was a log line and `OnOrderRefunded` had zero callers.
+- **Features/Areas**: Marketplace payouts (Stripe Connect), refunds, Connect onboarding
+- **Summary**: Implemented `updateRefundStatus` in `stripe_webhook.go` to look up orders by PaymentIntent ID and persist refund state idempotently. Wired `PayoutService.OnOrderRefunded` into both the order cancellation flow (when void fails and a refund is issued) and the `charge.refunded` webhook (via `PayoutReverser` interface). Implemented `account.updated` Connect webhook handler to look up the bakery by Stripe Connect ID and sync status. Added `GetByPaymentIntentID` to `OrderRepository` and `GetByStripeConnectID` to `BakeryRepository` with implementations in both postgres and memory repos. Restructured service wiring in `main.go` to enable the refund callback chain.
+- **Tests**: 8 new tests (updateRefundStatus persistence, idempotency, payout reversal trigger, webhook endpoint integration, connect webhook bakery sync, order service refund callback). Full suite passes (14/14 packages).
+
+## [2025-07-28] Fix Postgres mode + payment callback security (MA-62, MA-63)
+
+- **Module/App**: Backend (Go), Database (PostgreSQL)
+- **Purpose**: Fix three critical bugs: non-UUID IDs breaking Postgres inserts, role CHECK constraint blocking B2B users, and insecure payment callback endpoint allowing IDOR and free-goods attacks.
+- **Features/Areas**: ID generation, user roles, payment security
+- **Summary**: Replaced all sequential ID generators (`order-N`, `user-N`, `reservation-N`, `recurring-N`, `oauth-user-N`, `prod_timestamp_rand`) with `uuid.New().String()` across 6 service files. Removed package-level counter variables and associated data-race risk. Created migration 024 to widen the users role CHECK constraint from `0..2` to `0..3` for B2B role support. Hardened `POST /api/payments/callback`: gated by payment mode (returns 403 in stripe/production mode), added ownership verification (caller must own the order), added state check (order must be in `PendingPayment`). Updated `NewPaymentHandler` signature to accept `paymentMode` parameter.
+- **Tests**: All 9 payment handler tests updated and passing. Full test suite green (`go test ./...` — 0 failures). `go build ./...` and `go vet ./...` clean.
+
+## [2025-07-28] Portal rebranding — Ma / Notre / Votre Boulangerie (MA-61)
+
+- **Module/App**: Frontend (React/TypeScript), Backend (Go)
+- **Purpose**: Rebrand all three portals from "Mie & Beurre" to context-specific French names: "Ma Boulangerie" (consumer), "Notre Boulangerie" (B2B comptoir), "Votre Boulangerie" (baker dashboard).
+- **Features/Areas**: Branding, i18n, Layout components, Legal pages
+- **Summary**: Updated brand text in CustomerLayout, HomePage, Footer, DashboardLayout (sidebar brand + collapsed "VB" abbreviation), ComptoirNav. Replaced all "Mie & Beurre" occurrences in i18n translations (EN/FR/NL). Updated page title in index.html. Updated legal pages (PrivacyPage, TermsPage) with new brand and email domains. Updated Go backend CONTACT_EMAIL default and seed data. Updated DashboardLayout tests to assert on new brand names.
+- **Tests**: DashboardLayout.test.tsx updated and passing (8/8). TypeScript compiles cleanly. Go builds cleanly. Grep verification confirms zero remaining "Mie & Beurre" in frontend TS/TSX sources.
+
+## [2025-07-28] Stripe Connect onboarding banner & webhook handler (MA-60)
+
+- **Module/App**: Backend (Go), Frontend (React/TypeScript)
+- **Purpose**: Complete the baker Stripe Connect onboarding experience by adding an account.updated webhook handler and a dashboard banner prompting un-connected bakeries to set up payouts.
+- **Features/Areas**: Stripe Connect, Dashboard overview, i18n
+- **Summary**: Created `payment.ConnectWebhookHandler` (`POST /api/stripe/connect-webhook`) handling `account.updated` events with signature verification — registered as a public route (Stripe sends it without JWT). Added a golden Connect banner to `DashboardOverview` that checks connect status and links to `/dashboard/payouts` when incomplete. Added `dashboard.connectBanner.*` i18n keys in EN/FR/NL. Added `STRIPE_CONNECT_WEBHOOK_SECRET` to `.env.example`.
+- **Tests**: 4 Go unit tests (webhook: missing sig, invalid sig, valid event, unknown event). 4 new Vitest tests (banner visibility for disconnected, partial, full, and error states). All pass.
+
+## [2025-07-28] B2B pricing & VAT with volume tiers (MA-41) [v0.5.0]
+
+- **Module/App**: Backend (Go), Frontend (React/TypeScript), Database (PostgreSQL)
+- **Purpose**: Implement full B2B pricing flow with per-account pro discount, configurable VAT rate per bakery, volume-based discount tiers driven by rolling monthly spend, and a "next tier" nudge in the cart summary.
+- **Features/Areas**: B2B pricing, VAT, volume tiers, cart summary, invoicing
+- **Summary**: Migration 023 adds `volume_tiers` table (seeded with 1500 EUR/8% and 2000 EUR/10%), `pro_discount`/`current_month_spend`/`spend_month` columns on `business_profiles`, and `vat_rate` on `b2b_config`. Domain: added `VolumeTier` and `B2BPricingResult` types, updated `BusinessProfile` and `B2BConfig` structs. Repository: added `ListVolumeTiers` and `UpdateMonthlySpend` methods. Service: new `computeFullPricing` function applying Subtotal HT -> Pro discount -> Volume discount -> TVA -> Total TTC; `CheckoutBakeryGroup` now increments monthly spend; `ComputePricing` now requires userID and returns full tier info. Handler/DTO: pricing endpoint returns `B2BPricingResultResponse` with tier nudge data. Frontend: updated `B2BPricingResult` type, API client, `B2BCartSummary` component (shows volume discount line, next-tier nudge), and i18n context (added interpolation support). Added 4 new i18n keys in EN/FR/NL for volume tier messaging.
+- **Tests**: 8 Go unit tests (pricing logic: no discount, pro discount, custom VAT, full pricing with/without tiers, max tier, below all tiers, empty items). 5 Vitest frontend tests (cart summary rendering). All pass.
+
+## [2025-07-28] Marketplace payouts to bakeries via Stripe Connect (MA-57)
+
+- **Module/App**: Backend (Go), Frontend (React/TypeScript), Database (PostgreSQL)
+- **Purpose**: Enable automatic marketplace payouts to bakeries when orders are delivered, using Stripe Connect Express accounts. The platform retains a configurable commission and transfers the remainder.
+- **Features/Areas**: Stripe Connect, Payouts, Seller Dashboard
+- **Summary**: Added migration 022 (stripe_connect_id/commission_rate on bakeries, payouts table). Created `domain.Payout` type and `PayoutRepository` interface with both PostgreSQL and in-memory implementations. Built `payment.ConnectService` wrapping Stripe Connect Express (account creation, onboarding links, transfers, reversals). Created `service.PayoutService` with `OnOrderDelivered` (computes split, creates transfer), `OnOrderRefunded` (reverses transfer), `ListPayouts`, `GetConnectStatus`, and `Onboard` methods. Added `PayoutHandler` with three endpoints: `GET /api/seller/payouts`, `POST /api/seller/connect/onboard`, `GET /api/seller/connect/status`. Wired payout trigger into `SellerService.UpdateOrderStatus` when order transitions to delivered. Frontend: new `DashboardPayouts` page at `/dashboard/payouts` showing connect status, onboarding button, and payout history table with pagination. Added nav link in DashboardLayout. Updated `.env.example` with `STRIPE_CONNECT_PLATFORM_ID` and `PLATFORM_COMMISSION_RATE`.
+- **Tests**: 10 Go unit tests for PayoutService (split calculation, idempotency, missing order/bakery, refund, pagination, connect status). All pass. Full suite green (no regressions).
+
+## [2025-07-28] GDPR & privacy compliance (MA-58)
+
+- **Module/App**: Full-stack (Backend Go + Frontend React/TypeScript), Documentation
+- **Purpose**: Implement EU GDPR compliance features before launch — data export, account deletion, cookie consent, privacy/terms pages, and registration consent.
+- **Features/Areas**: Data portability (Art. 20), Right to erasure (Art. 17), Cookie consent, Privacy policy, Terms of Service, Registration consent checkbox, Account settings page, Data inventory documentation
+- **Summary**: Backend: added `GET /api/user/data-export` (collects all user data: profile, orders, reservations, recurring orders, social logins, B2B profile, delivery sites) and `DELETE /api/user/account` (anonymizes user record, deletes recurring orders and delivery sites). Extended `UserService` with `ExportData` and `DeleteAccount` methods accepting all necessary repos. Created `dto/gdpr.go` with export response types. Frontend: created `CookieConsent` component (non-blocking banner, localStorage consent, i18n), `PrivacyPage` and `TermsPage` (placeholder legal content with disclaimer), `AccountSettingsPage` (export button with file download, delete button with confirmation dialog). Updated `RegisterPage` with terms acceptance checkbox (blocks submission). Updated `Footer` with privacy/terms links. Registered `/privacy`, `/terms`, `/settings` routes in App.tsx. Added 24 i18n keys across EN/FR/NL. Created `docs/DATA-INVENTORY.md` documenting all personal data collected, processors, retention periods, and GDPR rights implementation.
+- **Tests**: `go build ./...` passes, `go vet` passes (pre-existing unrelated test issue in payout_service_test.go). `npx tsc --noEmit` passes with zero errors.
+
+## [2025-07-28] SSO / Social Login - Google and Apple (MA-55)
+
+- **Module/App**: Backend (Go), Frontend (React/TypeScript), Database (PostgreSQL)
+- **Purpose**: Allow users to sign in or register using their Google or Apple accounts, reducing friction for new signups.
+- **Features/Areas**: Authentication, OAuth, Social Login
+- **Summary**: Added full OAuth2 social login flow for Google and Apple providers. Backend: new `social_logins` table (migration 021), `SocialLogin` domain type and repository interface, `OAuthService` handling the link-or-create logic, `OAuthHandler` with `GET /api/auth/oauth/{provider}` (returns auth URL) and `POST /api/auth/oauth/{provider}/callback` (exchanges code, issues JWT). Providers are only active when env vars are configured (graceful no-op otherwise). Frontend: "Sign in with Google" and "Sign in with Apple" buttons on LoginPage with SVG brand icons, new `OAuthCallbackPage` at `/auth/callback` that exchanges the code and redirects. Added i18n keys for en/fr/nl. Updated `.env.example` with OAuth config vars.
+- **Tests**: 7 Go unit tests (service + handler), 6 Vitest frontend tests. All pass. Full test suite green (no regressions).
+
+## [2025-07-28] UI performance optimizations (MA-56)
+
+- **Module/App**: Frontend (React/TypeScript)
+- **Purpose**: Reduce initial bundle size and improve page load metrics via route-level code splitting, lazy-loading of heavy dependencies, and image optimization.
+- **Features/Areas**: Route-level code splitting, lazy loading (Leaflet), image `loading="lazy"`, font `display=swap`, performance documentation
+- **Summary**: Converted all page imports in `App.tsx` to `React.lazy()` with dynamic imports, wrapped routes in `<Suspense fallback={<LoadingSpinner />}>`. Created `LoadingSpinner` component. Lazy-loaded `BakeryMap` (Leaflet/react-leaflet) inside `HomePage` with its own Suspense boundary so the 162KB map chunk only downloads when needed. Added `loading="lazy"` to `BakerCard` img. Verified Google Fonts already uses `&display=swap`. Fixed 5 pre-existing unused-import TypeScript errors blocking the build. Confirmed Vite produces 30+ code-split chunks (one per route). Created `docs/PERFORMANCE.md` documenting the strategy, targets (LCP < 2.5s, CLS < 0.1, INP < 200ms), and Lighthouse audit instructions.
+- **Tests**: 205 tests pass. 6 pre-existing ThemeSwitcher test failures (unrelated component refactor). `npx tsc --noEmit` and `npm run build` succeed.
+
+## [2025-07-28] Storybook for the component library (MA-21)
+
+- **Module/App**: Frontend (React/TypeScript)
+- **Purpose**: Enable isolated component development and living documentation via Storybook.
+- **Features/Areas**: Storybook setup, component stories (StarRating, BundleCard, AllergenIndicator, HealthScoreDisplay, SearchBar, ReviewList)
+- **Summary**: Installed Storybook 10.5.3 with `@storybook/react-vite` framework (compatible with Vite 8). Created `.storybook/main.ts` config targeting `src/**/*.stories.tsx`. Created `.storybook/preview.tsx` wrapping stories in ThemeProvider + I18nProvider with global CSS. Added `storybook` and `build-storybook` npm scripts. Created 6 story files: StarRating (5 variants: display, interactive, small, empty, full), BundleCard (compose, surprise, sold-out), AllergenIndicator (multiple and single allergen), HealthScoreDisplay (scores 1-5), SearchBar (default empty), ReviewList (with bakery ID). Added `storybook-static/` to `.gitignore`. Updated tsconfig includes for `.storybook/` files. Note: `npm run build-storybook` can be added to CI for static documentation builds.
+- **Tests**: TypeScript compiles with zero errors (`npx tsc --noEmit`). `storybook build` completes successfully.
+
+## [2025-07-28] OpenAPI 3.0 specification (MA-20)
+
+- **Module/App**: Documentation (api/)
+- **Purpose**: Provide a machine-readable API contract documenting all current backend endpoints for frontend integration, testing, and external consumers.
+- **Features/Areas**: Auth, Bakeries, Orders, Reservations, Bundles, Reviews, B2B Comptoir, B2B Dashboard, Uploads, User, WebSocket, Health
+- **Summary**: Created `api/openapi.yaml` (OpenAPI 3.0.3) covering all 50+ endpoints across 12 tag groups. Includes full request/response schemas with `$ref` component reuse, JWT bearer auth security scheme, path/query parameters, and error responses. Added `api/serve.sh` script to serve docs locally via Swagger UI Docker container.
+- **Tests**: N/A — documentation only.
+
+## [2025-07-28] Quick fixes batch: security CI, dark mode, full-width products, invalid date, bundle auth
+
+- **Module/App**: Frontend (React/TypeScript), DevOps (GitHub Actions)
+- **Purpose**: Address multiple backlog items in a single pass — CI security scanning, UI layout fixes, runtime date bug, dark mode accessibility, and bundle reservation auth gating.
+- **Features/Areas**: MA-32 (security CI), MA-48 (dark mode everywhere), MA-49 (bundle auth guard), MA-50 (guide public), MA-51 (baker dark mode), MA-52 (full-width products), MA-53 (invalid date)
+- **Summary**:
+  - MA-32: Created `.github/workflows/security.yml` with govulncheck, npm audit, and TruffleHog secret scanning (weekly + on PR).
+  - MA-50: Confirmed `/guide` is already public under CustomerLayout without ProtectedRoute — no change needed.
+  - MA-52: Increased `DashboardProducts.css` max-width from 960px to 1400px.
+  - MA-53: Fixed "Invalid Date" across dashboard — the API returns `scheduledTime` as `{ startTime, endTime }` object, not ISO string. Updated `ScheduleEntry` type, `DashboardOverview`, `DashboardOrders`, `DashboardReservations`, and `ScheduleOrdersPage` to handle the object correctly.
+  - MA-48: Added ThemeSwitcher to HomePage hero nav. CustomerLayout and DashboardLayout already had it. Login page intentionally excluded.
+  - MA-49: Added `isAuthenticated()` check in BundlePage `handleReserve` — unauthenticated users are redirected to `/login` instead of calling the reserve API.
+  - MA-51: Confirmed DashboardLayout already renders ThemeSwitcher in the sidebar footer — baker portal dark mode works via `data-theme` attribute.
+- **Tests**: All 30 affected tests pass. TypeScript compiles with zero errors. Pre-existing ThemeSwitcher test failures (unrelated UI refactor) remain.
+
+## [2025-07-28] B2B Comptoir Portal - Frontend Implementation (Tasks 7.1-17.3)
+
+- **Module/App**: Frontend (React/TypeScript)
+- **Purpose**: Implement the complete B2B Comptoir frontend — types, API client, cart logic, i18n, layout, pages, and route registration — to provide a professional ordering interface for business clients.
+- **Features/Areas**: B2B types, API client, multi-bakery cart (localStorage), i18n (3 locales), ComptoirLayout with nav/site switcher, CommanderPage (spreadsheet grid), RecurrencesPage, LivraisonsPage (pagination/filters), FacturesPage (grouped by month, PDF download), ComptoirProfilePage (profile + site CRUD), DashboardB2BPage (baker config + access management), route registration with RoleRoute guard (role 3)
+- **Summary**: Created `src/types/b2b.ts` with all interfaces. Created `src/api/b2b-client.ts` with 20+ API functions. Created `src/hooks/useB2BCart.ts` with localStorage-persisted multi-bakery cart. Added ~90 i18n keys per locale (EN/FR/NL) in comptoir namespace. Created ComptoirLayout, ComptoirNav, SiteSwitcher (with React context). Created CommanderPage with bakery selector, cutoff display, CommandeRapide grid, SavedListPicker, B2BCartSummary. Created RecurrencesPage, LivraisonsPage, FacturesPage. Created ComptoirProfilePage and DashboardB2BPage. Registered `/comptoir` routes in App.tsx with SiteProvider wrapper. Added B2B nav link to baker dashboard sidebar.
+- **Tests**: TypeScript compilation passes with zero errors (`npx tsc --noEmit`).
+
+## [2025-07-28] B2B Comptoir Portal - Backend API handler and wiring (Tasks 5.1-5.3)
+
+- **Module/App**: Backend (Go)
+- **Purpose**: Complete the B2B Comptoir Portal backend by adding API handler with all routes, DTOs, and wiring into the server.
+- **Features/Areas**: B2B registration, profile, delivery sites, access whitelisting, checkout, pricing, saved lists, deliveries, invoices, baker B2B config
+- **Summary**: Created `internal/api/dto/b2b.go` with all request/response DTOs (registration, profile, sites, access, config, checkout, pricing, saved lists, invoices). Created `internal/api/b2b_handler.go` implementing all 28 B2B endpoints across `/api/comptoir/*` (business role) and `/api/dashboard/b2b/*` (seller role) routes with `requireB2BRole` and `requireSellerRole` middleware, structured error responses per the design error table, and DTO conversion helpers. Wired `B2BRepo`, `B2BService`, and `B2BHandler` into `cmd/server/main.go` with nil-guard for in-memory mode. Added `B2BRepo` to compile-time interface check. Migration, domain types, repository, and service were previously implemented.
+- **Tests**: `go build ./...` and `go vet ./...` pass cleanly.
+
+## [2025-07-28] Customer reviews frontend (Tasks 5-9)
+
+- **Module/App**: Frontend (React/TypeScript)
+- **Purpose**: Add star rating display, review listing, review submission modal, and bakery rating integration to the customer-facing frontend.
+- **Features/Areas**: StarRating component, ReviewList component, ReviewPrompt modal, bakery card/detail integration, i18n
+- **Summary**: Created `StarRating.tsx` (SVG-based, display + interactive modes, half-star support, 3 sizes, full ARIA). Created `api/reviews.ts` with fetchReviews, createReview, reportReview functions. Created `ReviewList.tsx` (paginated list with locale-aware relative timestamps via Intl.RelativeTimeFormat, empty state, load more). Created `ReviewPrompt.tsx` (modal with interactive rating, optional textarea, submit/dismiss, sessionStorage persistence, thank-you confirmation). Updated `types/bakery.ts` with `ratingAvg`/`ratingCount` on both `BakeryCard` and `Bakery` interfaces. Integrated StarRating + count into `BakeriesPage.tsx` (grid cards and ledger rows) and `BakeryDetailPage.tsx` (header + ReviewList below menu + conditional ReviewPrompt). Added 9 i18n keys across EN/FR/NL locales.
+- **Tests**: TypeScript compilation passes with zero errors (`npx tsc --noEmit`).
+
+## [2025-07-28] Customer reviews and ratings backend (MA-17)
+
+- **Module/App**: Backend (Go)
+- **Purpose**: Allow verified customers to submit ratings/reviews for bakeries, display aggregate ratings on bakery endpoints, and provide moderation controls for bakery owners.
+- **Features/Areas**: Review creation, review listing, review moderation (hide), review reporting, bakery rating aggregates
+- **Summary**: Created migration `019_create_reviews.sql` with `reviews` table (unique per user+bakery, rating 1-5, text, hidden flag), `review_reports` table, and `rating_avg`/`rating_count` columns on `bakeries`. Added `Review` and `ReviewReport` domain types, `ReviewRepository` interface, and `ReviewService` interface. Implemented `PostgresReviewRepo` with transactional aggregate recalculation on create/hide. Implemented `ReviewService` with verified-purchaser check, duplicate prevention, ownership-based moderation. Created `ReviewHandler` with endpoints: `POST /api/bakeries/{id}/reviews` (201), `GET /api/bakeries/{id}/reviews` (public, paginated), `POST /api/reviews/{id}/report` (204), `PUT /api/seller/reviews/{id}/hide` (seller-only). Updated bakery repo queries and `BakeryCardResponse` DTO to include rating fields. Wired into `main.go` with proper auth middleware.
+- **Tests**: All existing tests pass (`go test ./...` — 0 failures). Build and vet clean.
+
 ## [2025-07-28] Image upload for products & bakeries (MA-19)
 
 - **Module/App**: Full-stack (Backend Go + Frontend React)

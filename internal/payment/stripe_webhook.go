@@ -3,8 +3,8 @@ package payment
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/lucatorrekens/bakery-app/internal/domain"
@@ -12,11 +12,17 @@ import (
 	"github.com/stripe/stripe-go/v82/webhook"
 )
 
+// PayoutReverser is the interface for reversing payouts on refund.
+type PayoutReverser interface {
+	OnOrderRefunded(ctx context.Context, orderID string) error
+}
+
 // StripeWebhookHandler processes incoming Stripe webhook events.
 type StripeWebhookHandler struct {
-	webhookSecret string
-	paymentSvc    domain.PaymentService
-	orderRepo     domain.OrderRepository
+	webhookSecret  string
+	paymentSvc     domain.PaymentService
+	orderRepo      domain.OrderRepository
+	payoutReverser PayoutReverser
 }
 
 // NewStripeWebhookHandler creates a new webhook handler.
@@ -26,6 +32,11 @@ func NewStripeWebhookHandler(webhookSecret string, paymentSvc domain.PaymentServ
 		paymentSvc:    paymentSvc,
 		orderRepo:     orderRepo,
 	}
+}
+
+// SetPayoutReverser sets the payout reversal callback (called from main wiring to avoid import cycles).
+func (h *StripeWebhookHandler) SetPayoutReverser(reverser PayoutReverser) {
+	h.payoutReverser = reverser
 }
 
 // HandleWebhook processes the webhook HTTP request from Stripe.
@@ -69,7 +80,7 @@ func (h *StripeWebhookHandler) HandleWebhook(w http.ResponseWriter, r *http.Requ
 		// Process the payment callback (updates order status to Confirmed).
 		// Log errors but return 200 to prevent Stripe from retrying for business logic failures.
 		if err := h.paymentSvc.ProcessPaymentCallback(r.Context(), orderID, paymentRef); err != nil {
-			fmt.Printf("webhook: failed to process payment for order %s: %v\n", orderID, err)
+			log.Printf("[WEBHOOK] failed to process payment for order %s: %v", orderID, err)
 		}
 	}
 
@@ -93,14 +104,39 @@ func (h *StripeWebhookHandler) HandleWebhook(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 }
 
-// updateRefundStatus logs the refund event from Stripe.
-// The order_service already sets RefundStatus="refunded" when it issues the refund;
-// this webhook acts as an idempotent confirmation. A PI→order lookup can be added later.
-func (h *StripeWebhookHandler) updateRefundStatus(_ context.Context, paymentIntentID string, refundedAmount int64, totalAmount int64) {
+// updateRefundStatus looks up the order by PaymentIntent ID and persists the refund state.
+// Idempotent: if the order already has the same refund status, it's a no-op.
+func (h *StripeWebhookHandler) updateRefundStatus(ctx context.Context, paymentIntentID string, refundedAmount int64, totalAmount int64) {
 	status := "refunded"
 	if refundedAmount > 0 && refundedAmount < totalAmount {
 		status = "partial"
 	}
-	fmt.Printf("webhook: charge.refunded for PI %s — status=%s (refunded=%d, total=%d)\n",
-		paymentIntentID, status, refundedAmount, totalAmount)
+
+	order, err := h.orderRepo.GetByPaymentIntentID(ctx, paymentIntentID)
+	if err != nil {
+		log.Printf("[WEBHOOK] failed to look up order for PI %s: %v", paymentIntentID, err)
+		return
+	}
+	if order == nil {
+		log.Printf("[WEBHOOK] no order found for PI %s", paymentIntentID)
+		return
+	}
+
+	// Idempotent: skip if already at the target status
+	if order.RefundStatus == status {
+		return
+	}
+
+	order.RefundStatus = status
+	if err := h.orderRepo.Save(ctx, order); err != nil {
+		log.Printf("[WEBHOOK] failed to update refund status for order %s: %v", order.ID, err)
+		return
+	}
+
+	// Trigger payout reversal for fully refunded orders
+	if status == "refunded" && h.payoutReverser != nil {
+		if err := h.payoutReverser.OnOrderRefunded(ctx, order.ID); err != nil {
+			log.Printf("[WEBHOOK] payout reversal failed for order %s: %v", order.ID, err)
+		}
+	}
 }

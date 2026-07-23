@@ -48,6 +48,15 @@ func (m *mockOrderRepo) ListByBakery(_ context.Context, _ string, _ domain.Order
 	return nil, 0, nil
 }
 
+func (m *mockOrderRepo) GetByPaymentIntentID(_ context.Context, paymentIntentID string) (*domain.Order, error) {
+	for _, o := range m.orders {
+		if o.PaymentIntentID == paymentIntentID {
+			return o, nil
+		}
+	}
+	return nil, nil
+}
+
 // mockBakeryRepo implements domain.BakeryRepository for testing.
 type mockBakeryRepo struct {
 	bakeries map[string]*domain.Bakery
@@ -95,6 +104,15 @@ func (m *mockBakeryRepo) DeleteProduct(_ context.Context, _ string) error {
 
 func (m *mockBakeryRepo) SearchProducts(_ context.Context, _ domain.ProductSearchParams) ([]domain.ProductSearchResult, int, error) {
 	return nil, 0, nil
+}
+
+func (m *mockBakeryRepo) GetByStripeConnectID(_ context.Context, stripeConnectID string) (*domain.Bakery, error) {
+	for _, b := range m.bakeries {
+		if b.StripeConnectID == stripeConnectID {
+			return b, nil
+		}
+	}
+	return nil, nil
 }
 
 // mockUserRepo implements domain.UserRepository for testing.

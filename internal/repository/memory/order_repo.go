@@ -41,6 +41,19 @@ func (r *OrderRepo) GetByID(_ context.Context, id string) (*domain.Order, error)
 	return &o, nil
 }
 
+// GetByPaymentIntentID returns an order by its Stripe PaymentIntent ID, or nil if not found.
+func (r *OrderRepo) GetByPaymentIntentID(_ context.Context, paymentIntentID string) (*domain.Order, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for _, o := range r.orders {
+		if o.PaymentIntentID == paymentIntentID {
+			return &o, nil
+		}
+	}
+	return nil, nil
+}
+
 // ListByUser returns orders for a user with optional filters and pagination.
 func (r *OrderRepo) ListByUser(_ context.Context, userID string, filters domain.OrderFilters, params domain.PaginationParams) ([]domain.Order, int, error) {
 	r.mu.RLock()
