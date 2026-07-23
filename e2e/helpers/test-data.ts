@@ -4,6 +4,7 @@ export const USERS = {
   baker2: { username: 'baker_marie', password: 'baker123', role: 'seller' },
   customer: { username: 'alice', password: 'customer123', role: 'customer' },
   customer2: { username: 'bob', password: 'customer123', role: 'customer' },
+  b2b: { username: 'comptoir_paul', password: 'b2b123', role: 'business' },
 } as const;
 
 export const BAKERIES = {

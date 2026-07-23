@@ -97,3 +97,4 @@ All rows are `pre-1.0`: the app is not deployed yet — the first production dep
 | 2026-07-23 | MA-18 | pre-1.0 | Dark mode |
 | 2026-07-28 | MA-62 | pre-1.0 | Postgres fix: UUID IDs, role CHECK widened to 0..3, data-race elimination |
 | 2026-07-28 | MA-66 | pre-1.0 | Rate limiter hardened: keyed on RemoteAddr, stale entry eviction, register endpoint rate-limited |
+| 2026-07-28 | MA-67 | pre-1.0 | CI/test integrity: fixed red frontend suite, coherent E2E strategy (in-memory + seed), health check URL, test theater cleanup, Comptoir + Baker portal E2E specs |

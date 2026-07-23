@@ -2,13 +2,18 @@ import { test, expect } from '../fixtures/auth.fixture';
 import { BakeriesPage } from '../page-objects/BakeriesPage';
 import { BakeryDetailPage } from '../page-objects/BakeryDetailPage';
 import { SchedulePage } from '../page-objects/SchedulePage';
+import { DashboardOrdersPage } from '../page-objects/DashboardOrdersPage';
 import { BAKERIES } from '../helpers/test-data';
 
 test.describe('Full Delivery Journey — A to Z', () => {
-  test('complete order lifecycle', async ({ customerPage }) => {
+  test('complete order lifecycle: place order, baker advances status, customer sees it', async ({
+    customerPage,
+    bakerPage,
+  }) => {
     const bakeries = new BakeriesPage(customerPage);
     const detail = new BakeryDetailPage(customerPage);
     const schedule = new SchedulePage(customerPage);
+    const bakerOrders = new DashboardOrdersPage(bakerPage);
 
     // Step 1: Browse bakeries
     await bakeries.goto();
@@ -31,38 +36,25 @@ test.describe('Full Delivery Journey — A to Z', () => {
     // Step 6: Choose time slot
     await customerPage.locator('.psm__time-select').selectOption({ index: 1 });
 
-    // Step 7: Submit order
+    // Step 7: Submit order (stub gateway auto-confirms payment)
     await customerPage.locator('.psm__submit-btn').click();
 
-    // Step 8: Payment processing
-    // TODO: Payment flow not yet implemented
-    // Expected: redirect to payment gateway → complete payment → return to app
-    // For now, the stub gateway auto-confirms
-
-    // Step 9: Order confirmed
-    // TODO: Verify confirmation screen/toast after payment
-
-    // Step 10: Baker receives order notification
-    // TODO: Real-time notifications not yet implemented
-
-    // Step 11: Baker marks order as preparing
-    // TODO: Test this in baker-orders.spec.ts (status: confirmed → preparing)
-
-    // Step 12: Baker marks order as ready
-    // TODO: Test this in baker-orders.spec.ts (status: preparing → ready)
-
-    // Step 13: Delivery dispatch
-    // TODO: Delivery/logistics system not yet implemented
-    // Expected: assign delivery partner, provide tracking
-
-    // Step 14: Customer receives delivery
-    // TODO: Delivery tracking & confirmation not yet implemented
-    // Expected: customer confirms receipt, order marked as delivered
-
-    // Step 15: Order appears in history
-    // Verify the order shows in the customer's schedule
+    // Step 8: Verify order appears in customer schedule
     await schedule.goto();
-    const count = await schedule.getOrderCount();
-    expect(count).toBeGreaterThan(0);
+    const orderCount = await schedule.getOrderCount();
+    expect(orderCount).toBeGreaterThan(0);
+
+    // Step 9: Baker sees the order in their dashboard
+    await bakerOrders.goto();
+    const bakerOrderCount = await bakerOrders.getOrderCount();
+    expect(bakerOrderCount).toBeGreaterThan(0);
+
+    // Step 10: Baker advances order status (confirmed -> preparing)
+    const firstRow = bakerOrders.orderRows.first();
+    const initialText = await firstRow.textContent();
+    await bakerOrders.changeOrderStatus(0, 'confirmed');
+
+    // Step 11: Verify the status has changed in the display
+    await expect(firstRow).not.toHaveText(initialText!);
   });
 });

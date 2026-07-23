@@ -50,6 +50,21 @@ func (r *fakeOrderRepo) GetByPaymentIntentID(_ context.Context, paymentIntentID 
 	return nil, nil
 }
 
+// spyGateway records calls to RefundPayment for assertion.
+type spyGateway struct {
+	StubGateway
+	refundCalled           bool
+	refundPaymentIntentID  string
+	refundAmountCents      int64
+}
+
+func (g *spyGateway) RefundPayment(_ context.Context, paymentIntentID string, amountCents int64) error {
+	g.refundCalled = true
+	g.refundPaymentIntentID = paymentIntentID
+	g.refundAmountCents = amountCents
+	return nil
+}
+
 // --- Tests ---
 
 func TestInitiatePayment_ReturnsLinkWith30MinExpiry(t *testing.T) {
@@ -217,7 +232,7 @@ func TestInitiateRefund_CallsGatewayRefundPayment(t *testing.T) {
 	}
 	_ = repo.Save(context.Background(), order)
 
-	gateway := NewStubGateway() // StubGateway.RefundPayment returns nil
+	gateway := &spyGateway{}
 	svc := NewPaymentService(ServiceConfig{
 		Gateway:   gateway,
 		OrderRepo: repo,
@@ -225,6 +240,11 @@ func TestInitiateRefund_CallsGatewayRefundPayment(t *testing.T) {
 
 	err := svc.InitiateRefund(context.Background(), "order-refund-1", 5000)
 	require.NoError(t, err)
+
+	// Verify the gateway was actually called with the correct payment intent and amount
+	assert.True(t, gateway.refundCalled, "expected RefundPayment to be called")
+	assert.Equal(t, "pi_captured_123", gateway.refundPaymentIntentID)
+	assert.Equal(t, int64(5000), gateway.refundAmountCents)
 }
 
 func TestInitiateRefund_ReturnsNilWhenNoPaymentIntent(t *testing.T) {

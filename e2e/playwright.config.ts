@@ -12,20 +12,24 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { browserName: 'chromium' } },
   ],
-  webServer: [
-    {
-      command: 'go run ./cmd/server',
-      cwd: '..',
-      port: 8080,
-      reuseExistingServer: !process.env.CI,
-      timeout: 30_000,
-    },
-    {
-      command: 'npm run dev',
-      cwd: '../frontend',
-      port: 5173,
-      reuseExistingServer: !process.env.CI,
-      timeout: 15_000,
-    },
-  ],
+  // In CI, servers are started manually in the workflow (in-memory mode with seed data).
+  // Locally, Playwright starts them automatically.
+  ...(!process.env.CI && {
+    webServer: [
+      {
+        command: 'go run ./cmd/server',
+        cwd: '..',
+        port: 8080,
+        reuseExistingServer: true,
+        timeout: 30_000,
+      },
+      {
+        command: 'npm run dev',
+        cwd: '../frontend',
+        port: 5173,
+        reuseExistingServer: true,
+        timeout: 15_000,
+      },
+    ],
+  }),
 });

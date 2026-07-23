@@ -4,7 +4,9 @@ import { calculateBundlePrice, capQuantity } from './bundle-utils';
 
 /**
  * Property 5: Bundle price discount invariant
- * For any non-empty list of items with positive prices, discountedPrice < originalPrice.
+ * For any non-empty list of items with positive prices, discountedPrice <= originalPrice.
+ * Strict decrease only holds when the discount rounds to at least 1 cent
+ * (i.e. originalPrice * discountFactor >= 0.5, which rounds up to >= 1 cent off).
  *
  * **Validates: Requirements 5.4, 5.6**
  */
@@ -18,7 +20,7 @@ describe('bundle-utils - Property 5: Bundle price discount invariant', () => {
     price: fc.integer({ min: 1, max: 10000 }), // positive price in cents
   });
 
-  it('discountedPrice is strictly less than originalPrice for non-empty selected items', () => {
+  it('discountedPrice is always <= originalPrice and >= 0', () => {
     fc.assert(
       fc.property(
         fc.array(selectedItemArb, { minLength: 1, maxLength: 20 }),
@@ -26,11 +28,28 @@ describe('bundle-utils - Property 5: Bundle price discount invariant', () => {
         (items, discountFactor) => {
           const { originalPrice, discountedPrice } = calculateBundlePrice(items, discountFactor);
 
-          // With at least one selected item with positive price and quantity,
-          // originalPrice > 0 and discountedPrice < originalPrice
           expect(originalPrice).toBeGreaterThan(0);
-          expect(discountedPrice).toBeLessThan(originalPrice);
+          expect(discountedPrice).toBeLessThanOrEqual(originalPrice);
           expect(discountedPrice).toBeGreaterThanOrEqual(0);
+        },
+      ),
+      { numRuns: 200 },
+    );
+  });
+
+  it('discountedPrice is strictly less when discount rounds to at least 1 cent', () => {
+    fc.assert(
+      fc.property(
+        fc.array(selectedItemArb, { minLength: 1, maxLength: 20 }),
+        fc.double({ min: 0.01, max: 0.99, noNaN: true }),
+        (items, discountFactor) => {
+          const { originalPrice, discountedPrice } = calculateBundlePrice(items, discountFactor);
+
+          // Only assert strict decrease when discount is large enough to round to >= 1 cent
+          const rawDiscount = originalPrice * discountFactor;
+          if (rawDiscount >= 0.5) {
+            expect(discountedPrice).toBeLessThan(originalPrice);
+          }
         },
       ),
       { numRuns: 200 },

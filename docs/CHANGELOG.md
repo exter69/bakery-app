@@ -1,5 +1,13 @@
 # Changelog
 
+## [2025-07-28] CI/test integrity: red suite blocks E2E, broken CI wiring, test theater cleanup (MA-67)
+
+- **Module/App**: Frontend (Vitest), E2E (Playwright), Backend (Go), CI (GitHub Actions)
+- **Purpose**: Fix deterministically failing test suite that blocked E2E execution in CI, repair CI E2E strategy, fix flaky property test, replace test theater with real assertions, and add missing portal E2E coverage.
+- **Features/Areas**: CI pipeline, ThemeSwitcher tests, bundle-utils property tests, StockStepper property tests, DashboardBundles test, refund test, full-journey E2E, Comptoir E2E, Baker portal E2E
+- **Summary**: Rewrote `ThemeSwitcher.test.tsx` to match the cycling-button UI (was targeting old radiogroup). Fixed `bundle-utils.test.ts` property invariant — strict price decrease only holds when discount rounds to >= 1 cent. Rewrote `StockStepper.test.tsx` property tests to exercise the rendered component instead of re-implementing logic inline. Pointed `DashboardBundles.test.tsx` at the actual routed component (`DashboardBundles.tsx`). Added spy gateway to `TestInitiateRefund_CallsGatewayRefundPayment` to verify the gateway is actually called. Rewrote `full-journey.spec.ts` replacing TODO comments with real baker status-progression assertions. Fixed CI: removed `DATABASE_URL` from E2E job (uses in-memory mode with seed data), fixed health check URL (`/health` not `/api/health`), removed `|| true` masking, disabled Playwright webServer in CI. Added `comptoir.spec.ts` and `baker-portal.spec.ts` E2E specs. Added `comptoir_paul` B2B seed user.
+- **Tests**: Frontend: 227/227 pass (was 219/226). Go: all packages pass. TypeScript compiles cleanly. New E2E specs for Comptoir (5 tests) and Baker portal (5 tests).
+
 ## [2025-07-28] Auth & secrets hardening (MA-66)
 
 - **Module/App**: Backend (Go)

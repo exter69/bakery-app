@@ -18,59 +18,53 @@ describe('ThemeSwitcher', () => {
     document.documentElement.removeAttribute('data-theme');
   });
 
-  it('renders three theme buttons', () => {
+  it('renders a single toggle button with system label by default', () => {
     renderSwitcher();
-    const group = screen.getByRole('radiogroup', { name: 'Theme' });
-    const buttons = group.querySelectorAll('button');
-    expect(buttons).toHaveLength(3);
+    const btn = screen.getByRole('button', { name: 'System theme' });
+    expect(btn).toBeInTheDocument();
   });
 
-  it('marks system button as active by default', () => {
-    renderSwitcher();
-    const systemBtn = screen.getByTitle('System');
-    expect(systemBtn).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  it('clicking dark button activates dark mode', async () => {
+  it('cycles from system to dark on click', async () => {
     const user = userEvent.setup();
     renderSwitcher();
 
-    const darkBtn = screen.getByTitle('Dark');
-    await user.click(darkBtn);
-
-    expect(darkBtn).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByRole('button', { name: 'System theme' }));
+    expect(screen.getByRole('button', { name: 'Dark mode' })).toBeInTheDocument();
     expect(localStorage.getItem('theme')).toBe('dark');
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
 
-  it('clicking light button activates light mode', async () => {
+  it('cycles from dark to light on click', async () => {
+    localStorage.setItem('theme', 'dark');
     const user = userEvent.setup();
     renderSwitcher();
 
-    const lightBtn = screen.getByTitle('Light');
-    await user.click(lightBtn);
-
-    expect(lightBtn).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByRole('button', { name: 'Dark mode' }));
+    expect(screen.getByRole('button', { name: 'Light mode' })).toBeInTheDocument();
     expect(localStorage.getItem('theme')).toBe('light');
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
   });
 
-  it('switching back to system removes data-theme attribute', async () => {
+  it('cycles from light back to system on click', async () => {
+    localStorage.setItem('theme', 'light');
     const user = userEvent.setup();
     renderSwitcher();
 
-    await user.click(screen.getByTitle('Dark'));
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-
-    await user.click(screen.getByTitle('System'));
-    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+    await user.click(screen.getByRole('button', { name: 'Light mode' }));
+    expect(screen.getByRole('button', { name: 'System theme' })).toBeInTheDocument();
     expect(localStorage.getItem('theme')).toBe('system');
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
   });
 
   it('respects persisted dark preference from localStorage', () => {
     localStorage.setItem('theme', 'dark');
     renderSwitcher();
-    const darkBtn = screen.getByTitle('Dark');
-    expect(darkBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Dark mode' })).toBeInTheDocument();
+  });
+
+  it('respects persisted light preference from localStorage', () => {
+    localStorage.setItem('theme', 'light');
+    renderSwitcher();
+    expect(screen.getByRole('button', { name: 'Light mode' })).toBeInTheDocument();
   });
 });

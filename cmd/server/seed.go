@@ -46,7 +46,7 @@ func seedDemoData(
 
 	seller2 := &domain.User{
 		ID: "seller-2", Username: "baker_marie", PasswordHash: hashPassword("baker123"),
-		Role: domain.RoleSeller, ContactEmail: "marie@mieetbeurre.fr", CreatedAt: now,
+		Role: domain.RoleSeller, ContactEmail: "marie@maboulangerie.fr", CreatedAt: now,
 	}
 	_ = userRepo.Save(ctx, seller2)
 
@@ -63,7 +63,14 @@ func seedDemoData(
 	}
 	_ = userRepo.Save(ctx, customer2)
 
-	log.Println("  ✓ Users: admin, baker_jean, baker_marie, alice, bob")
+	// B2B business user (role 3)
+	b2bUser := &domain.User{
+		ID: "b2b-1", Username: "comptoir_paul", PasswordHash: hashPassword("b2b123"),
+		Role: domain.RoleBusiness, ContactEmail: "paul@restaurant-paul.fr", CreatedAt: now,
+	}
+	_ = userRepo.Save(ctx, b2bUser)
+
+	log.Println("  Users: admin, baker_jean, baker_marie, alice, bob, comptoir_paul")
 
 	// ===================== BAKERIES =====================
 	bakeryRepo.SeedBakery(domain.Bakery{
@@ -84,7 +91,7 @@ func seedDemoData(
 	})
 
 	bakeryRepo.SeedBakery(domain.Bakery{
-		ID: "bakery-2", OwnerID: "seller-2", Name: "Mie & Beurre",
+		ID: "bakery-2", OwnerID: "seller-2", Name: "Mie et Beurre",
 		PhotoURL: "https://images.unsplash.com/photo-1517433670267-08bbd4be890f?w=600",
 		Description: "Artisan sourdough and butter croissants made with organic flour.",
 		Address: "45 Avenue des Champs, Lyon", Latitude: 45.7640, Longitude: 4.8357,
@@ -117,7 +124,7 @@ func seedDemoData(
 		MinDelivery: 1000, CreatedAt: now,
 	})
 
-	log.Println("  ✓ Bakeries: La Boulangerie du Coin, Mie & Beurre, Le Fournil de Max")
+	log.Println("  Bakeries: La Boulangerie du Coin, Mie et Beurre, Le Fournil de Max")
 
 	// ===================== PRODUCTS =====================
 	// Bakery 1
@@ -252,15 +259,16 @@ func seedDemoData(
 	log.Println("=== Seed complete ===")
 	log.Println("")
 	log.Println("  Test accounts:")
-	log.Println("  ┌────────────────┬──────────────┬─────────┐")
-	log.Println("  │ Username       │ Password     │ Role    │")
-	log.Println("  ├────────────────┼──────────────┼─────────┤")
-	log.Println("  │ admin          │ admin123     │ Admin   │")
-	log.Println("  │ baker_jean     │ baker123     │ Seller  │")
-	log.Println("  │ baker_marie    │ baker123     │ Seller  │")
-	log.Println("  │ alice          │ customer123  │ Customer│")
-	log.Println("  │ bob            │ customer123  │ Customer│")
-	log.Println("  └────────────────┴──────────────┴─────────┘")
+	log.Println("  ┌────────────────┬──────────────┬──────────┐")
+	log.Println("  │ Username       │ Password     │ Role     │")
+	log.Println("  ├────────────────┼──────────────┼──────────┤")
+	log.Println("  │ admin          │ admin123     │ Admin    │")
+	log.Println("  │ baker_jean     │ baker123     │ Seller   │")
+	log.Println("  │ baker_marie    │ baker123     │ Seller   │")
+	log.Println("  │ alice          │ customer123  │ Customer │")
+	log.Println("  │ bob            │ customer123  │ Customer │")
+	log.Println("  │ comptoir_paul  │ b2b123       │ Business │")
+	log.Println("  └────────────────┴──────────────┴──────────┘")
 	log.Println("  Baker registration code: DEMO1234")
 	log.Println("")
 }

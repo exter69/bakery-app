@@ -102,23 +102,8 @@ jobs:
     timeout-minutes: 20
     needs: [backend, frontend]
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: bakery_app_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U test"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     env:
-      DATABASE_URL: postgres://test:test@localhost:5432/bakery_app_test?sslmode=disable
+      # No DATABASE_URL: use in-memory mode so seed data is loaded automatically
       JWT_SECRET: ci-test-secret
       FRONTEND_ORIGIN: http://localhost:5173
       PAYMENT_GATEWAY: stub
@@ -139,11 +124,6 @@ jobs:
           cache-dependency-path: |
             frontend/package-lock.json
             e2e/package-lock.json
-
-      - name: Run migrations
-        run: |
-          go install github.com/pressly/goose/v3/cmd/goose@latest
-          goose -dir db/migrations postgres "$DATABASE_URL" up
 
       - name: Build backend
         run: go build -o ./bin/server ./cmd/server
@@ -167,8 +147,8 @@ jobs:
 
       - name: Wait for services
         run: |
-          timeout 30 bash -c 'until curl -sf http://localhost:8080/api/health 2>/dev/null || curl -sf http://localhost:8080/ 2>/dev/null; do sleep 1; done' || true
-          timeout 30 bash -c 'until curl -sf http://localhost:5173 2>/dev/null; do sleep 1; done' || true
+          timeout 30 bash -c 'until curl -sf http://localhost:8080/health; do sleep 1; done'
+          timeout 30 bash -c 'until curl -sf http://localhost:5173; do sleep 1; done'
 
       - name: Install E2E dependencies
         run: npm ci

@@ -7,13 +7,13 @@ afterEach(() => cleanup());
 
 /**
  * Property 4: Stock stepper bounds
- * For any sequence of increment/decrement operations on a stock stepper,
- * the displayed value SHALL always remain within [min, max] bounds.
+ * For any sequence of increment/decrement operations on the rendered component,
+ * the value passed to onChange SHALL always remain within [min, max] bounds.
  *
  * **Validates: Requirements 6.4, 5.10**
  */
 describe('StockStepper – Property: bounds invariant', () => {
-  it('value never goes below min when decrementing', () => {
+  it('value never goes below min when decrementing via rendered component', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 0, max: 50 }),   // min bound
@@ -21,25 +21,32 @@ describe('StockStepper – Property: bounds invariant', () => {
         fc.integer({ min: 1, max: 50 }),   // number of decrements
         (min, offset, decrementCount) => {
           let currentValue = min + offset;
-          const onChange = (newValue: number) => { currentValue = newValue; };
+          const max = currentValue + 10;
+          const onChange = vi.fn((v: number) => { currentValue = v; });
 
-          // Simulate the decrement logic directly (same as component)
+          const { rerender } = render(
+            <StockStepper value={currentValue} min={min} max={max} onChange={onChange} />
+          );
+
           for (let i = 0; i < decrementCount; i++) {
-            const atMin = currentValue <= min;
-            if (!atMin) {
-              onChange(Math.max(min, currentValue - 1));
+            fireEvent.click(screen.getByLabelText('Diminuer'));
+            if (onChange.mock.calls.length > 0) {
+              currentValue = onChange.mock.calls[onChange.mock.calls.length - 1][0];
             }
+            rerender(
+              <StockStepper value={currentValue} min={min} max={max} onChange={onChange} />
+            );
           }
 
-          // Property: value never below min
           expect(currentValue).toBeGreaterThanOrEqual(min);
+          cleanup();
         }
       ),
-      { numRuns: 200 }
+      { numRuns: 50 }
     );
   });
 
-  it('value never goes above max when incrementing', () => {
+  it('value never goes above max when incrementing via rendered component', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 0, max: 50 }),   // min bound
@@ -48,60 +55,66 @@ describe('StockStepper – Property: bounds invariant', () => {
         (min, maxOffset, incrementCount) => {
           const max = min + maxOffset;
           let currentValue = min;
-          const onChange = (newValue: number) => { currentValue = newValue; };
+          const onChange = vi.fn((v: number) => { currentValue = v; });
 
-          // Simulate the increment logic directly (same as component)
+          const { rerender } = render(
+            <StockStepper value={currentValue} min={min} max={max} onChange={onChange} />
+          );
+
           for (let i = 0; i < incrementCount; i++) {
-            const atMax = currentValue >= max;
-            if (!atMax) {
-              const next = currentValue + 1;
-              onChange(Math.min(max, next));
+            fireEvent.click(screen.getByLabelText('Augmenter'));
+            if (onChange.mock.calls.length > 0) {
+              currentValue = onChange.mock.calls[onChange.mock.calls.length - 1][0];
             }
+            rerender(
+              <StockStepper value={currentValue} min={min} max={max} onChange={onChange} />
+            );
           }
 
-          // Property: value never above max
           expect(currentValue).toBeLessThanOrEqual(max);
+          cleanup();
         }
       ),
-      { numRuns: 200 }
+      { numRuns: 50 }
     );
   });
 
-  it('value stays within [min, max] for random sequences of operations', () => {
+  it('value stays within [min, max] for random sequences of operations on rendered component', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 0, max: 20 }),    // min
         fc.integer({ min: 1, max: 30 }),    // max offset
-        fc.array(fc.oneof(fc.constant('inc'), fc.constant('dec')), { minLength: 1, maxLength: 30 }),
+        fc.array(fc.oneof(fc.constant('inc'), fc.constant('dec')), { minLength: 1, maxLength: 20 }),
         (min, maxOffset, ops) => {
           const max = min + maxOffset;
           let currentValue = min + Math.floor(maxOffset / 2);
+          const onChange = vi.fn((v: number) => { currentValue = v; });
 
-          // Simulate component logic for each operation
+          const { rerender } = render(
+            <StockStepper value={currentValue} min={min} max={max} onChange={onChange} />
+          );
+
           for (const op of ops) {
-            if (op === 'dec') {
-              const atMin = currentValue <= min;
-              if (!atMin) {
-                currentValue = Math.max(min, currentValue - 1);
-              }
-            } else {
-              const atMax = currentValue >= max;
-              if (!atMax) {
-                currentValue = Math.min(max, currentValue + 1);
-              }
+            const label = op === 'inc' ? 'Augmenter' : 'Diminuer';
+            fireEvent.click(screen.getByLabelText(label));
+            if (onChange.mock.calls.length > 0) {
+              currentValue = onChange.mock.calls[onChange.mock.calls.length - 1][0];
             }
+            rerender(
+              <StockStepper value={currentValue} min={min} max={max} onChange={onChange} />
+            );
 
-            // Property: value always within bounds after each op
             expect(currentValue).toBeGreaterThanOrEqual(min);
             expect(currentValue).toBeLessThanOrEqual(max);
           }
+
+          cleanup();
         }
       ),
-      { numRuns: 200 }
+      { numRuns: 50 }
     );
   });
 
-  // Integration test: verify the component actually calls onChange with bounded values
   it('component renders bounded value and buttons respect limits', () => {
     const onChange = vi.fn();
     const { rerender } = render(
