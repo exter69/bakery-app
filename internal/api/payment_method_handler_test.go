@@ -46,6 +46,7 @@ func (s *stubPaymentMethodService) SetDefaultPaymentMethod(_ context.Context, _ 
 func setupPaymentMethodTestRouter(svc PaymentMethodService) chi.Router {
 	handler := NewPaymentMethodHandler(svc)
 	r := chi.NewRouter()
+	r.Use(testAuthMiddleware)
 	handler.RegisterRoutes(r)
 	return r
 }

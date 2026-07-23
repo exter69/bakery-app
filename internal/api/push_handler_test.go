@@ -10,8 +10,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/lucatorrekens/bakery-app/internal/middleware"
 	"github.com/lucatorrekens/bakery-app/internal/push"
 )
+
+// withTestUserContext injects a user ID into the request context for direct handler tests.
+func withTestUserContext(req *http.Request, userID string) *http.Request {
+	ctx := middleware.WithUserID(req.Context(), userID)
+	return req.WithContext(ctx)
+}
 
 func TestPushHandler_Subscribe_success(t *testing.T) {
 	store := push.NewStore()
@@ -21,7 +28,7 @@ func TestPushHandler_Subscribe_success(t *testing.T) {
 	body := `{"endpoint":"https://push.example.com/sub1","keys":{"p256dh":"test-p256dh","auth":"test-auth"}}`
 	req := httptest.NewRequest(http.MethodPost, "/api/user/push/subscribe", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-User-ID", "user-1")
+	req = withTestUserContext(req, "user-1")
 	w := httptest.NewRecorder()
 
 	handler.Subscribe(w, req)
@@ -49,7 +56,7 @@ func TestPushHandler_Subscribe_rejectsUnauthenticated(t *testing.T) {
 	body := `{"endpoint":"https://push.example.com/sub1","keys":{"p256dh":"key","auth":"auth"}}`
 	req := httptest.NewRequest(http.MethodPost, "/api/user/push/subscribe", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
-	// No X-User-ID or JWT context
+	// No user context — should be rejected
 	w := httptest.NewRecorder()
 
 	handler.Subscribe(w, req)
@@ -75,7 +82,7 @@ func TestPushHandler_Subscribe_rejectsMissingFields(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/api/user/push/subscribe", bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("X-User-ID", "user-1")
+			req = withTestUserContext(req, "user-1")
 			w := httptest.NewRecorder()
 
 			handler.Subscribe(w, req)
@@ -92,7 +99,7 @@ func TestPushHandler_Subscribe_rejectsInvalidJSON(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/api/user/push/subscribe", bytes.NewBufferString("not json"))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-User-ID", "user-1")
+	req = withTestUserContext(req, "user-1")
 	w := httptest.NewRecorder()
 
 	handler.Subscribe(w, req)
@@ -115,7 +122,7 @@ func TestPushHandler_Unsubscribe_success(t *testing.T) {
 	body := `{"endpoint":"https://push.example.com/sub1"}`
 	req := httptest.NewRequest(http.MethodDelete, "/api/user/push/unsubscribe", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-User-ID", "user-1")
+	req = withTestUserContext(req, "user-1")
 	w := httptest.NewRecorder()
 
 	handler.Unsubscribe(w, req)
@@ -150,7 +157,7 @@ func TestPushHandler_Unsubscribe_rejectsMissingEndpoint(t *testing.T) {
 	body := `{"endpoint":""}`
 	req := httptest.NewRequest(http.MethodDelete, "/api/user/push/unsubscribe", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-User-ID", "user-1")
+	req = withTestUserContext(req, "user-1")
 	w := httptest.NewRecorder()
 
 	handler.Unsubscribe(w, req)

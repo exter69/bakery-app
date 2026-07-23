@@ -36,8 +36,9 @@ func (s *stubPaymentService) InitiateRefund(_ context.Context, _ string, _ int64
 }
 
 func setupPaymentTestRouter(paymentSvc domain.PaymentService, orderRepo *memory.OrderRepo) chi.Router {
-	handler := NewPaymentHandler(paymentSvc, orderRepo)
+	handler := NewPaymentHandler(paymentSvc, orderRepo, "stub")
 	r := chi.NewRouter()
+	r.Use(testAuthMiddleware)
 	handler.RegisterRoutes(r)
 	return r
 }
@@ -70,6 +71,7 @@ func TestPaymentCallback_Success(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 	req := httptest.NewRequest(http.MethodPost, "/api/payments/callback", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-User-ID", "user-1")
 
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -100,6 +102,7 @@ func TestPaymentCallback_LinkExpired_CancelsOrder(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 	req := httptest.NewRequest(http.MethodPost, "/api/payments/callback", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-User-ID", "user-1")
 
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -134,6 +137,7 @@ func TestPaymentCallback_Failure_TracksRetries(t *testing.T) {
 		body, _ := json.Marshal(reqBody)
 		req := httptest.NewRequest(http.MethodPost, "/api/payments/callback", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-User-ID", "user-1")
 
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -156,6 +160,7 @@ func TestPaymentCallback_Failure_TracksRetries(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 	req := httptest.NewRequest(http.MethodPost, "/api/payments/callback", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-User-ID", "user-1")
 
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -230,6 +235,8 @@ func TestPaymentCallback_InvalidStatus_Returns400(t *testing.T) {
 
 func TestPaymentCallback_LinkNotFound_Returns404(t *testing.T) {
 	orderRepo := memory.NewOrderRepo()
+	seedPendingOrder(orderRepo, "nonexistent-order")
+
 	paymentSvc := &stubPaymentService{processErr: payment.ErrLinkNotFound}
 	router := setupPaymentTestRouter(paymentSvc, orderRepo)
 
@@ -242,6 +249,7 @@ func TestPaymentCallback_LinkNotFound_Returns404(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 	req := httptest.NewRequest(http.MethodPost, "/api/payments/callback", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-User-ID", "user-1")
 
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -251,6 +259,8 @@ func TestPaymentCallback_LinkNotFound_Returns404(t *testing.T) {
 
 func TestPaymentCallback_LinkAlreadyUsed_Returns409(t *testing.T) {
 	orderRepo := memory.NewOrderRepo()
+	seedPendingOrder(orderRepo, "order-1")
+
 	paymentSvc := &stubPaymentService{processErr: payment.ErrLinkUsed}
 	router := setupPaymentTestRouter(paymentSvc, orderRepo)
 
@@ -263,6 +273,7 @@ func TestPaymentCallback_LinkAlreadyUsed_Returns409(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 	req := httptest.NewRequest(http.MethodPost, "/api/payments/callback", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-User-ID", "user-1")
 
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -272,6 +283,8 @@ func TestPaymentCallback_LinkAlreadyUsed_Returns409(t *testing.T) {
 
 func TestPaymentCallback_InternalError_Returns500(t *testing.T) {
 	orderRepo := memory.NewOrderRepo()
+	seedPendingOrder(orderRepo, "order-1")
+
 	paymentSvc := &stubPaymentService{processErr: errors.New("unexpected error")}
 	router := setupPaymentTestRouter(paymentSvc, orderRepo)
 
@@ -284,6 +297,7 @@ func TestPaymentCallback_InternalError_Returns500(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 	req := httptest.NewRequest(http.MethodPost, "/api/payments/callback", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-User-ID", "user-1")
 
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)

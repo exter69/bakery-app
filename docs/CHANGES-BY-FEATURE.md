@@ -49,6 +49,7 @@ All rows are `pre-1.0`: the app is not deployed yet — the first production dep
 | 2026-07-17 | — | pre-1.0 | JWT auth + roles (Admin/Seller/Customer) |
 | 2026-07-23 | MA-55 | pre-1.0 | SSO / social login (Google, Apple) |
 | 2026-07-23 | MA-58 | pre-1.0 | GDPR: data export, account deletion, cookie consent, privacy/terms pages |
+| 2026-07-28 | MA-66 | pre-1.0 | Auth hardening: prod boot guard for secrets, server-signed OAuth state (CSRF), safe account linking, crypto/rand tokens, removed X-User-ID header fallback |
 
 ## Surplus boxes — "Panier du soir"
 
@@ -95,3 +96,4 @@ All rows are `pre-1.0`: the app is not deployed yet — the first production dep
 | 2026-07-23 | MA-56 | pre-1.0 | UI performance: code splitting, lazy loading |
 | 2026-07-23 | MA-18 | pre-1.0 | Dark mode |
 | 2026-07-28 | MA-62 | pre-1.0 | Postgres fix: UUID IDs, role CHECK widened to 0..3, data-race elimination |
+| 2026-07-28 | MA-66 | pre-1.0 | Rate limiter hardened: keyed on RemoteAddr, stale entry eviction, register endpoint rate-limited |

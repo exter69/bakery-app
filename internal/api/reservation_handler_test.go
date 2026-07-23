@@ -37,6 +37,7 @@ func setupReservationHandler(bakeries []domain.Bakery, products []domain.Product
 
 	handler := NewReservationHandler(svc)
 	r := chi.NewRouter()
+	r.Use(testAuthMiddleware)
 	handler.RegisterRoutes(r)
 	return handler, r
 }
@@ -360,6 +361,7 @@ func setupReservationManagementHandler(reservations []domain.Reservation) chi.Ro
 
 	handler := NewReservationHandler(svc)
 	r := chi.NewRouter()
+	r.Use(testAuthMiddleware)
 	handler.RegisterRoutes(r)
 	return r
 }

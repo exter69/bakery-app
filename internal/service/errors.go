@@ -71,6 +71,16 @@ var (
 
 	// ErrTokenAlreadyUsed is returned when the provided registration token was already used.
 	ErrTokenAlreadyUsed = errors.New("registration token has already been used")
+
+	// ErrUnsupportedProvider is returned when an unsupported OAuth provider is requested.
+	ErrUnsupportedProvider = errors.New("unsupported OAuth provider")
+
+	// ErrOAuthNoEmail is returned when the OAuth provider does not return an email address.
+	ErrOAuthNoEmail = errors.New("OAuth provider did not return an email address")
+
+	// ErrOAuthAccountLinkRequiresVerification is returned when OAuth tries to link to an
+	// existing password-protected account by unverified provider email.
+	ErrOAuthAccountLinkRequiresVerification = errors.New("account linking requires password verification")
 )
 
 // ValidationErrors wraps a list of validation errors from the validation package.

@@ -1,5 +1,13 @@
 # Changelog
 
+## [2025-07-28] Auth & secrets hardening (MA-66)
+
+- **Module/App**: Backend (Go)
+- **Purpose**: Close critical auth/secrets security gaps: default secrets reaching production, OAuth login CSRF, unsafe account linking, weak rate limiting, non-crypto token generation, and header-based identity fallback.
+- **Features/Areas**: Auth, OAuth, rate limiting, secrets management, CSRF protection
+- **Summary**: Server now fails fast at boot in production if `JWT_SECRET` or `STRIPE_WEBHOOK_SECRET` (when Stripe is active) are missing. OAuth state is now server-generated (HMAC-signed, time-limited) and verified in callback — rejects invalid/expired/missing state with 403. Account linking by unverified provider email is blocked when the target account has a password (returns 409 requiring password login first). Rate limiter keys on `RemoteAddr` instead of spoofable `X-Forwarded-For`, evicts stale entries periodically to bound memory, and now covers `/api/auth/register` in addition to login. Registration token generation uses `crypto/rand` instead of `math/rand`. Removed the `X-User-ID` header fallback and `"anonymous"` default from `extractUserID` — identity now exclusively comes from JWT middleware context.
+- **Tests**: 10 new/updated OAuth handler tests (valid state, invalid state, missing state, expired state, account link rejection, social-only link), 2 new OAuth service tests (password-protected rejection, social-only link), 1 new rate limiter eviction test. Full suite passes (14/14 packages, 0 failures).
+
 ## [2025-07-28] Wire refund to payout reversal and implement updateRefundStatus (MA-65)
 
 - **Module/App**: Backend (Go)

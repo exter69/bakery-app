@@ -57,11 +57,13 @@ func main() {
 	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")
+	appEnv := os.Getenv("APP_ENV")
 	if jwtSecret == "" {
+		if appEnv == "production" {
+			log.Fatal("FATAL: JWT_SECRET must be set in production. Refusing to start with default secret.")
+		}
 		jwtSecret = "dev-secret-do-not-use-in-production"
-	}
-	if jwtSecret == "dev-secret-do-not-use-in-production" {
-		log.Println("⚠️  WARNING: Using default JWT secret. Set JWT_SECRET env var for production!")
+		log.Println("WARNING: Using default JWT secret. Set JWT_SECRET env var for production!")
 	}
 
 	frontendOrigin := os.Getenv("FRONTEND_ORIGIN")
@@ -363,7 +365,7 @@ func main() {
 
 	var oauthHandler *api.OAuthHandler
 	if oauthSvc != nil {
-		oauthHandler = api.NewOAuthHandler(oauthSvc)
+		oauthHandler = api.NewOAuthHandler(oauthSvc, []byte(jwtSecret))
 	}
 
 	uploadHandler := api.NewUploadHandler(uploadStorage)
@@ -461,17 +463,15 @@ func main() {
 		MaxRequests: 5,
 		Window:      60_000_000_000, // 60 seconds in nanoseconds (time.Minute)
 		UserIDExtractor: func(r *http.Request) string {
-			// Use IP address for unauthenticated endpoints
-			ip := r.Header.Get("X-Forwarded-For")
-			if ip == "" {
-				ip = r.RemoteAddr
-			}
-			return ip
+			// Use RemoteAddr as the primary key (set by trusted reverse proxy or
+			// Go's net/http from the TCP connection). Only fall back to
+			// X-Forwarded-For when a trusted proxy list is configured.
+			return r.RemoteAddr
 		},
 	})
 
 	// --- Public routes (no JWT required) ---
-	r.Post("/api/auth/register", authHandler.Register)
+	r.With(authRateLimiter.Middleware).Post("/api/auth/register", authHandler.Register)
 	r.With(authRateLimiter.Middleware).Post("/api/auth/login", authHandler.Login)
 	r.Post("/api/auth/request-access", authHandler.RequestAccess)
 
@@ -584,6 +584,12 @@ func main() {
 	// --- Stripe webhook (public — Stripe needs to reach it without JWT) ---
 	if paymentMode == "stripe" {
 		webhookSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
+		if webhookSecret == "" {
+			if appEnv == "production" {
+				log.Fatal("FATAL: STRIPE_WEBHOOK_SECRET must be set in production when PAYMENT_GATEWAY=stripe.")
+			}
+			log.Println("WARNING: STRIPE_WEBHOOK_SECRET is empty. Webhook signature verification will fail.")
+		}
 		stripeWebhook := payment.NewStripeWebhookHandler(webhookSecret, paymentSvc, orderRepo)
 		if payoutSvc != nil {
 			stripeWebhook.SetPayoutReverser(payoutSvc)

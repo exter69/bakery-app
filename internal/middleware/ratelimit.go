@@ -39,20 +39,48 @@ type userWindow struct {
 }
 
 // RateLimiter is an in-memory per-user rate limiter using a sliding window.
+// Stale entries are evicted periodically to bound memory growth.
 type RateLimiter struct {
-	mu      sync.Mutex
-	config  RateLimitConfig
-	windows map[string]*userWindow
-	now     func() time.Time // for testing
+	mu          sync.Mutex
+	config      RateLimitConfig
+	windows     map[string]*userWindow
+	now         func() time.Time // for testing
+	lastCleanup time.Time
 }
 
 // NewRateLimiter creates a new RateLimiter with the given configuration.
 func NewRateLimiter(config RateLimitConfig) *RateLimiter {
 	return &RateLimiter{
-		config:  config,
-		windows: make(map[string]*userWindow),
-		now:     time.Now,
+		config:      config,
+		windows:     make(map[string]*userWindow),
+		now:         time.Now,
+		lastCleanup: time.Now(),
 	}
+}
+
+// cleanupInterval determines how often stale entries are evicted.
+// Set to 5x the window duration (e.g. 5 minutes for a 1-minute window).
+const cleanupMultiplier = 5
+
+// evictStale removes entries with no timestamps within the current window.
+// Called under the existing mutex — no additional locking needed.
+func (rl *RateLimiter) evictStale(now time.Time) {
+	interval := rl.config.Window * cleanupMultiplier
+	if now.Sub(rl.lastCleanup) < interval {
+		return
+	}
+	windowStart := now.Add(-rl.config.Window)
+	for key, w := range rl.windows {
+		if len(w.timestamps) == 0 {
+			delete(rl.windows, key)
+			continue
+		}
+		// If the newest timestamp is older than the window, the entry is stale.
+		if w.timestamps[len(w.timestamps)-1].Before(windowStart) {
+			delete(rl.windows, key)
+		}
+	}
+	rl.lastCleanup = now
 }
 
 // allow checks if a user is within the rate limit. If allowed, it records the request.
@@ -61,6 +89,10 @@ func (rl *RateLimiter) allow(userID string) bool {
 	defer rl.mu.Unlock()
 
 	now := rl.now()
+
+	// Periodically evict stale entries to bound memory.
+	rl.evictStale(now)
+
 	windowStart := now.Add(-rl.config.Window)
 
 	w, exists := rl.windows[userID]

@@ -169,3 +169,50 @@ func TestRateLimiter_ContentTypeHeader(t *testing.T) {
 	assert.Equal(t, http.StatusTooManyRequests, rec.Code)
 	assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
 }
+
+func TestRateLimiter_EvictsStaleEntries(t *testing.T) {
+	config := RateLimitConfig{
+		MaxRequests: 5,
+		Window:      10 * time.Second,
+		UserIDExtractor: func(r *http.Request) string {
+			return r.Header.Get("X-User-ID")
+		},
+	}
+	rl := NewRateLimiter(config)
+
+	// Use a controllable time function
+	currentTime := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
+	rl.now = func() time.Time { return currentTime }
+	rl.lastCleanup = currentTime
+
+	// Generate requests from 100 different "users" (simulating stale keys)
+	handler := rl.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	for i := 0; i < 100; i++ {
+		req := httptest.NewRequest(http.MethodPost, "/api/auth/login", nil)
+		req.Header.Set("X-User-ID", "ip-"+string(rune('0'+i%10))+string(rune('0'+i/10)))
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+	}
+
+	// All 100 entries should exist
+	rl.mu.Lock()
+	assert.Equal(t, 100, len(rl.windows))
+	rl.mu.Unlock()
+
+	// Advance time past the window + cleanup interval (5x window = 50 seconds)
+	currentTime = currentTime.Add(60 * time.Second)
+
+	// Trigger a new request to trigger the cleanup
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/login", nil)
+	req.Header.Set("X-User-ID", "new-user")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	// All stale entries should be evicted, only "new-user" should remain
+	rl.mu.Lock()
+	assert.Equal(t, 1, len(rl.windows))
+	rl.mu.Unlock()
+}

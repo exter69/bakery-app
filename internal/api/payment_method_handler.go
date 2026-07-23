@@ -40,7 +40,7 @@ func (h *PaymentMethodHandler) RegisterRoutes(r chi.Router) {
 // ListPaymentMethods handles GET /api/user/payment-methods.
 func (h *PaymentMethodHandler) ListPaymentMethods(w http.ResponseWriter, r *http.Request) {
 	userID := extractUserID(r)
-	if userID == "anonymous" {
+	if userID == "" {
 		writeJSON(w, http.StatusUnauthorized, dto.ErrorResponse{
 			Code:    "UNAUTHORIZED",
 			Message: "authentication required",
@@ -70,7 +70,7 @@ func (h *PaymentMethodHandler) ListPaymentMethods(w http.ResponseWriter, r *http
 // CreateSetupIntent handles POST /api/user/payment-methods/setup.
 func (h *PaymentMethodHandler) CreateSetupIntent(w http.ResponseWriter, r *http.Request) {
 	userID := extractUserID(r)
-	if userID == "anonymous" {
+	if userID == "" {
 		writeJSON(w, http.StatusUnauthorized, dto.ErrorResponse{
 			Code:    "UNAUTHORIZED",
 			Message: "authentication required",
@@ -102,7 +102,7 @@ func (h *PaymentMethodHandler) CreateSetupIntent(w http.ResponseWriter, r *http.
 // DetachPaymentMethod handles DELETE /api/user/payment-methods/{id}.
 func (h *PaymentMethodHandler) DetachPaymentMethod(w http.ResponseWriter, r *http.Request) {
 	userID := extractUserID(r)
-	if userID == "anonymous" {
+	if userID == "" {
 		writeJSON(w, http.StatusUnauthorized, dto.ErrorResponse{
 			Code:    "UNAUTHORIZED",
 			Message: "authentication required",
@@ -148,7 +148,7 @@ func (h *PaymentMethodHandler) DetachPaymentMethod(w http.ResponseWriter, r *htt
 // SetDefaultPaymentMethod handles PUT /api/user/payment-methods/{id}/default.
 func (h *PaymentMethodHandler) SetDefaultPaymentMethod(w http.ResponseWriter, r *http.Request) {
 	userID := extractUserID(r)
-	if userID == "anonymous" {
+	if userID == "" {
 		writeJSON(w, http.StatusUnauthorized, dto.ErrorResponse{
 			Code:    "UNAUTHORIZED",
 			Message: "authentication required",

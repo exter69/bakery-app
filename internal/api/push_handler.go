@@ -25,7 +25,7 @@ func NewPushHandler(sender *push.Sender, store *push.Store) *PushHandler {
 // Saves a new push subscription for the authenticated user.
 func (h *PushHandler) Subscribe(w http.ResponseWriter, r *http.Request) {
 	userID := extractUserID(r)
-	if userID == "" || userID == "anonymous" {
+	if userID == "" {
 		writeJSON(w, http.StatusUnauthorized, dto.ErrorResponse{
 			Code:    "UNAUTHORIZED",
 			Message: "authentication required",
@@ -69,7 +69,7 @@ func (h *PushHandler) Subscribe(w http.ResponseWriter, r *http.Request) {
 // Removes a push subscription for the authenticated user by endpoint.
 func (h *PushHandler) Unsubscribe(w http.ResponseWriter, r *http.Request) {
 	userID := extractUserID(r)
-	if userID == "" || userID == "anonymous" {
+	if userID == "" {
 		writeJSON(w, http.StatusUnauthorized, dto.ErrorResponse{
 			Code:    "UNAUTHORIZED",
 			Message: "authentication required",

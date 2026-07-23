@@ -54,15 +54,9 @@ func toValidationErrorDTOs(errs []validation.ValidationError) []dto.ValidationEr
 	return details
 }
 
-// extractUserID extracts the user ID from the request.
-// It checks the context first (set by JWT auth middleware), then falls back to
-// the X-User-ID header for backward compatibility with tests.
+// extractUserID extracts the user ID from the request context (set by JWT auth middleware).
+// Returns an empty string if no user ID is present — callers behind JWT middleware
+// can rely on this always being non-empty.
 func extractUserID(r *http.Request) string {
-	if uid := middleware.GetUserIDFromContext(r.Context()); uid != "" {
-		return uid
-	}
-	if uid := r.Header.Get("X-User-ID"); uid != "" {
-		return uid
-	}
-	return "anonymous"
+	return middleware.GetUserIDFromContext(r.Context())
 }

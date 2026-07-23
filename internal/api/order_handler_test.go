@@ -46,6 +46,7 @@ func setupOrderTestRouter(bakeries []domain.Bakery, products []domain.Product) c
 
 	handler := NewOrderHandler(orderSvc)
 	r := chi.NewRouter()
+	r.Use(testAuthMiddleware)
 	handler.RegisterRoutes(r)
 	return r
 }
@@ -335,6 +336,8 @@ func setupOrderManagementRouter(orders []domain.Order) chi.Router {
 
 	handler := NewOrderHandler(orderSvc)
 	r := chi.NewRouter()
+	// Simulate JWT middleware in tests: read X-User-ID header and inject into context
+	r.Use(testAuthMiddleware)
 	handler.RegisterRoutes(r)
 	return r
 }

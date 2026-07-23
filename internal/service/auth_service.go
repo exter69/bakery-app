@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"log"
-	"math/rand"
+	"math/big"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/lucatorrekens/bakery-app/internal/domain"
@@ -53,19 +55,22 @@ func NewAuthService(cfg AuthServiceConfig) *AuthService {
 	}
 }
 
-var authIDCounter int
-
 func defaultAuthIDGen() string {
-	authIDCounter++
-	return fmt.Sprintf("user-%d", authIDCounter)
+	return uuid.New().String()
 }
 
-// generateTokenCode produces an 8-character alphanumeric code avoiding ambiguous characters.
+// generateTokenCode produces an 8-character alphanumeric code using crypto/rand,
+// avoiding ambiguous characters (0, O, 1, I, L).
 func generateTokenCode() string {
 	const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 	b := make([]byte, 8)
 	for i := range b {
-		b[i] = chars[rand.Intn(len(chars))]
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+		if err != nil {
+			// crypto/rand failure is unrecoverable
+			panic("crypto/rand failed: " + err.Error())
+		}
+		b[i] = chars[n.Int64()]
 	}
 	return string(b)
 }
